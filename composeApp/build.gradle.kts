@@ -7,6 +7,22 @@ plugins {
     alias(libs.plugins.composeHotReload)
 }
 
+fun getGitHash(): String {
+    return try {
+        val process = ProcessBuilder("git", "rev-parse", "--short", "HEAD")
+            .redirectError(ProcessBuilder.Redirect.INHERIT)
+            .start()
+
+        process.inputStream.bufferedReader().use { it.readText().trim() }
+    } catch (e: Exception) {
+        "unknown $e"
+    }
+}
+
+val buildNumber = getGitHash()
+version = env.RELEASE_VERSION.value
+val buildVersion = "$version-$buildNumber"
+
 kotlin {
     jvm("desktop")
     
@@ -39,9 +55,13 @@ compose.desktop {
         mainClass = "ua.in.ios.devopstools.MainKt"
 
         nativeDistributions {
+            jvmArgs += listOf(
+                "--add-modules=java.naming",
+                "-DbuildVersion=$buildVersion"
+            )
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb, TargetFormat.Rpm)
             packageName = "ua.in.ios.devopstools"
-            packageVersion = "1.0.0"
+            packageVersion = version.toString()
         }
     }
 }
