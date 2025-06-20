@@ -1,0 +1,27 @@
+{
+  "tasks": [
+    {
+      "name": "yq",
+      "description": "A lightweight and portable command-line YAML, JSON, INI and XML processor",
+      "install_type": "github",
+      "install_version": "",
+      "version_cmd": "--version",
+      "enabled": true,
+      "github": {
+        "url": "https://github.com/mikefarah/yq",
+        "api_url": "https://api.github.com/repos/mikefarah/yq"
+      }
+    },
+    {
+      "name": "jq",
+      "description": "A lightweight and flexible command-line JSON processor",
+      "install_type": "github",
+      "install_version": "",
+      "version_cmd": "--version",
+      "enabled": true,
+      "github": {
+        "url": "https://github.com/jqlang/jq"
+      }
+    }
+  ]
+}

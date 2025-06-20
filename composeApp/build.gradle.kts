@@ -9,18 +9,6 @@ plugins {
     alias(libs.plugins.composeHotReload)
 }
 
-//fun getGitHash(): String {
-//    return try {
-//        val process = ProcessBuilder("git", "rev-parse", "--short", "HEAD")
-//            .redirectError(ProcessBuilder.Redirect.INHERIT)
-//            .start()
-//
-//        process.inputStream.bufferedReader().use { it.readText().trim() }
-//    } catch (e: Exception) {
-//        "unknown $e"
-//    }
-//}
-
 abstract class GitCommitHash : ValueSource<String, ValueSourceParameters.None> {
     @get:Inject
     abstract val execOperations: ExecOperations
@@ -37,8 +25,6 @@ abstract class GitCommitHash : ValueSource<String, ValueSourceParameters.None> {
 
 val gitCommitHashProvider = providers.of(GitCommitHash::class) {}
 val buildNumber = gitCommitHashProvider.get()
-
-//val buildNumber = getGitHash()
 version = env.RELEASE_VERSION.value
 val buildVersion = "$version-$buildNumber"
 

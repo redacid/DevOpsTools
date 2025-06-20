@@ -1,0 +1,40 @@
+{
+  "settings": {
+    "install_path": "/usr/bin",
+    "temp_path": "/tmp",
+    "tasks_url": "https://github.com/redacid/DevOpsTools/tasks.json",
+    "install_types": [
+      "github",
+      "distributive_package",
+      "package",
+      "remote_shell_script",
+      "shell_cmd",
+      "package_manager"
+    ],
+    "package_managers": {
+      "apt": {
+        "update_cmd": "update",
+        "install_cmd": "install",
+        "remove_cmd": "remove"
+      },
+      "yum": {
+        "install_cmd": "install",
+        "remove_cmd": "remove"
+      },
+      "dnf": {
+        "install_cmd": "install",
+        "remove_cmd": "remove"
+      }
+    },
+    "package_installers": {
+      "dpkg": {
+        "install_cmd": "--install",
+        "remove_cmd": "--remove"
+      },
+      "rpm": {
+        "install_cmd": "--install",
+        "remove_cmd": "--erase="
+      }
+    }
+  }
+}
