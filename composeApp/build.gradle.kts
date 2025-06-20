@@ -38,11 +38,14 @@ kotlin {
             implementation(compose.runtime)
             implementation(compose.foundation)
             implementation(compose.material3)
+            implementation(compose.material)
+            implementation("br.com.devsrsouza.compose.icons:feather:1.1.1") // https://feathericons.com/
             implementation(compose.ui)
             implementation(compose.components.resources)
             implementation(compose.components.uiToolingPreview)
             implementation(libs.androidx.lifecycle.viewmodel)
             implementation(libs.androidx.lifecycle.runtimeCompose)
+            implementation("com.google.code.gson:gson:2.10.1")
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
