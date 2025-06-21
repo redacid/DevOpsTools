@@ -234,6 +234,8 @@ fun TaskEditDialog(
 
             isLoadingAssets = true
             availableAssets = listOf("Loading...")
+            selectedAsset = "" // Reset selected asset when version changes
+            assetDownloadUrl = "" // Reset download URL
 
             coroutineScope.launch {
                 try {
@@ -267,6 +269,7 @@ fun TaskEditDialog(
                     availableAssets = listOf("Loading error")
                     filteredAssets = emptyList()
                     println("Error loading assets: ${e.message}")
+                    e.printStackTrace()
                 }
 
                 isLoadingAssets = false
@@ -363,15 +366,22 @@ fun TaskEditDialog(
             }
         }
 
+
         // Function to install the selected tool
         fun installTool() {
-            if (isInstalling) return
+            if (isInstalling || selectedAsset.isEmpty() || assetDownloadUrl.isEmpty()) return
 
             // Show installation dialog
             showInstallationDialog = true
             isInstalling = true
             installationStatus = "Preparing installation..."
             installationProgress = 0.1f
+
+            // Для налагодження виведемо додаткову інформацію
+            println("Installing: $name")
+            println("Selected asset: $selectedAsset")
+            println("Asset type: $assetInstallType")
+            println("Download URL: $assetDownloadUrl")
 
             coroutineScope.launch {
                 try {
@@ -387,34 +397,41 @@ fun TaskEditDialog(
                         toolDirFile.mkdirs()
                     }
 
+                    // Створюємо шлях для завантаження файлу
+                    val destinationFile = "$toolDir/$selectedAsset"
+
                     // Download the file
-                    installationStatus = "Downloading file..."
+                    installationStatus = "Downloading file: $selectedAsset"
                     installationProgress = 0.3f
 
-                    val success = if (installType == "github" && assetDownloadUrl.isNotEmpty()) {
-                        val destinationFile = "$toolDir/$selectedAsset"
-
-                        // Implement download function
-                        withContext(Dispatchers.IO) {
-                            try {
-                                val destFile = File(destinationFile)
-                                if (!destFile.parentFile.exists()) {
-                                    destFile.parentFile.mkdirs()
-                                }
-
-                                URL(assetDownloadUrl).openStream().use { input ->
-                                    Files.copy(input, Paths.get(destinationFile), StandardCopyOption.REPLACE_EXISTING)
-                                }
-                                true
-                            } catch (e: Exception) {
-                                println("Error downloading file from '$assetDownloadUrl': ${e.message}")
-                                installationStatus = "Download error: ${e.message}"
-                                false
+                    val success = withContext(Dispatchers.IO) {
+                        try {
+                            val destFile = File(destinationFile)
+                            if (!destFile.parentFile.exists()) {
+                                destFile.parentFile.mkdirs()
                             }
+
+                            println("Downloading from: $assetDownloadUrl")
+                            println("Downloading to: $destinationFile")
+
+                            URL(assetDownloadUrl).openStream().use { input ->
+                                Files.copy(input, Paths.get(destinationFile), StandardCopyOption.REPLACE_EXISTING)
+                            }
+
+                            // Перевіряємо чи файл був успішно завантажений
+                            val downloadedFile = File(destinationFile)
+                            if (!downloadedFile.exists()) {
+                                installationStatus = "Download failed: File does not exist after download"
+                                return@withContext false
+                            }
+
+                            println("File downloaded successfully: ${downloadedFile.absolutePath}, size: ${downloadedFile.length()} bytes")
+                            true
+                        } catch (e: Exception) {
+                            println("Error downloading file from '$assetDownloadUrl': ${e.message}")
+                            installationStatus = "Download error: ${e.message}"
+                            false
                         }
-                    } else {
-                        installationStatus = "No download URL found"
-                        false
                     }
 
                     if (!success) {
@@ -427,26 +444,31 @@ fun TaskEditDialog(
                     installationStatus = "Installing..."
                     installationProgress = 0.7f
 
+                    // Для перевірки файлу перед встановленням
+                    val fileToInstall = File(destinationFile)
+                    if (!fileToInstall.exists()) {
+                        installationStatus = "Installation failed: File not found at $destinationFile"
+                        installationProgress = 1.0f
+                        isInstalling = false
+                        return@launch
+                    }
+
                     val installResult = when (assetInstallType) {
                         "deb_based" -> {
                             // Install DEB package
-                            val destinationFile = "$toolDir/$selectedAsset"
-                            val command = "sudo dpkg -i \"$destinationFile\""
+                            val command = "sudo dpkg -i $destinationFile"
                             executeCommand(command)
                         }
                         "rpm_based" -> {
                             // Install RPM package
-                            val destinationFile = "$toolDir/$selectedAsset"
-                            val command = "sudo rpm -i \"$destinationFile\""
+                            val command = "sudo rpm -i $destinationFile"
                             executeCommand(command)
                         }
                         "package" -> {
                             // Extract and copy binary from package
-                            val destinationFile = "$toolDir/$selectedAsset"
-
                             // Extract the archive
                             if (selectedAsset.endsWith(".tar.gz")) {
-                                val extractCommand = "tar -xzf \"$destinationFile\" -C \"$toolDir\""
+                                val extractCommand = "tar -xzf $destinationFile -C $toolDir"
                                 val extractResult = executeCommand(extractCommand)
 
                                 if (extractResult) {
@@ -458,8 +480,8 @@ fun TaskEditDialog(
                                     val foundBinary = findBinary(toolDir, binaryFile)
 
                                     if (foundBinary.isNotEmpty()) {
-                                        val copyCommand = "sudo cp \"$foundBinary\" \"$installPath/$binaryFile\""
-                                        val chmodCommand = "sudo chmod +x \"$installPath/$binaryFile\""
+                                        val copyCommand = "sudo cp $foundBinary $installPath/$binaryFile"
+                                        val chmodCommand = "sudo chmod +x $installPath/$binaryFile"
 
                                         executeCommand(copyCommand) && executeCommand(chmodCommand)
                                     } else {
@@ -476,14 +498,13 @@ fun TaskEditDialog(
                         }
                         "binary" -> {
                             // Copy binary file directly
-                            val destinationFile = "$toolDir/$selectedAsset"
                             val installPath = settingsManager.getString("settings.install_path", "/usr/bin")
                             val binaryFile = binaryName.ifEmpty { name }
 
                             // Make the binary executable
-                            val chmodCommand = "chmod +x \"$destinationFile\""
-                            val copyCommand = "sudo cp \"$destinationFile\" \"$installPath/$binaryFile\""
-                            val finalChmodCommand = "sudo chmod +x \"$installPath/$binaryFile\""
+                            val chmodCommand = "chmod +x $destinationFile"
+                            val copyCommand = "sudo cp $destinationFile $installPath/$binaryFile"
+                            val finalChmodCommand = "sudo chmod +x $installPath/$binaryFile"
 
                             executeCommand(chmodCommand) && executeCommand(copyCommand) && executeCommand(finalChmodCommand)
                         }
@@ -710,6 +731,9 @@ fun TaskEditDialog(
                                                                 selectedVersion = version
                                                                 installVersion = version
                                                                 expanded = false
+                                                                // Reset selected asset when version changes
+                                                                selectedAsset = ""
+                                                                assetDownloadUrl = ""
                                                                 // Load assets for selected version
                                                                 loadAssetsForVersion(version)
                                                             }
@@ -718,6 +742,7 @@ fun TaskEditDialog(
                                                 }
                                             }
                                         }
+
 
                                         // Button to refresh version list
                                         IconButton(
