@@ -24,6 +24,18 @@
       "github": {
         "url": "https://github.com/jqlang/jq"
       }
+    },
+    {
+      "name": "dive",
+      "binary_name": "dive",
+      "description": "A tool for exploring a Docker image, layer contents, and discovering ways to shrink the size of your Docker/OCI image",
+      "install_type": "github",
+      "install_version": "",
+      "version_cmd": "--version",
+      "enabled": true,
+      "github": {
+        "url": "https://github.com/wagoodman/dive"
+      }
     }
   ]
 }
