@@ -7,6 +7,7 @@
       "install_type": "github",
       "install_version": "",
       "version_cmd": "--version",
+      "installed_as": "binary",
       "enabled": true,
       "github": {
         "url": "https://github.com/mikefarah/yq",
@@ -20,6 +21,7 @@
       "install_type": "github",
       "install_version": "",
       "version_cmd": "--version",
+      "installed_as": "binary",
       "enabled": true,
       "github": {
         "url": "https://github.com/jqlang/jq"
@@ -32,6 +34,7 @@
       "install_type": "github",
       "install_version": "",
       "version_cmd": "--version",
+      "installed_as": "deb",
       "enabled": true,
       "github": {
         "url": "https://github.com/wagoodman/dive"

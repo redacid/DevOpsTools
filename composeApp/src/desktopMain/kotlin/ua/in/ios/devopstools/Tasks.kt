@@ -334,6 +334,157 @@ class TasksManager {
         reloadTasks(LoadStrategy.REPLACE_ALL)
     }
 
+
+    /**
+     * Gets available installation options for the current system and architecture
+     * based on the given task.
+     *
+     * @param task The task for which to find installation options
+     * @return Map of installation type to list of available patterns
+     */
+    fun getAvailableInstallationOptions(task: JsonObject): Map<String, List<String>> {
+        val systemInfo = SystemInfo.getInstance()
+        val settingsManager = SettingsManager.getInstance()
+        val result = mutableMapOf<String, List<String>>()
+
+        // Get task name to include in patterns
+        val taskName = task.get("name")?.asString ?: ""
+        if (taskName.isEmpty()) {
+            return emptyMap()
+        }
+
+        // Build the path to patterns based on OS and architecture
+        val osFamily = systemInfo.osFamily.toString().lowercase()
+        val arch = systemInfo.osArch
+
+        // Map Java architecture to our pattern architecture
+        val mappedArch = when {
+            arch.contains("amd64") || arch.contains("x86_64") -> "amd64"
+            arch.contains("86") -> "386"
+            arch.contains("arm64") || arch.contains("aarch64") -> "arm64"
+            arch.contains("arm") -> "arm"
+            else -> "amd64" // Default to amd64 if unknown
+        }
+
+        // Path to patterns in settings
+        val patternsPath = "settings.application_patterns.os.$osFamily.arch.$mappedArch"
+
+        // Get patterns object from settings
+        val patternsObj = settingsManager.getObject(patternsPath)
+
+        if (patternsObj != null) {
+            // For each type of installation pattern
+            patternsObj.keySet().forEach { installType ->
+                if (patternsObj.has(installType) && patternsObj.get(installType).isJsonArray) {
+                    val patterns = patternsObj.getAsJsonArray(installType)
+                    val patternList = mutableListOf<String>()
+
+                    // Insert task name pattern for each pattern
+                    for (i in 0 until patterns.size()) {
+                        if (patterns.get(i).isJsonPrimitive) {
+                            val pattern = patterns.get(i).asString
+
+                            // Create pattern with separate task name segment
+                            // Format: *taskName*rest_of_pattern
+                            val modifiedPattern = "*$taskName$pattern"
+
+                            patternList.add(modifiedPattern)
+                        }
+                    }
+
+                    result[installType] = patternList
+                }
+            }
+        }
+
+        // Add special case for Linux distributions if needed
+        if (osFamily == "linux") {
+            // Determine if we need deb or rpm based on the distribution
+            if (systemInfo.supportsDeb) {
+                result["package_type"] = listOf("deb_based")
+            } else if (systemInfo.supportsRpm) {
+                result["package_type"] = listOf("rpm_based")
+            }
+        }
+
+        return result
+    }
+
+    /**
+     * Finds the most appropriate installation file pattern for the current system
+     * based on the task name and available release assets.
+     *
+     * @param taskName The name of the task
+     * @param assetNames List of available asset file names
+     * @return The best matching asset name or null if no match found
+     */
+    fun findBestInstallationAsset(taskName: String, assetNames: List<String>): String? {
+        val systemInfo = SystemInfo.getInstance()
+        val settingsManager = SettingsManager.getInstance()
+
+        // Create a dummy task object to get installation options
+        val dummyTask = JsonObject().apply {
+            addProperty("name", taskName)
+        }
+
+        val installOptions = getAvailableInstallationOptions(dummyTask)
+
+        // Create a scoring system for each asset
+        val assetScores = mutableMapOf<String, Int>()
+
+        // Initialize scores
+        assetNames.forEach { assetScores[it] = 0 }
+
+        // Score based on our installation type preferences
+        val preferredOrder = listOf("deb_based", "rpm_based", "package", "binary")
+
+        // Check each pattern type
+        installOptions.forEach { (installType, patterns) ->
+            // Get preference score for this type (higher is better)
+            val typeScore = preferredOrder.indexOf(installType).let {
+                if (it == -1) 0 else (preferredOrder.size - it) * 100
+            }
+
+            // Check each pattern against each asset
+            patterns.forEach { pattern ->
+                // Convert pattern to regex
+                // Replace dots with escaped dots and * with regex wildcard
+                val regexPattern = pattern.replace(".", "\\.").replace("*", ".*")
+                val regex = regexPattern.toRegex(RegexOption.IGNORE_CASE)
+
+                assetNames.forEach { asset ->
+                    if (regex.matches(asset)) {
+                        // Add score for this match
+                        assetScores[asset] = assetScores[asset]!! + typeScore + 10
+
+                        // Bonus points for exact architecture match
+                        when {
+                            systemInfo.osArch.contains("64") && asset.contains("64") ->
+                                assetScores[asset] = assetScores[asset]!! + 5
+                            systemInfo.osArch.contains("86") && !asset.contains("64") && asset.contains("86") ->
+                                assetScores[asset] = assetScores[asset]!! + 5
+                        }
+
+                        // Bonus points for containing the task name
+                        if (asset.contains(taskName, ignoreCase = true)) {
+                            assetScores[asset] = assetScores[asset]!! + 3
+                        }
+                    }
+                }
+            }
+        }
+
+        // Debug log to see all scores
+        println("Asset scores for task '$taskName':")
+        assetScores.filter { it.value > 0 }.forEach { (asset, score) ->
+            println("  $asset: $score")
+        }
+
+        // Get the asset with the highest score, if any scored above 0
+        return assetScores.filter { it.value > 0 }
+            .maxByOrNull { it.value }
+            ?.key
+    }
     companion object {
         @Volatile
         private var instance: TasksManager? = null

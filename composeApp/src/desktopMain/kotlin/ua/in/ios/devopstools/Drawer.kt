@@ -58,6 +58,7 @@ fun NavigationDrawer() {
                     "Updated Tasks",
                     modifier = Modifier.padding(16.dp)
                 )
+                "System Info" -> SystemInfoView()
                 else -> TasksTable()
 //                    Text(
 //                    "DevOps Tools - допомога у встановленні та оновленні DevOps інструментів",
@@ -107,6 +108,18 @@ fun DetailedDrawer(
                         onClick = {
                             selectedItem = "Updates"
                             onScreenSelected("Updates")
+                            scope.launch {
+                                drawerState.close()
+                            }
+                        }
+                    )
+                    NavigationDrawerItem(
+                        label = { Text("Системна інформація") },
+                        selected = selectedItem == "System Info",
+                        icon = { Icon(ICON_INFO, contentDescription = null) },
+                        onClick = {
+                            selectedItem = "System Info"
+                            onScreenSelected("System Info")
                             scope.launch {
                                 drawerState.close()
                             }

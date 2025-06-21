@@ -23,6 +23,7 @@ import devopstools.composeapp.generated.resources.Res
 fun App() {
     val settingsManager = SettingsManager.getInstance()
     val tasksManager = TasksManager.getInstance()
+    val systemInfo = SystemInfo.getInstance()
 
 //    // Отримання значення налаштування
 //    val installPath = settingsManager.getString("settings.install_path")
