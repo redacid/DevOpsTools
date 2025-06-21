@@ -22,6 +22,7 @@ import devopstools.composeapp.generated.resources.Res
 @Preview
 fun App() {
     val settingsManager = SettingsManager.getInstance()
+    val tasksManager = TasksManager.getInstance()
 
 //    // Отримання значення налаштування
 //    val installPath = settingsManager.getString("settings.install_path")
@@ -32,7 +33,6 @@ fun App() {
 //
 //// Отримання всіх налаштувань
 //    val allSettings = settingsManager.getSettings()
-
 
     NavigationDrawer()
 }

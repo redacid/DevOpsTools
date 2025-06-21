@@ -8,10 +8,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-//import androidx.compose.material.icons.Icons
-//import androidx.compose.material.icons.automirrored.outlined.Help
-//import androidx.compose.material.icons.filled.Menu
-//import androidx.compose.material.icons.outlined.Settings
+import androidx.compose.material3.Button
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
@@ -26,30 +23,63 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.google.gson.JsonObject
 import kotlinx.coroutines.launch
+
 
 @Composable
 fun NavigationDrawer() {
-    DetailedDrawer { innerPadding ->
+    var currentScreen by remember { mutableStateOf("Home") }
+
+    DetailedDrawer(
+        onScreenSelected = { screen ->
+            currentScreen = screen
+        }
+    ) { innerPadding ->
         Box(modifier = Modifier.padding(innerPadding)) {
-            Text(
-                "Swipe from left edge or use menu icon to open the dismissible drawer",
-                modifier = Modifier.padding(16.dp)
-            )
+            when (currentScreen) {
+                "Tasks" -> TasksTable()
+                "Settings" -> Text(
+                    "Налаштування",
+                    modifier = Modifier.padding(16.dp)
+                )
+                "Help" -> Text(
+                    "Допомога та зворотній зв'язок",
+                    modifier = Modifier.padding(16.dp)
+                )
+                "Update Tasks" -> Text(
+                    "Updated Tasks",
+                    modifier = Modifier.padding(16.dp)
+                )
+                else -> TasksTable()
+//                    Text(
+//                    "DevOps Tools - допомога у встановленні та оновленні DevOps інструментів",
+//                    modifier = Modifier.padding(16.dp)
+//                )
+            }
         }
     }
 }
 
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DetailedDrawer(
+    onScreenSelected: (String) -> Unit,
     content: @Composable (PaddingValues) -> Unit
 ) {
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
+    val tasksManager = TasksManager.getInstance()
+    var tasks by remember { mutableStateOf(emptyList<JsonObject>()) }
+    var selectedItem by remember { mutableStateOf("Home") }
 
     ModalNavigationDrawer(
         drawerContent = {
@@ -59,36 +89,70 @@ fun DetailedDrawer(
                         .verticalScroll(rememberScrollState())
                 ) {
                     Spacer(Modifier.height(12.dp))
-//                    Text("Drawer Title", modifier = Modifier.padding(16.dp), style = MaterialTheme.typography.titleLarge)
-                    //HorizontalDivider()
 
-                    //Text("Section 1", modifier = Modifier.padding(16.dp), style = MaterialTheme.typography.titleMedium)
                     NavigationDrawerItem(
-                        label = { Text("Tasks") },
-                        selected = false,
-                        onClick = { /* Handle click */ }
+                        label = { Text("Завдання") },
+                        selected = selectedItem == "Tasks",
+                        onClick = {
+                            selectedItem = "Tasks"
+                            onScreenSelected("Tasks")
+                            scope.launch {
+                                drawerState.close()
+                            }
+                        }
                     )
                     NavigationDrawerItem(
-                        label = { Text("Check for updates") },
-                        selected = false,
-                        onClick = { /* Handle click */ }
+                        label = { Text("Перевірити оновлення") },
+                        selected = selectedItem == "Updates",
+                        onClick = {
+                            selectedItem = "Updates"
+                            onScreenSelected("Updates")
+                            scope.launch {
+                                drawerState.close()
+                            }
+                        }
                     )
 
                     HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
 
-//                    Text("Section 2", modifier = Modifier.padding(16.dp), style = MaterialTheme.typography.titleMedium)
                     NavigationDrawerItem(
-                        label = { Text("Settings") },
-                        selected = false,
+                        label = { Text("Налаштування") },
+                        selected = selectedItem == "Settings",
                         icon = { Icon(ICON_SETTINGS, contentDescription = null) },
-                        badge = { Text("20") }, // Placeholder
-                        onClick = { /* Handle click */ }
+                        onClick = {
+                            selectedItem = "Settings"
+                            onScreenSelected("Settings")
+                            scope.launch {
+                                drawerState.close()
+                            }
+                        }
                     )
+
                     NavigationDrawerItem(
-                        label = { Text("Help and feedback") },
-                        selected = false,
+                        label = {Text("Оновити завдання")},
+                        selected = selectedItem == "Update Tasks",
+                        icon = { Icon(ICON_REFRESH, contentDescription = null) },
+                        onClick = {
+                            tasksManager.reloadTasks()
+                            selectedItem = "Update Tasks"
+                            onScreenSelected("Update Tasks")
+                            scope.launch {
+                                drawerState.close()
+                            }
+                        }
+                    )
+
+                    NavigationDrawerItem(
+                        label = { Text("Допомога") },
+                        selected = selectedItem == "Help",
                         icon = { Icon(ICON_HELP, contentDescription = null) },
-                        onClick = { /* Handle click */ },
+                        onClick = {
+                            selectedItem = "Help"
+                            onScreenSelected("Help")
+                            scope.launch {
+                                drawerState.close()
+                            }
+                        }
                     )
                     Spacer(Modifier.height(12.dp))
                 }
@@ -99,7 +163,7 @@ fun DetailedDrawer(
         Scaffold(
             topBar = {
                 TopAppBar(
-                    title = { Text("Menu") },
+                    title = { Text("DevOps Tools") },
                     navigationIcon = {
                         IconButton(onClick = {
                             scope.launch {
@@ -110,7 +174,7 @@ fun DetailedDrawer(
                                 }
                             }
                         }) {
-                            Icon(ICON_MENU, contentDescription = "Menu")
+                            Icon(ICON_MENU, contentDescription = "Меню")
                         }
                     }
                 )
@@ -120,3 +184,4 @@ fun DetailedDrawer(
         }
     }
 }
+
