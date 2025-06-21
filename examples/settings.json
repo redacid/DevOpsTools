@@ -2,7 +2,7 @@
   "settings": {
     "install_path": "/usr/bin",
     "temp_path": "/tmp",
-    "tasks_url": "https://github.com/redacid/DevOpsTools/tasks.json",
+    "tasks_url": "https://github.com/redacid/DevOpsTools/blob/init/tasks.json",
     "install_types": [
       "github",
       "distributive_package",

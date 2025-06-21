@@ -3,6 +3,12 @@ package ua.`in`.ios.devopstools
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.window.DialogProperties
+import androidx.compose.foundation.layout.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
+
 
 /**
  * Універсальне діалогове вікно підтвердження дії.
@@ -43,6 +49,75 @@ fun ConfirmationDialog(
             dismissButton = {
                 OutlinedButton(onClick = onDismissRequest) {
                     Text(dismissButtonText)
+                }
+            },
+            properties = DialogProperties(
+                dismissOnBackPress = true,
+                dismissOnClickOutside = true
+            )
+        )
+    }
+}
+
+/**
+ * Діалогове вікно для вибору стратегії завантаження завдань.
+ */
+@Composable
+fun TaskLoadStrategyDialog(
+    isOpen: Boolean,
+    onDismissRequest: () -> Unit,
+    onStrategySelected: (TasksManager.LoadStrategy) -> Unit
+) {
+    if (isOpen) {
+        var selectedStrategy by remember { mutableStateOf(TasksManager.LoadStrategy.REPLACE_ALL) }
+
+        AlertDialog(
+            onDismissRequest = onDismissRequest,
+            title = { Text("Вибір стратегії завантаження") },
+            text = {
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    Text("Виберіть спосіб завантаження завдань:", modifier = Modifier.padding(bottom = 16.dp))
+
+                    // Радіо-кнопки для вибору стратегії
+                    Column {
+                        TasksManager.LoadStrategy.values().forEach { strategy ->
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 8.dp),
+                                verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
+                            ) {
+                                RadioButton(
+                                    selected = selectedStrategy == strategy,
+                                    onClick = { selectedStrategy = strategy }
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = when (strategy) {
+                                        TasksManager.LoadStrategy.REPLACE_ALL -> "Завантажити і замінити всі"
+                                        TasksManager.LoadStrategy.ADD_TO_EXISTING -> "Завантажити і додати до поточних"
+                                        TasksManager.LoadStrategy.ADD_MISSING -> "Завантажити і додати лише відсутні"
+                                        TasksManager.LoadStrategy.UPDATE_AND_ADD -> "Оновити існуючі та додати нові"
+                                    }
+                                )
+                            }
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        onStrategySelected(selectedStrategy)
+                        onDismissRequest()
+                    }
+                ) {
+                    Text("Завантажити")
+                }
+            },
+            dismissButton = {
+                OutlinedButton(onClick = onDismissRequest) {
+                    Text("Скасувати")
                 }
             },
             properties = DialogProperties(

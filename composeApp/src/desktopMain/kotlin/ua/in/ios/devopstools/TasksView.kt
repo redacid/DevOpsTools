@@ -12,12 +12,17 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.google.gson.JsonObject
+import kotlinx.coroutines.launch
 
 @Composable
 fun TasksTable() {
     val tasksManager = TasksManager.getInstance()
     val tasksArray = tasksManager.getTasksArray()
     var tasks by remember { mutableStateOf(emptyList<JsonObject>()) }
+    var showLoadStrategyDialog by remember { mutableStateOf(false) }
+    var isLoading by remember { mutableStateOf(false) }
+    var loadResult by remember { mutableStateOf<Boolean?>(null) }
+    val coroutineScope = rememberCoroutineScope()
 
     // Завантажуємо завдання при першому відображенні компонента
     LaunchedEffect(tasksArray) {
@@ -25,6 +30,18 @@ fun TasksTable() {
             if (tasksArray != null) {
                 for (i in 0 until tasksArray.size()) {
                     add(tasksArray.get(i).asJsonObject)
+                }
+            }
+        }
+    }
+
+    // Функція оновлення списку завдань після будь-якої операції
+    fun refreshTasksList() {
+        val updatedTasksArray = tasksManager.getTasksArray()
+        tasks = buildList {
+            if (updatedTasksArray != null) {
+                for (i in 0 until updatedTasksArray.size()) {
+                    add(updatedTasksArray.get(i).asJsonObject)
                 }
             }
         }
@@ -39,6 +56,39 @@ fun TasksTable() {
             style = MaterialTheme.typography.headlineMedium,
             modifier = Modifier.padding(bottom = 16.dp)
         )
+
+        // Кнопка оновлення завдань
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
+            horizontalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            Button(
+                onClick = { showLoadStrategyDialog = true },
+                enabled = !isLoading
+            ) {
+                Text("Оновити завдання")
+            }
+
+            // Показуємо індикатор завантаження
+            if (isLoading) {
+                CircularProgressIndicator(modifier = Modifier.size(24.dp))
+            }
+
+            // Показуємо результат завантаження
+            loadResult?.let { success ->
+                if (success) {
+                    Text(
+                        "Завдання успішно завантажено",
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                } else {
+                    Text(
+                        "Помилка завантаження завдань",
+                        color = MaterialTheme.colorScheme.error
+                    )
+                }
+            }
+        }
 
         // Заголовки таблиці
         Row(
@@ -92,22 +142,36 @@ fun TasksTable() {
                         // Видаляємо завдання та оновлюємо список
                         val taskName = task.get("name")?.asString ?: return@TaskRow
                         tasksManager.removeTask(taskName)
-
-                        // Оновлюємо список завдань
-                        val updatedTasksArray = tasksManager.getTasksArray()
-                        tasks = buildList {
-                            if (updatedTasksArray != null) {
-                                for (i in 0 until updatedTasksArray.size()) {
-                                    add(updatedTasksArray.get(i).asJsonObject)
-                                }
-                            }
-                        }
+                        refreshTasksList()
                     })
                     HorizontalDivider(Modifier, DividerDefaults.Thickness, DividerDefaults.color)
                 }
             }
         }
     }
+
+    // Діалогове вікно вибору стратегії завантаження
+    TaskLoadStrategyDialog(
+        isOpen = showLoadStrategyDialog,
+        onDismissRequest = { showLoadStrategyDialog = false },
+        onStrategySelected = { strategy ->
+            // Запускаємо завантаження з вибраною стратегією
+            isLoading = true
+            loadResult = null
+
+            // Використовуємо створений раніше coroutineScope
+            coroutineScope.launch {
+                val success = tasksManager.reloadTasks(strategy)
+                isLoading = false
+                loadResult = success
+
+                if (success) {
+                    refreshTasksList()
+                }
+            }
+        }
+    )
+
 }
 
 @Composable

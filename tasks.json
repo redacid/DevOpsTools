@@ -2,6 +2,7 @@
   "tasks": [
     {
       "name": "yq",
+      "binary_name": "yq",
       "description": "A lightweight and portable command-line YAML, JSON, INI and XML processor",
       "install_type": "github",
       "install_version": "",
@@ -14,6 +15,7 @@
     },
     {
       "name": "jq",
+      "binary_name": "jq",
       "description": "A lightweight and flexible command-line JSON processor",
       "install_type": "github",
       "install_version": "",
