@@ -969,6 +969,345 @@ fun TaskEditDialog(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun TaskAddDialog(
+    isOpen: Boolean,
+    onDismissRequest: () -> Unit,
+    onAddRequest: (JsonObject) -> Unit
+) {
+    if (isOpen) {
+        val settingsManager = SettingsManager.getInstance()
+
+        // Create a new task with default values
+        val newTask = JsonObject()
+
+        // Form field states
+        var name by remember { mutableStateOf("") }
+        var description by remember { mutableStateOf("") }
+        var binaryName by remember { mutableStateOf("") }
+        var installType by remember { mutableStateOf("github") } // github as default
+        var versionCmd by remember { mutableStateOf("--version") }
+        var installedAs by remember { mutableStateOf("") }
+        var enabled by remember { mutableStateOf(true) }
+        var installVersion by remember { mutableStateOf("latest") }
+
+        // GitHub-specific fields
+        var githubUrl by remember { mutableStateOf("") }
+        var githubApiUrl by remember { mutableStateOf("") }
+
+        // Form validation
+        var isNameValid by remember { mutableStateOf(true) }
+        var isUrlValid by remember { mutableStateOf(true) }
+
+        // Validation states
+        var nameErrorText by remember { mutableStateOf("") }
+        var urlErrorText by remember { mutableStateOf("") }
+
+        // List of available installation types
+        val installTypes = settingsManager.getStringArray("settings.install_types")
+
+        // Coroutines
+        val coroutineScope = rememberCoroutineScope()
+
+        // Function to convert GitHub URL to API URL
+        fun updateGithubApiUrl() {
+            if (githubUrl.isNotEmpty() && githubUrl.contains("github.com")) {
+                try {
+                    // Extract repository path from URL
+                    val regex = "https?://github.com/([^/]+/[^/]+).*".toRegex()
+                    val matchResult = regex.find(githubUrl)
+
+                    if (matchResult != null) {
+                        val repoPath = matchResult.groupValues[1].trim()
+                        // Remove .git if it's at the end
+                        val cleanRepoPath = repoPath.replace("\\.git$".toRegex(), "")
+
+                        githubApiUrl = "https://api.github.com/repos/$cleanRepoPath"
+                    }
+                } catch (e: Exception) {
+                    println("Error converting GitHub URL: ${e.message}")
+                }
+            }
+        }
+
+        // Form validation function
+        fun validateForm(): Boolean {
+            var isValid = true
+
+            // Name validation
+            if (name.isBlank()) {
+                isNameValid = false
+                nameErrorText = "Task name cannot be empty"
+                isValid = false
+            } else {
+                isNameValid = true
+                nameErrorText = ""
+            }
+
+            // URL validation for GitHub
+            if (installType == "github" && githubUrl.isBlank()) {
+                isUrlValid = false
+                urlErrorText = "Repository URL cannot be empty for GitHub type"
+                isValid = false
+            } else {
+                isUrlValid = true
+                urlErrorText = ""
+            }
+
+            return isValid
+        }
+
+        AlertDialog(
+            onDismissRequest = onDismissRequest,
+            title = { Text(text = "Add New Task") },
+            modifier = Modifier.fillMaxWidth(0.9f).fillMaxHeight(0.9f),
+            text = {
+                Box(
+                    modifier = Modifier.fillMaxSize()
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .verticalScroll(rememberScrollState())
+                            .padding(8.dp)
+                    ) {
+                        // Task basic information
+                        OutlinedTextField(
+                            value = name,
+                            onValueChange = {
+                                name = it
+                                isNameValid = true
+                            },
+                            label = { Text("Name") },
+                            modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                            singleLine = true,
+                            isError = !isNameValid,
+                            supportingText = {
+                                if (!isNameValid) {
+                                    Text(nameErrorText)
+                                }
+                            }
+                        )
+
+                        OutlinedTextField(
+                            value = description,
+                            onValueChange = { description = it },
+                            label = { Text("Description") },
+                            modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                            maxLines = 3
+                        )
+
+                        // Additional fields
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            // First column
+                            Column(
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                OutlinedTextField(
+                                    value = binaryName,
+                                    onValueChange = { binaryName = it },
+                                    label = { Text("Binary name") },
+                                    modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                                    singleLine = true,
+                                    placeholder = { Text("Leave empty to use task name") }
+                                )
+
+                                // Installation type dropdown
+                                var expandedInstallType by remember { mutableStateOf(false) }
+
+                                ExposedDropdownMenuBox(
+                                    expanded = expandedInstallType,
+                                    onExpandedChange = { expandedInstallType = it },
+                                    modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
+                                ) {
+                                    OutlinedTextField(
+                                        value = installType,
+                                        onValueChange = { },
+                                        label = { Text("Installation type") },
+                                        readOnly = true,
+                                        trailingIcon = {
+                                            ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedInstallType)
+                                        },
+                                        modifier = Modifier.menuAnchor().fillMaxWidth(),
+                                        singleLine = true
+                                    )
+
+                                    ExposedDropdownMenu(
+                                        expanded = expandedInstallType,
+                                        onDismissRequest = { expandedInstallType = false }
+                                    ) {
+                                        installTypes.forEach { type ->
+                                            DropdownMenuItem(
+                                                text = { Text(type) },
+                                                onClick = {
+                                                    installType = type
+                                                    expandedInstallType = false
+                                                }
+                                            )
+                                        }
+                                    }
+                                }
+
+                                OutlinedTextField(
+                                    value = versionCmd,
+                                    onValueChange = { versionCmd = it },
+                                    label = { Text("Version check command") },
+                                    modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                                    singleLine = true,
+                                    placeholder = { Text("--version") }
+                                )
+                            }
+
+                            // Second column
+                            Column(
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                OutlinedTextField(
+                                    value = installedAs,
+                                    onValueChange = { installedAs = it },
+                                    label = { Text("Installed as") },
+                                    modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                                    singleLine = true,
+                                    placeholder = { Text("Leave empty to use binary name") }
+                                )
+
+                                OutlinedTextField(
+                                    value = installVersion,
+                                    onValueChange = { installVersion = it },
+                                    label = { Text("Version to install") },
+                                    modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                                    singleLine = true,
+                                    placeholder = { Text("latest") }
+                                )
+
+                                // Checkbox for enabled
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
+                                ) {
+                                    Checkbox(
+                                        checked = enabled,
+                                        onCheckedChange = { enabled = it }
+                                    )
+                                    Text("Enabled", modifier = Modifier.padding(start = 8.dp))
+                                }
+                            }
+                        }
+
+                        // GitHub-specific fields
+                        if (installType == "github") {
+                            Text(
+                                "GitHub Settings",
+                                style = MaterialTheme.typography.titleMedium,
+                                modifier = Modifier.padding(vertical = 8.dp)
+                            )
+
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                OutlinedTextField(
+                                    value = githubUrl,
+                                    onValueChange = {
+                                        githubUrl = it
+                                        isUrlValid = true
+                                        updateGithubApiUrl()
+                                    },
+                                    label = { Text("Repository URL") },
+                                    modifier = Modifier.weight(1f).padding(vertical = 4.dp),
+                                    singleLine = true,
+                                    isError = !isUrlValid,
+                                    supportingText = {
+                                        if (!isUrlValid) {
+                                            Text(urlErrorText)
+                                        }
+                                    },
+                                    placeholder = { Text("https://github.com/owner/repo") }
+                                )
+                            }
+
+                            OutlinedTextField(
+                                value = githubApiUrl,
+                                onValueChange = { githubApiUrl = it },
+                                label = { Text("GitHub API URL") },
+                                modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                                singleLine = true,
+                                placeholder = { Text("https://api.github.com/repos/owner/repo") }
+                            )
+
+                            // Button to open repository
+                            OutlinedButton(
+                                onClick = {
+                                    if (githubUrl.isNotEmpty()) {
+                                        // Open GitHub repository in browser
+                                        try {
+                                            val url = java.net.URI(githubUrl).toURL()
+                                            java.awt.Desktop.getDesktop().browse(url.toURI())
+                                        } catch (e: Exception) {
+                                            println("Error opening URL: ${e.message}")
+                                        }
+                                    }
+                                },
+                                modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                                enabled = githubUrl.isNotEmpty()
+                            ) {
+                                Text("Open Repository")
+                            }
+                        }
+
+                        // Other installation types may have their own specific fields
+                        // Here you can add handling for other types
+                    }
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        if (validateForm()) {
+                            // Fill the fields for the new task
+                            newTask.addProperty("name", name)
+                            newTask.addProperty("description", description)
+                            newTask.addProperty("binary_name", binaryName)
+                            newTask.addProperty("install_type", installType)
+                            newTask.addProperty("version_cmd", versionCmd)
+                            newTask.addProperty("installed_as", installedAs)
+                            newTask.addProperty("enabled", enabled)
+                            newTask.addProperty("install_version", installVersion)
+
+                            // GitHub-specific fields
+                            if (installType == "github") {
+                                val githubObj = JsonObject()
+                                githubObj.addProperty("url", githubUrl)
+                                githubObj.addProperty("api_url", githubApiUrl)
+                                newTask.add("github", githubObj)
+                            }
+
+                            onAddRequest(newTask)
+                            onDismissRequest()
+                        }
+                    }
+                ) {
+                    Text("Add")
+                }
+            },
+            dismissButton = {
+                OutlinedButton(onClick = onDismissRequest) {
+                    Text("Cancel")
+                }
+            },
+            properties = DialogProperties(
+                dismissOnBackPress = true,
+                dismissOnClickOutside = true,
+                usePlatformDefaultWidth = false
+            )
+        )
+    }
+}
+
 @Composable
 fun TasksTable() {
     val tasksManager = TasksManager.getInstance()
