@@ -239,14 +239,15 @@ fun TaskEditDialog(
 
             coroutineScope.launch {
                 try {
-                    val releaseUrl = "$githubApiUrl/releases/tags/$version"
-                    val releaseJson = URL(releaseUrl).readText()
-                    val release = com.google.gson.JsonParser.parseString(releaseJson).asJsonObject
+                    //val releaseUrl = "$githubApiUrl/releases/tags/$version"
+                    //val releaseJson = URL(releaseUrl).readText()
+                    val release = tasksManager.getGithubReleaseByTag(githubApiUrl, version)
+                    //val release = com.google.gson.JsonParser.parseString(releaseJson).asJsonObject
 
                     val assets = mutableListOf<String>()
                     val assetUrlMap = mutableMapOf<String, String>() // Map asset name to download URL
 
-                    if (release.has("assets") && release.get("assets").isJsonArray) {
+                    if (release?.has("assets") == true && release.get("assets").isJsonArray) {
                         val assetsArray = release.getAsJsonArray("assets")
                         for (i in 0 until assetsArray.size()) {
                             val asset = assetsArray.get(i).asJsonObject
@@ -286,21 +287,48 @@ fun TaskEditDialog(
             coroutineScope.launch {
                 try {
                     if (githubApiUrl.isNotEmpty()) {
-                        val releasesUrl = "$githubApiUrl/releases"
-                        val releasesJson = URL(releasesUrl).readText()
-                        val jsonArray = com.google.gson.JsonParser.parseString(releasesJson).asJsonArray
+                        val jsonArray = tasksManager.getGithubReleases(githubApiUrl)
 
                         val versions = mutableListOf<String>()
-                        for (i in 0 until jsonArray.size()) {
-                            val release = jsonArray.get(i).asJsonObject
-                            val tagName = release.get("tag_name").asString
-                            versions.add(tagName)
+
+                        // Безпечно обробляємо nullable JsonArray
+                        if (jsonArray != null) {
+                            for (i in 0 until jsonArray.size()) {
+                                // Отримуємо JsonObject безпечно
+                                val releaseElement = jsonArray.get(i)
+                                if (releaseElement != null && releaseElement.isJsonObject) {
+                                    val release = releaseElement.asJsonObject
+
+                                    // Безпечно отримуємо tag_name
+                                    val tagNameElement = release.get("tag_name")
+                                    if (tagNameElement != null && tagNameElement.isJsonPrimitive) {
+                                        val tagName = tagNameElement.asString
+                                        versions.add(tagName)
+                                    }
+                                }
+                            }
                         }
 
-                        availableVersions = versions
                         if (versions.isNotEmpty()) {
+                            availableVersions = versions
                             selectedVersion = versions[0]
                             loadAssetsForVersion(selectedVersion)
+                        } else {
+                            // Спробуємо отримати останній реліз, якщо список релізів порожній
+                            val latestRelease = tasksManager.getLatestGithubRelease(githubApiUrl)
+                            if (latestRelease != null) {
+                                val tagNameElement = latestRelease.get("tag_name")
+                                if (tagNameElement != null && tagNameElement.isJsonPrimitive) {
+                                    val tagName = tagNameElement.asString
+                                    availableVersions = listOf(tagName)
+                                    selectedVersion = tagName
+                                    loadAssetsForVersion(selectedVersion)
+                                } else {
+                                    availableVersions = listOf("No tag name found")
+                                }
+                            } else {
+                                availableVersions = listOf("No releases found")
+                            }
                         }
                     } else {
                         availableVersions = listOf("No API URL specified")
@@ -308,11 +336,13 @@ fun TaskEditDialog(
                 } catch (e: Exception) {
                     availableVersions = listOf("Loading error")
                     println("Error loading versions: ${e.message}")
+                    e.printStackTrace()
                 }
 
                 isLoadingVersions = false
             }
         }
+
 
         // Helper function to execute shell commands
         suspend fun executeCommand(command: String): Boolean {
@@ -980,10 +1010,8 @@ fun TaskAddDialog(
     if (isOpen) {
         val settingsManager = SettingsManager.getInstance()
         val tasksManager = TasksManager.getInstance()
-
         // Create a new task with default values
         val newTask = JsonObject()
-
         // Form field states
         var name by remember { mutableStateOf("") }
         var description by remember { mutableStateOf("") }
