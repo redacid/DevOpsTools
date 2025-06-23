@@ -219,32 +219,33 @@ class TasksManager {
     }
 
     /**
-     * Конвертує звичайний GitHub URL у відповідний API URL
+     * Converts a regular GitHub URL to the corresponding API URL
      */
-    private fun convertGithubUrlToApiUrl(githubUrl: String): String {
-        // Перевіряємо, чи це GitHub URL
+    fun convertGithubUrlToApiUrl(githubUrl: String): String {
+        // Check if it's a GitHub URL
         if (!githubUrl.contains("github.com")) {
             return ""
         }
 
         try {
-            // Витягуємо шлях репозиторію з URL
+            // Extract repository path from URL
             val regex = "https?://github.com/([^/]+/[^/]+).*".toRegex()
             val matchResult = regex.find(githubUrl)
 
             if (matchResult != null) {
                 val repoPath = matchResult.groupValues[1].trim()
-                // Видаляємо .git, якщо він є в кінці
+                // Remove .git if it's at the end
                 val cleanRepoPath = repoPath.replace("\\.git$".toRegex(), "")
 
                 return "https://api.github.com/repos/$cleanRepoPath"
             }
         } catch (e: Exception) {
-            println("Помилка при конвертації GitHub URL: ${e.message}")
+            println("Error converting GitHub URL: ${e.message}")
         }
 
         return ""
     }
+
 
     private fun createEmptyTasks() {
         // Створюємо порожній об'єкт завдань з мінімальною структурою

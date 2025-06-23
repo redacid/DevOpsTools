@@ -969,6 +969,7 @@ fun TaskEditDialog(
     }
 }
 
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TaskAddDialog(
@@ -978,6 +979,7 @@ fun TaskAddDialog(
 ) {
     if (isOpen) {
         val settingsManager = SettingsManager.getInstance()
+        val tasksManager = TasksManager.getInstance()
 
         // Create a new task with default values
         val newTask = JsonObject()
@@ -1010,23 +1012,13 @@ fun TaskAddDialog(
         // Coroutines
         val coroutineScope = rememberCoroutineScope()
 
-        // Function to convert GitHub URL to API URL
-        fun updateGithubApiUrl() {
+        // Effect to update API URL when GitHub URL changes
+        LaunchedEffect(githubUrl) {
             if (githubUrl.isNotEmpty() && githubUrl.contains("github.com")) {
-                try {
-                    // Extract repository path from URL
-                    val regex = "https?://github.com/([^/]+/[^/]+).*".toRegex()
-                    val matchResult = regex.find(githubUrl)
-
-                    if (matchResult != null) {
-                        val repoPath = matchResult.groupValues[1].trim()
-                        // Remove .git if it's at the end
-                        val cleanRepoPath = repoPath.replace("\\.git$".toRegex(), "")
-
-                        githubApiUrl = "https://api.github.com/repos/$cleanRepoPath"
-                    }
-                } catch (e: Exception) {
-                    println("Error converting GitHub URL: ${e.message}")
+                val apiUrl = tasksManager.convertGithubUrlToApiUrl(githubUrl)
+                if (apiUrl.isNotEmpty()) {
+                    githubApiUrl = apiUrl
+                    println("Generated API URL: $apiUrl from GitHub URL: $githubUrl")
                 }
             }
         }
@@ -1053,6 +1045,19 @@ fun TaskAddDialog(
             } else {
                 isUrlValid = true
                 urlErrorText = ""
+            }
+
+            // Ensure API URL is generated for GitHub
+            if (installType == "github" && githubUrl.isNotEmpty() && githubApiUrl.isEmpty()) {
+                // Try one more time to generate API URL
+                val apiUrl = tasksManager.convertGithubUrlToApiUrl(githubUrl)
+                if (apiUrl.isNotEmpty()) {
+                    githubApiUrl = apiUrl
+                } else {
+                    isUrlValid = false
+                    urlErrorText = "Invalid GitHub repository URL"
+                    isValid = false
+                }
             }
 
             return isValid
@@ -1215,7 +1220,6 @@ fun TaskAddDialog(
                                     onValueChange = {
                                         githubUrl = it
                                         isUrlValid = true
-                                        updateGithubApiUrl()
                                     },
                                     label = { Text("Repository URL") },
                                     modifier = Modifier.weight(1f).padding(vertical = 4.dp),
@@ -1236,6 +1240,7 @@ fun TaskAddDialog(
                                 label = { Text("GitHub API URL") },
                                 modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
                                 singleLine = true,
+                                readOnly = true,
                                 placeholder = { Text("https://api.github.com/repos/owner/repo") }
                             )
 
@@ -1258,9 +1263,6 @@ fun TaskAddDialog(
                                 Text("Open Repository")
                             }
                         }
-
-                        // Other installation types may have their own specific fields
-                        // Here you can add handling for other types
                     }
                 }
             },
@@ -1314,6 +1316,7 @@ fun TasksTable() {
     val tasksArray = tasksManager.getTasksArray()
     var tasks by remember { mutableStateOf(emptyList<JsonObject>()) }
     var showLoadStrategyDialog by remember { mutableStateOf(false) }
+    var showAddDialog by remember { mutableStateOf(false) }
     var isLoading by remember { mutableStateOf(false) }
     var loadResult by remember { mutableStateOf<Boolean?>(null) }
     val coroutineScope = rememberCoroutineScope()
@@ -1341,6 +1344,23 @@ fun TasksTable() {
         }
     }
 
+    fun refreshTasks() {
+        isLoading = true
+        val tasksArray = tasksManager.getTasksArray()
+
+        val tasksList = mutableListOf<JsonObject>()
+        if (tasksArray != null) {
+            for (i in 0 until tasksArray.size()) {
+                val task = tasksArray.get(i).asJsonObject
+                tasksList.add(task)
+            }
+        }
+
+        tasks = tasksList
+        isLoading = false
+    }
+
+
     Column(
         modifier = Modifier.fillMaxSize().padding(16.dp)
     ) {
@@ -1361,6 +1381,13 @@ fun TasksTable() {
                 enabled = !isLoading
             ) {
                 Text("Оновити завдання")
+            }
+            Button(
+                onClick = { showAddDialog = true }
+            ) {
+                Icon(ICON_ADD, contentDescription = "Add")
+                Spacer(Modifier.width(4.dp))
+                Text("Add")
             }
 
             // Показуємо індикатор завантаження
@@ -1443,6 +1470,21 @@ fun TasksTable() {
             }
         }
     }
+
+    // Add dialog
+    if (showAddDialog) {
+        TaskAddDialog(
+            isOpen = true,
+            onDismissRequest = { showAddDialog = false },
+            onAddRequest = { newTask ->
+                coroutineScope.launch {
+                    tasksManager.addTask(newTask)
+                    refreshTasks()
+                }
+            }
+        )
+    }
+
 
     // Діалогове вікно вибору стратегії завантаження
     TaskLoadStrategyDialog(
