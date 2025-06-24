@@ -176,357 +176,6 @@ class TasksManager {
         }
     }
 
-    private fun downloadTasksFromUrl() {
-        reloadTasks(LoadStrategy.REPLACE_ALL)
-    }
-
-    /**
-     * Перевіряє та оновлює api_url для GitHub завдань
-     */
-    private fun updateGitHubApiUrls() {
-        val tasksArray = getTasksArray() ?: return
-        var updated = false
-
-        for (i in 0 until tasksArray.size()) {
-            val task = tasksArray.get(i).asJsonObject
-
-            // Перевіряємо, чи це GitHub-завдання
-            if (task.has("install_type") &&
-                task.get("install_type").asString == "github" &&
-                task.has("github")) {
-
-                val githubObj = task.getAsJsonObject("github")
-
-                // Перевіряємо, чи є url, але немає api_url
-                if (githubObj.has("url") &&
-                    (!githubObj.has("api_url") || githubObj.get("api_url").asString.isEmpty())) {
-
-                    val githubUrl = githubObj.get("url").asString
-                    val apiUrl = convertGithubUrlToApiUrl(githubUrl)
-
-                    if (apiUrl.isNotEmpty()) {
-                        githubObj.addProperty("api_url", apiUrl)
-                        updated = true
-                    }
-                }
-            }
-        }
-
-        // Зберігаємо зміни, якщо були оновлення
-        if (updated) {
-            saveTasks()
-        }
-    }
-
-    /**
-     * Converts a regular GitHub URL to the corresponding API URL
-     */
-    fun convertGithubUrlToApiUrl(githubUrl: String): String {
-        // Check if it's a GitHub URL
-        if (!githubUrl.contains("github.com")) {
-            return ""
-        }
-
-        try {
-            // Extract repository path from URL
-            // GitHub дозволяє в іменах користувачів та репозиторіїв використовувати:
-            // - літери a-z, A-Z
-            // - цифри 0-9
-            // - дефіси -
-            // - крапки .
-            // - підкреслення _
-            val regex = "https?://github\\.com/([\\w\\-\\.]+/[\\w\\-\\.]+)(?:\\.git|/.*)?".toRegex()
-            val matchResult = regex.find(githubUrl)
-
-            if (matchResult != null) {
-                val repoPath = matchResult.groupValues[1].trim()
-                // Remove .git if it's at the end (although our regex already handles this)
-                val cleanRepoPath = repoPath.replace("\\.git$".toRegex(), "")
-
-                println("Extracted GitHub repository path: $cleanRepoPath from URL: $githubUrl")
-                return "https://api.github.com/repos/$cleanRepoPath"
-            } else {
-                println("Failed to extract repository path from URL: $githubUrl")
-            }
-        } catch (e: Exception) {
-            println("Error converting GitHub URL: ${e.message}")
-        }
-
-        return ""
-    }
-
-    /**
-     * Performs an HTTP request to GitHub API with authentication token if available
-     *
-     * @param apiUrl URL for GitHub API request
-     * @return response content as string or null in case of error
-     */
-    private fun fetchFromGithubApi(apiUrl: String): String? {
-        try {
-            val githubToken = settingsManager.getString("settings.github_token", "")
-            val connection = URL(apiUrl).openConnection() as java.net.HttpURLConnection
-
-            // Set up connection
-            connection.requestMethod = "GET"
-            connection.setRequestProperty("Accept", "application/vnd.github.v3+json")
-
-            // Add authorization token if available
-            if (githubToken.isNotEmpty()) {
-                connection.setRequestProperty("Authorization", "token $githubToken")
-                println("Using GitHub token for API request to: $apiUrl")
-            }
-
-            // Check response status
-            val responseCode = connection.responseCode
-            if (responseCode != 200) {
-                println("Error when requesting GitHub API: HTTP $responseCode")
-                println("Response: ${connection.responseMessage}")
-
-                // Read error text if available
-                val errorStream = connection.errorStream
-                if (errorStream != null) {
-                    val errorText = errorStream.bufferedReader().use { it.readText() }
-                    println("Error details: $errorText")
-                }
-                return null
-            }
-
-            // Read and return response
-            return connection.inputStream.bufferedReader().use { it.readText() }
-        } catch (e: Exception) {
-            println("Exception when requesting GitHub API: ${e.message}")
-            e.printStackTrace()
-            return null
-        }
-    }
-
-    private fun createEmptyTasks() {
-        // Створюємо порожній об'єкт завдань з мінімальною структурою
-        tasks = JsonObject().apply {
-            add("tasks", JsonArray())
-        }
-        saveTasks()
-    }
-
-    fun saveTasks() {
-        try {
-            FileWriter(tasksFile).use { writer ->
-                gson.toJson(tasks, writer)
-            }
-        } catch (e: Exception) {
-            println("Помилка збереження завдань: ${e.message}")
-        }
-    }
-
-    fun getTasks(): JsonObject {
-        return tasks
-    }
-
-    fun getTasksArray(): JsonArray? {
-        return if (tasks.has("tasks") && tasks.get("tasks").isJsonArray) {
-            tasks.getAsJsonArray("tasks")
-        } else {
-            null
-        }
-    }
-
-    fun getTaskByName(name: String): JsonObject? {
-        val tasksArray = getTasksArray() ?: return null
-
-        for (i in 0 until tasksArray.size()) {
-            val task = tasksArray.get(i).asJsonObject
-            if (task.has("name") && task.get("name").asString == name) {
-                return task
-            }
-        }
-
-        return null
-    }
-
-    fun addTask(task: JsonObject) {
-        if (!tasks.has("tasks")) {
-            tasks.add("tasks", JsonArray())
-        }
-
-        val tasksArray = tasks.getAsJsonArray("tasks")
-        tasksArray.add(task)
-        saveTasks()
-    }
-
-    fun removeTask(name: String): Boolean {
-        val tasksArray = getTasksArray() ?: return false
-
-        for (i in 0 until tasksArray.size()) {
-            val task = tasksArray.get(i).asJsonObject
-            if (task.has("name") && task.get("name").asString == name) {
-                tasksArray.remove(i)
-                saveTasks()
-                return true
-            }
-        }
-
-        return false
-    }
-
-    fun updateTask(name: String, updatedTask: JsonObject): Boolean {
-        val tasksArray = getTasksArray() ?: return false
-
-        for (i in 0 until tasksArray.size()) {
-            val task = tasksArray.get(i).asJsonObject
-            if (task.has("name") && task.get("name").asString == name) {
-                tasksArray.set(i, updatedTask)
-                saveTasks()
-                return true
-            }
-        }
-
-        return false
-    }
-
-    // Старий метод, залишений для сумісності
-    fun reloadTasks() {
-        reloadTasks(LoadStrategy.REPLACE_ALL)
-    }
-
-    /**
-     * Checks and updates api_url for GitHub tasks
-     */
-    private fun updateGitHubApiUrls2() {
-        val tasksArray = getTasksArray() ?: return
-        var updated = false
-
-        for (i in 0 until tasksArray.size()) {
-            val task = tasksArray.get(i).asJsonObject
-
-            // Check if it's a GitHub task
-            if (task.has("install_type") &&
-                task.get("install_type").asString == "github" &&
-                task.has("github")) {
-
-                val githubObj = task.getAsJsonObject("github")
-
-                // Check if there's a url but no api_url
-                if (githubObj.has("url") &&
-                    (!githubObj.has("api_url") || githubObj.get("api_url").asString.isEmpty())) {
-
-                    val githubUrl = githubObj.get("url").asString
-                    val apiUrl = convertGithubUrlToApiUrl(githubUrl)
-
-                    if (apiUrl.isNotEmpty()) {
-                        githubObj.addProperty("api_url", apiUrl)
-                        updated = true
-                    }
-                }
-            }
-        }
-
-        // Save changes if there were updates
-        if (updated) {
-            saveTasks()
-        }
-    }
-
-    /**
-     * Converts a regular GitHub URL to the corresponding API URL
-     */
-    fun convertGithubUrlToApiUrl2(githubUrl: String): String {
-        // Check if it's a GitHub URL
-        if (!githubUrl.contains("github.com")) {
-            return ""
-        }
-
-        try {
-            // Extract repository path from URL
-            // GitHub allows in user and repository names:
-            // - letters a-z, A-Z
-            // - digits 0-9
-            // - hyphens -
-            // - dots .
-            // - underscores _
-            val regex = "https?://github\\.com/([\\w\\-\\.]+/[\\w\\-\\.]+)(?:\\.git|/.*)?".toRegex()
-            val matchResult = regex.find(githubUrl)
-
-            if (matchResult != null) {
-                val repoPath = matchResult.groupValues[1].trim()
-                // Remove .git if it's at the end (although our regex already handles this)
-                val cleanRepoPath = repoPath.replace("\\.git$".toRegex(), "")
-
-                println("Extracted GitHub repository path: $cleanRepoPath from URL: $githubUrl")
-                return "https://api.github.com/repos/$cleanRepoPath"
-            } else {
-                println("Failed to extract repository path from URL: $githubUrl")
-            }
-        } catch (e: Exception) {
-            println("Error converting GitHub URL: ${e.message}")
-        }
-
-        return ""
-    }
-
-    /**
-     * Gets list of releases for a GitHub task
-     *
-     * @param apiUrl URL to GitHub API for repository
-     * @return JsonArray with releases or null in case of error
-     */
-    fun getGithubReleases(apiUrl: String): JsonArray? {
-        try {
-            val releasesUrl = "$apiUrl/releases"
-            val response = fetchFromGithubApi(releasesUrl)
-
-            if (response != null) {
-                return JsonParser.parseString(response).asJsonArray
-            }
-        } catch (e: Exception) {
-            println("Error getting releases from GitHub: ${e.message}")
-        }
-
-        return null
-    }
-
-    /**
-     * Gets latest release for a GitHub task
-     *
-     * @param apiUrl URL to GitHub API for repository
-     * @return JsonObject with information about latest release or null in case of error
-     */
-    fun getLatestGithubRelease(apiUrl: String): JsonObject? {
-        try {
-            val latestReleaseUrl = "$apiUrl/releases/latest"
-            val response = fetchFromGithubApi(latestReleaseUrl)
-
-            if (response != null) {
-                return JsonParser.parseString(response).asJsonObject
-            }
-        } catch (e: Exception) {
-            println("Error getting latest release from GitHub: ${e.message}")
-        }
-
-        return null
-    }
-
-    /**
-     * Gets information about specific release by its tag
-     *
-     * @param apiUrl URL to GitHub API for repository
-     * @param tag Release tag
-     * @return JsonObject with release information or null in case of error
-     */
-    fun getGithubReleaseByTag(apiUrl: String, tag: String): JsonObject? {
-        try {
-            val tagReleaseUrl = "$apiUrl/releases/tags/$tag"
-            val response = fetchFromGithubApi(tagReleaseUrl)
-
-            if (response != null) {
-                return JsonParser.parseString(response).asJsonObject
-            }
-        } catch (e: Exception) {
-            println("Error getting release for tag $tag from GitHub: ${e.message}")
-        }
-
-        return null
-    }
-
     /**
      * Loads tasks from URL with specified loading strategy
      * @param strategy Tasks loading strategy
@@ -642,6 +291,303 @@ class TasksManager {
             e.printStackTrace()
             return false
         }
+    }
+
+    // Старий метод, залишений для сумісності
+    fun reloadTasks() {
+        reloadTasks(LoadStrategy.REPLACE_ALL)
+    }
+
+    private fun downloadTasksFromUrl() {
+        reloadTasks(LoadStrategy.REPLACE_ALL)
+    }
+
+    /**
+     * Converts a regular GitHub URL to the corresponding API URL
+     */
+    fun convertGithubUrlToApiUrl_old(githubUrl: String): String {
+        // Check if it's a GitHub URL
+        if (!githubUrl.contains("github.com")) {
+            return ""
+        }
+        try {
+            val regex = "https?://github\\.com/([\\w\\-\\.]+/[\\w\\-\\.]+)(?:\\.git|/.*)?".toRegex()
+            val matchResult = regex.find(githubUrl)
+
+            if (matchResult != null) {
+                val repoPath = matchResult.groupValues[1].trim()
+                // Remove .git if it's at the end (although our regex already handles this)
+                val cleanRepoPath = repoPath.replace("\\.git$".toRegex(), "")
+
+                println("Extracted GitHub repository path: $cleanRepoPath from URL: $githubUrl")
+                return "https://api.github.com/repos/$cleanRepoPath"
+            } else {
+                println("Failed to extract repository path from URL: $githubUrl")
+            }
+        } catch (e: Exception) {
+            println("Error converting GitHub URL: ${e.message}")
+        }
+
+        return ""
+    }
+
+    /**
+     * Converts a regular GitHub URL to the corresponding API URL
+     */
+    fun convertGithubUrlToApiUrl(githubUrl: String): String {
+        // Check if it's a GitHub URL
+        if (!githubUrl.contains("github.com")) {
+            return ""
+        }
+        try {
+            val regex = "https?://github\\.com/([\\w\\-\\.]+/[\\w\\-\\.]+)(?:\\.git|/.*)?".toRegex()
+            val matchResult = regex.find(githubUrl)
+
+            if (matchResult != null) {
+                val repoPath = matchResult.groupValues[1].trim()
+                // Remove .git if it's at the end (although our regex already handles this)
+                val cleanRepoPath = repoPath.replace("\\.git$".toRegex(), "")
+
+                println("Extracted GitHub repository path: $cleanRepoPath from URL: $githubUrl")
+                return "https://api.github.com/repos/$cleanRepoPath"
+            } else {
+                println("Failed to extract repository path from URL: $githubUrl")
+            }
+        } catch (e: Exception) {
+            println("Error converting GitHub URL: ${e.message}")
+        }
+
+        return ""
+    }
+
+    /**
+     * Performs an HTTP request to GitHub API with authentication token if available
+     *
+     * @param apiUrl URL for GitHub API request
+     * @return response content as string or null in case of error
+     */
+    private fun fetchFromGithubApi(apiUrl: String): String? {
+        try {
+            val githubToken = settingsManager.getString("settings.github_token", "")
+            val connection = URL(apiUrl).openConnection() as java.net.HttpURLConnection
+
+            // Set up connection
+            connection.requestMethod = "GET"
+            connection.setRequestProperty("Accept", "application/vnd.github.v3+json")
+
+            // Add authorization token if available
+            if (githubToken.isNotEmpty()) {
+                connection.setRequestProperty("Authorization", "token $githubToken")
+                println("Using GitHub token for API request to: $apiUrl")
+            }
+
+            // Check response status
+            val responseCode = connection.responseCode
+            if (responseCode != 200) {
+                println("Error when requesting GitHub API: HTTP $responseCode")
+                println("Response: ${connection.responseMessage}")
+
+                // Read error text if available
+                val errorStream = connection.errorStream
+                if (errorStream != null) {
+                    val errorText = errorStream.bufferedReader().use { it.readText() }
+                    println("Error details: $errorText")
+                }
+                return null
+            }
+
+            // Read and return response
+            return connection.inputStream.bufferedReader().use { it.readText() }
+        } catch (e: Exception) {
+            println("Exception when requesting GitHub API: ${e.message}")
+            e.printStackTrace()
+            return null
+        }
+    }
+
+    private fun createEmptyTasks() {
+        // Створюємо порожній об'єкт завдань з мінімальною структурою
+        tasks = JsonObject().apply {
+            add("tasks", JsonArray())
+        }
+        saveTasks()
+    }
+
+    fun saveTasks() {
+        try {
+            FileWriter(tasksFile).use { writer ->
+                gson.toJson(tasks, writer)
+            }
+        } catch (e: Exception) {
+            println("Помилка збереження завдань: ${e.message}")
+        }
+    }
+
+//    fun getTasks(): JsonObject {
+//        return tasks
+//    }
+
+    fun getTaskByName(name: String): JsonObject? {
+        val tasksArray = getTasksArray() ?: return null
+
+        for (i in 0 until tasksArray.size()) {
+            val task = tasksArray.get(i).asJsonObject
+            if (task.has("name") && task.get("name").asString == name) {
+                return task
+            }
+        }
+
+        return null
+    }
+
+    fun getTasksArray(): JsonArray? {
+        return if (tasks.has("tasks") && tasks.get("tasks").isJsonArray) {
+            tasks.getAsJsonArray("tasks")
+        } else {
+            null
+        }
+    }
+
+    fun addTask(task: JsonObject) {
+        if (!tasks.has("tasks")) {
+            tasks.add("tasks", JsonArray())
+        }
+
+        val tasksArray = tasks.getAsJsonArray("tasks")
+        tasksArray.add(task)
+        saveTasks()
+    }
+
+    fun removeTask(name: String): Boolean {
+        val tasksArray = getTasksArray() ?: return false
+
+        for (i in 0 until tasksArray.size()) {
+            val task = tasksArray.get(i).asJsonObject
+            if (task.has("name") && task.get("name").asString == name) {
+                tasksArray.remove(i)
+                saveTasks()
+                return true
+            }
+        }
+
+        return false
+    }
+
+    fun updateTask(name: String, updatedTask: JsonObject): Boolean {
+        val tasksArray = getTasksArray() ?: return false
+
+        for (i in 0 until tasksArray.size()) {
+            val task = tasksArray.get(i).asJsonObject
+            if (task.has("name") && task.get("name").asString == name) {
+                tasksArray.set(i, updatedTask)
+                saveTasks()
+                return true
+            }
+        }
+
+        return false
+    }
+
+    /**
+     * Checks and updates api_url for GitHub tasks
+     */
+    private fun updateGitHubApiUrls() {
+        val tasksArray = getTasksArray() ?: return
+        var updated = false
+
+        for (i in 0 until tasksArray.size()) {
+            val task = tasksArray.get(i).asJsonObject
+
+            // Check if it's a GitHub task
+            if (task.has("install_type") &&
+                task.get("install_type").asString == "github" &&
+                task.has("github")) {
+
+                val githubObj = task.getAsJsonObject("github")
+
+                // Check if there's a url but no api_url
+                if (githubObj.has("url") &&
+                    (!githubObj.has("api_url") || githubObj.get("api_url").asString.isEmpty())) {
+
+                    val githubUrl = githubObj.get("url").asString
+                    val apiUrl = convertGithubUrlToApiUrl(githubUrl)
+
+                    if (apiUrl.isNotEmpty()) {
+                        githubObj.addProperty("api_url", apiUrl)
+                        updated = true
+                    }
+                }
+            }
+        }
+
+        // Save changes if there were updates
+        if (updated) {
+            saveTasks()
+        }
+    }
+
+    /**
+     * Gets list of releases for a GitHub task
+     *
+     * @param apiUrl URL to GitHub API for repository
+     * @return JsonArray with releases or null in case of error
+     */
+    fun getGithubReleases(apiUrl: String): JsonArray? {
+        try {
+            val releasesUrl = "$apiUrl/releases"
+            val response = fetchFromGithubApi(releasesUrl)
+
+            if (response != null) {
+                return JsonParser.parseString(response).asJsonArray
+            }
+        } catch (e: Exception) {
+            println("Error getting releases from GitHub: ${e.message}")
+        }
+
+        return null
+    }
+
+    /**
+     * Gets latest release for a GitHub task
+     *
+     * @param apiUrl URL to GitHub API for repository
+     * @return JsonObject with information about latest release or null in case of error
+     */
+    fun getLatestGithubRelease(apiUrl: String): JsonObject? {
+        try {
+            val latestReleaseUrl = "$apiUrl/releases/latest"
+            val response = fetchFromGithubApi(latestReleaseUrl)
+
+            if (response != null) {
+                return JsonParser.parseString(response).asJsonObject
+            }
+        } catch (e: Exception) {
+            println("Error getting latest release from GitHub: ${e.message}")
+        }
+
+        return null
+    }
+
+    /**
+     * Gets information about specific release by its tag
+     *
+     * @param apiUrl URL to GitHub API for repository
+     * @param tag Release tag
+     * @return JsonObject with release information or null in case of error
+     */
+    fun getGithubReleaseByTag(apiUrl: String, tag: String): JsonObject? {
+        try {
+            val tagReleaseUrl = "$apiUrl/releases/tags/$tag"
+            val response = fetchFromGithubApi(tagReleaseUrl)
+
+            if (response != null) {
+                return JsonParser.parseString(response).asJsonObject
+            }
+        } catch (e: Exception) {
+            println("Error getting release for tag $tag from GitHub: ${e.message}")
+        }
+
+        return null
     }
 
     /**

@@ -84,7 +84,6 @@ fun InstallationOptionsSection(task: JsonObject) {
     }
 }
 
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TaskEditDialog(
@@ -343,7 +342,6 @@ fun TaskEditDialog(
             }
         }
 
-
         // Helper function to execute shell commands
         suspend fun executeCommand(command: String): Boolean {
             return withContext(Dispatchers.IO) {
@@ -395,7 +393,6 @@ fun TaskEditDialog(
                 }
             }
         }
-
 
         // Function to install the selected tool
         fun installTool() {
@@ -573,6 +570,16 @@ fun TaskEditDialog(
                 loadAvailableVersions()
             }
         }
+
+//        LaunchedEffect(githubUrl) {
+//            if (githubUrl.isNotEmpty() && githubUrl.contains("github.com")) {
+//                val apiUrl = tasksManager.convertGithubUrlToApiUrl(githubUrl)
+//                if (apiUrl.isNotEmpty()) {
+//                    githubApiUrl = apiUrl
+//                    println("Generated API URL: $apiUrl from GitHub URL: $githubUrl")
+//                }
+//            }
+//        }
 
         // Installation progress dialog
         if (showInstallationDialog) {
@@ -825,7 +832,8 @@ fun TaskEditDialog(
                                     onValueChange = { githubApiUrl = it },
                                     label = { Text("GitHub API URL") },
                                     modifier = Modifier.weight(1f).padding(vertical = 4.dp),
-                                    singleLine = true
+                                    singleLine = true,
+                                    readOnly = true
                                 )
                             }
 
@@ -998,7 +1006,6 @@ fun TaskEditDialog(
         )
     }
 }
-
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -1388,17 +1395,15 @@ fun TasksTable() {
         isLoading = false
     }
 
-
     Column(
         modifier = Modifier.fillMaxSize().padding(16.dp)
     ) {
         // Заголовок
         Text(
-            "Список завдань",
+            "Task List",
             style = MaterialTheme.typography.headlineMedium,
             modifier = Modifier.padding(bottom = 16.dp)
         )
-
         // Кнопка оновлення завдань
         Row(
             modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
@@ -1408,7 +1413,7 @@ fun TasksTable() {
                 onClick = { showLoadStrategyDialog = true },
                 enabled = !isLoading
             ) {
-                Text("Оновити завдання")
+                Text("Update tasks")
             }
             Button(
                 onClick = { showAddDialog = true }
@@ -1427,12 +1432,12 @@ fun TasksTable() {
             loadResult?.let { success ->
                 if (success) {
                     Text(
-                        "Завдання успішно завантажено",
+                        "The tasks has been successfully downloaded",
                         color = MaterialTheme.colorScheme.primary
                     )
                 } else {
                     Text(
-                        "Помилка завантаження завдань",
+                        "Error Tasks Downloading",
                         color = MaterialTheme.colorScheme.error
                     )
                 }
@@ -1448,25 +1453,25 @@ fun TasksTable() {
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                "Назва",
+                "Name",
                 style = MaterialTheme.typography.titleSmall,
                 modifier = Modifier.weight(1f),
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             Text(
-                "Опис",
+                "Description",
                 style = MaterialTheme.typography.titleSmall,
                 modifier = Modifier.weight(2f),
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             Text(
-                "Тип встановлення",
+                "Install Type",
                 style = MaterialTheme.typography.titleSmall,
                 modifier = Modifier.weight(1f),
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             Text(
-                "Статус",
+                "Status",
                 style = MaterialTheme.typography.titleSmall,
                 modifier = Modifier.weight(0.5f),
                 color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -1480,7 +1485,7 @@ fun TasksTable() {
                 modifier = Modifier.fillMaxWidth().height(200.dp),
                 contentAlignment = Alignment.Center
             ) {
-                Text("Завдання відсутні або завантажуються...")
+                Text("Tasks are missing or loaded...")
             }
         } else {
             LazyColumn(
@@ -1513,17 +1518,16 @@ fun TasksTable() {
         )
     }
 
-
-    // Діалогове вікно вибору стратегії завантаження
+    // Download Strategy Selection dialog
     TaskLoadStrategyDialog(
         isOpen = showLoadStrategyDialog,
         onDismissRequest = { showLoadStrategyDialog = false },
         onStrategySelected = { strategy ->
-            // Запускаємо завантаження з вибраною стратегією
+            // We start downloading with the strategy selected
             isLoading = true
             loadResult = null
 
-            // Використовуємо створений раніше coroutineScope
+            // We use previously created Coroutinescope
             coroutineScope.launch {
                 val success = tasksManager.reloadTasks(strategy)
                 isLoading = false
@@ -1535,7 +1539,6 @@ fun TasksTable() {
             }
         }
     )
-
 }
 
 @Composable
