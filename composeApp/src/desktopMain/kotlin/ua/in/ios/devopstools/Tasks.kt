@@ -58,7 +58,8 @@ class TasksManager {
             updateGitHubApiUrls()
 
         } catch (e: Exception) {
-            println("Помилка завантаження завдань: ${e.message}")
+            logger.e("TasksManager", "Помилка завантаження завдань", e)
+            //println("Помилка завантаження завдань: ${e.message}")
             // Створюємо порожній об'єкт завдань, якщо сталася помилка
             createEmptyTasks()
         }
@@ -80,8 +81,8 @@ class TasksManager {
             } else {
                 tasksUrl
             }
-
-            println("Завантаження завдань з URL: $rawUrl із стратегією: $strategy")
+            logger.i("TasksManager", "Завантаження завдань з URL: $rawUrl із стратегією: $strategy")
+            //println("Завантаження завдань з URL: $rawUrl із стратегією: $strategy")
 
             // Завантажуємо вміст файлу з URL
             val content = URL(rawUrl).readText()
@@ -170,7 +171,8 @@ class TasksManager {
             updateGitHubApiUrls()
             return true
         } catch (e: Exception) {
-            println("Помилка завантаження завдань з URL: ${e.message}")
+            logger.e("TasksManager", "Помилка завантаження завдань з URL", e)
+            //println("Помилка завантаження завдань з URL: ${e.message}")
             e.printStackTrace()
             return false
         }
@@ -192,8 +194,8 @@ class TasksManager {
             } else {
                 tasksUrl
             }
-
-            println("Loading tasks from URL: $rawUrl with strategy: $strategy")
+            logger.i("TasksManager", "Loading tasks from URL: $rawUrl with strategy: $strategy")
+            //println("Loading tasks from URL: $rawUrl with strategy: $strategy")
 
             // Load content from URL considering possible token
             val content = if (tasksUrl.contains("github.com") || tasksUrl.contains("api.github.com")) {
@@ -287,7 +289,8 @@ class TasksManager {
             updateGitHubApiUrls()
             return true
         } catch (e: Exception) {
-            println("Error loading tasks from URL: ${e.message}")
+            logger.e("TasksManager", "Error loading tasks from URL", e)
+            //println("Error loading tasks from URL: ${e.message}")
             e.printStackTrace()
             return false
         }
@@ -318,14 +321,16 @@ class TasksManager {
                 val repoPath = matchResult.groupValues[1].trim()
                 // Remove .git if it's at the end (although our regex already handles this)
                 val cleanRepoPath = repoPath.replace("\\.git$".toRegex(), "")
-
-                println("Extracted GitHub repository path: $cleanRepoPath from URL: $githubUrl")
+                logger.i("TasksManager", "Extracted GitHub repository path: $cleanRepoPath from URL: $githubUrl")
+                //println("Extracted GitHub repository path: $cleanRepoPath from URL: $githubUrl")
                 return "https://api.github.com/repos/$cleanRepoPath"
             } else {
-                println("Failed to extract repository path from URL: $githubUrl")
+                logger.w("TasksManager", "Failed to extract repository path from URL: $githubUrl")
+                //println("Failed to extract repository path from URL: $githubUrl")
             }
         } catch (e: Exception) {
-            println("Error converting GitHub URL: ${e.message}")
+            logger.e("TasksManager", "Error converting GitHub URL", e)
+            //println("Error converting GitHub URL: ${e.message}")
         }
 
         return ""
@@ -347,14 +352,16 @@ class TasksManager {
                 val repoPath = matchResult.groupValues[1].trim()
                 // Remove .git if it's at the end (although our regex already handles this)
                 val cleanRepoPath = repoPath.replace("\\.git$".toRegex(), "")
-
-                println("Extracted GitHub repository path: $cleanRepoPath from URL: $githubUrl")
+                logger.i("TasksManager", "Extracted GitHub repository path: $cleanRepoPath from URL: $githubUrl")
+                //println("Extracted GitHub repository path: $cleanRepoPath from URL: $githubUrl")
                 return "https://api.github.com/repos/$cleanRepoPath"
             } else {
-                println("Failed to extract repository path from URL: $githubUrl")
+                logger.w("TasksManager", "Failed to extract repository path from URL: $githubUrl")
+                //println("Failed to extract repository path from URL: $githubUrl")
             }
         } catch (e: Exception) {
-            println("Error converting GitHub URL: ${e.message}")
+            logger.e("TasksManager", "Error converting GitHub URL", e)
+            //println("Error converting GitHub URL: ${e.message}")
         }
 
         return ""
@@ -378,20 +385,24 @@ class TasksManager {
             // Add authorization token if available
             if (githubToken.isNotEmpty()) {
                 connection.setRequestProperty("Authorization", "token $githubToken")
-                println("Using GitHub token for API request to: $apiUrl")
+                logger.i("TasksManager", "Using GitHub token for API request to: $apiUrl")
+                //println("Using GitHub token for API request to: $apiUrl")
             }
 
             // Check response status
             val responseCode = connection.responseCode
             if (responseCode != 200) {
-                println("Error when requesting GitHub API: HTTP $responseCode")
-                println("Response: ${connection.responseMessage}")
+                logger.w("TasksManager", "Error when requesting GitHub API: HTTP $responseCode")
+                //println("Error when requesting GitHub API: HTTP $responseCode")
+                logger.w("TasksManager", "Response: ${connection.responseMessage}")
+                //println("Response: ${connection.responseMessage}")
 
                 // Read error text if available
                 val errorStream = connection.errorStream
                 if (errorStream != null) {
                     val errorText = errorStream.bufferedReader().use { it.readText() }
-                    println("Error details: $errorText")
+                    logger.w("TasksManager", "Error details: $errorText")
+                    //println("Error details: $errorText")
                 }
                 return null
             }
@@ -399,7 +410,8 @@ class TasksManager {
             // Read and return response
             return connection.inputStream.bufferedReader().use { it.readText() }
         } catch (e: Exception) {
-            println("Exception when requesting GitHub API: ${e.message}")
+            logger.e("TasksManager", "Error when requesting GitHub API", e)
+            //println("Exception when requesting GitHub API: ${e.message}")
             e.printStackTrace()
             return null
         }
@@ -419,7 +431,8 @@ class TasksManager {
                 gson.toJson(tasks, writer)
             }
         } catch (e: Exception) {
-            println("Помилка збереження завдань: ${e.message}")
+            logger.e("TasksManager", "Error saving tasks to file", e)
+            //println("Помилка збереження завдань: ${e.message}")
         }
     }
 
@@ -541,7 +554,8 @@ class TasksManager {
                 return JsonParser.parseString(response).asJsonArray
             }
         } catch (e: Exception) {
-            println("Error getting releases from GitHub: ${e.message}")
+            logger.e("TasksManager", "Error getting releases from GitHub", e)
+            //println("Error getting releases from GitHub: ${e.message}")
         }
 
         return null
@@ -562,7 +576,8 @@ class TasksManager {
                 return JsonParser.parseString(response).asJsonObject
             }
         } catch (e: Exception) {
-            println("Error getting latest release from GitHub: ${e.message}")
+            logger.e("TasksManager", "Error getting latest release from GitHub", e)
+            //println("Error getting latest release from GitHub: ${e.message}")
         }
 
         return null
@@ -584,7 +599,8 @@ class TasksManager {
                 return JsonParser.parseString(response).asJsonObject
             }
         } catch (e: Exception) {
-            println("Error getting release for tag $tag from GitHub: ${e.message}")
+            logger.e("TasksManager", "Error getting release for tag $tag from GitHub", e)
+            //println("Error getting release for tag $tag from GitHub: ${e.message}")
         }
 
         return null
@@ -730,9 +746,11 @@ class TasksManager {
         }
 
         // Debug log to see all scores
-        println("Asset scores for task '$taskName':")
+        logger.d("TasksManager", "Asset scores for task '$taskName'")
+        //println("Asset scores for task '$taskName':")
         assetScores.filter { it.value > 0 }.forEach { (asset, score) ->
-            println("  $asset: $score")
+            logger.d("TasksManager", "  $asset: $score")
+            //println("  $asset: $score")
         }
 
         // Get the asset with the highest score, if any scored above 0

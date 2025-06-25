@@ -3,6 +3,9 @@ package ua.`in`.ios.devopstools
 import androidx.compose.runtime.*
 import org.jetbrains.compose.ui.tooling.preview.Preview
 
+
+val logger = Logger.getInstance()
+
 @Composable
 @Preview
 fun App() {

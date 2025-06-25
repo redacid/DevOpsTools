@@ -36,7 +36,8 @@ fun getInstallTypeForTask(task: JsonObject): InstallType? {
     return try {
         InstallType.createFromTypeName(installType)
     } catch (e: IllegalArgumentException) {
-        println("Помилка при створенні типу встановлення: ${e.message}")
+        logger.e("TasksManager", "Помилка при створенні типу встановлення:", e)
+        //println("Помилка при створенні типу встановлення: ${e.message}")
         null
     }
 }
@@ -268,7 +269,8 @@ fun TaskEditDialog(
                 } catch (e: Exception) {
                     availableAssets = listOf("Loading error")
                     filteredAssets = emptyList()
-                    println("Error loading assets: ${e.message}")
+                    logger.e("TasksManager", "Error loading assets:", e)
+                    //println("Error loading assets: ${e.message}")
                     e.printStackTrace()
                 }
 
@@ -334,7 +336,8 @@ fun TaskEditDialog(
                     }
                 } catch (e: Exception) {
                     availableVersions = listOf("Loading error")
-                    println("Error loading versions: ${e.message}")
+                    logger.e("TasksManager", "Error loading versions:", e)
+                    //println("Error loading versions: ${e.message}")
                     e.printStackTrace()
                 }
 
@@ -346,20 +349,23 @@ fun TaskEditDialog(
         suspend fun executeCommand(command: String): Boolean {
             return withContext(Dispatchers.IO) {
                 try {
-                    println("Executing command: $command")
+                    logger.i("TasksManager", "Executing command: $command")
+                    //println("Executing command: $command")
                     val process = Runtime.getRuntime().exec(arrayOf("/bin/sh", "-c", command))
                     val exitCode = process.waitFor()
 
                     if (exitCode != 0) {
                         val errorStream = process.errorStream.bufferedReader().readText()
-                        println("Command failed with exit code $exitCode: $errorStream")
+                        logger.e("TasksManager", "Command failed with exit code $exitCode: $errorStream")
+                        //println("Command failed with exit code $exitCode: $errorStream")
                         installationStatus = "Command failed: $errorStream"
                         false
                     } else {
                         true
                     }
                 } catch (e: Exception) {
-                    println("Error executing command: ${e.message}")
+                    logger.e("TasksManager", "Error executing command:", e)
+                    //println("Error executing command: ${e.message}")
                     installationStatus = "Command error: ${e.message}"
                     false
                 }
@@ -388,7 +394,8 @@ fun TaskEditDialog(
                     val binaryFile = searchRecursively(dir)
                     binaryFile?.absolutePath ?: ""
                 } catch (e: Exception) {
-                    println("Error finding binary: ${e.message}")
+                    logger.e("TasksManager", "Error finding binary file:", e)
+                    //println("Error finding binary: ${e.message}")
                     ""
                 }
             }
@@ -405,10 +412,15 @@ fun TaskEditDialog(
             installationProgress = 0.1f
 
             // Для налагодження виведемо додаткову інформацію
-            println("Installing: $name")
-            println("Selected asset: $selectedAsset")
-            println("Asset type: $assetInstallType")
-            println("Download URL: $assetDownloadUrl")
+            logger.i("TasksManager", "Installing: $name")
+            logger.i("TasksManager", "Selected asset: $selectedAsset")
+            logger.i("TasksManager", "Asset type: $assetInstallType")
+            logger.i("TasksManager", "Download URL: $assetDownloadUrl")
+
+            //println("Installing: $name")
+            //println("Selected asset: $selectedAsset")
+            //println("Asset type: $assetInstallType")
+            //println("Download URL: $assetDownloadUrl")
 
             coroutineScope.launch {
                 try {
@@ -437,9 +449,11 @@ fun TaskEditDialog(
                             if (!destFile.parentFile.exists()) {
                                 destFile.parentFile.mkdirs()
                             }
+                            logger.i("TasksManager", "Downloading from: $assetDownloadUrl")
+                            logger.i("TasksManager", "Downloading to: $destinationFile")
 
-                            println("Downloading from: $assetDownloadUrl")
-                            println("Downloading to: $destinationFile")
+                            //println("Downloading from: $assetDownloadUrl")
+                            //println("Downloading to: $destinationFile")
 
                             URL(assetDownloadUrl).openStream().use { input ->
                                 Files.copy(input, Paths.get(destinationFile), StandardCopyOption.REPLACE_EXISTING)
@@ -451,11 +465,12 @@ fun TaskEditDialog(
                                 installationStatus = "Download failed: File does not exist after download"
                                 return@withContext false
                             }
-
-                            println("File downloaded successfully: ${downloadedFile.absolutePath}, size: ${downloadedFile.length()} bytes")
+                            logger.i("TasksManager", "File downloaded successfully: ${downloadedFile.absolutePath}, size: ${downloadedFile.length()} bytes")
+                            //println("File downloaded successfully: ${downloadedFile.absolutePath}, size: ${downloadedFile.length()} bytes")
                             true
                         } catch (e: Exception) {
-                            println("Error downloading file from '$assetDownloadUrl': ${e.message}")
+                            logger.e("TasksManager", "Error downloading file:", e)
+                            //println("Error downloading file from '$assetDownloadUrl': ${e.message}")
                             installationStatus = "Download error: ${e.message}"
                             false
                         }
@@ -554,7 +569,8 @@ fun TaskEditDialog(
 
                 } catch (e: Exception) {
                     installationStatus = "Installation error: ${e.message}"
-                    println("Installation error: ${e.message}")
+                    logger.e("TasksManager", "Installation error", e)
+                    //println("Installation error: ${e.message}")
                     e.printStackTrace()
                 } finally {
                     installationProgress = 1.0f
@@ -926,7 +942,8 @@ fun TaskEditDialog(
                                                 val url = java.net.URI(githubUrl).toURL()
                                                 java.awt.Desktop.getDesktop().browse(url.toURI())
                                             } catch (e: Exception) {
-                                                println("Error opening URL: ${e.message}")
+                                                logger.e("TasksManager", "Error opening URL:", e)
+                                                //println("Error opening URL: ${e.message}")
                                             }
                                         }
                                     },
@@ -1053,7 +1070,8 @@ fun TaskAddDialog(
                 val apiUrl = tasksManager.convertGithubUrlToApiUrl(githubUrl)
                 if (apiUrl.isNotEmpty()) {
                     githubApiUrl = apiUrl
-                    println("Generated API URL: $apiUrl from GitHub URL: $githubUrl")
+                    logger.i("TasksManager", "Generated API URL: $apiUrl from GitHub URL: $githubUrl")
+                    //println("Generated API URL: $apiUrl from GitHub URL: $githubUrl")
                 }
             }
         }
@@ -1288,7 +1306,8 @@ fun TaskAddDialog(
                                             val url = java.net.URI(githubUrl).toURL()
                                             java.awt.Desktop.getDesktop().browse(url.toURI())
                                         } catch (e: Exception) {
-                                            println("Error opening URL: ${e.message}")
+                                            logger.e("TasksManager", "Error opening URL:", e)
+                                            //println("Error opening URL: ${e.message}")
                                         }
                                     }
                                 },
@@ -1470,13 +1489,26 @@ fun TasksTable() {
                 modifier = Modifier.weight(1f),
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
+            // Available version
+            Text(
+                "Available version",
+                style = MaterialTheme.typography.titleSmall,
+                modifier = Modifier.weight(1f),
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
             Text(
                 "Status",
                 style = MaterialTheme.typography.titleSmall,
                 modifier = Modifier.weight(0.5f),
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
-            Spacer(modifier = Modifier.width(48.dp)) // Місце для кнопок дій
+            Text(
+                "Actions",
+                style = MaterialTheme.typography.titleSmall,
+                modifier = Modifier.weight(0.5f),
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            //Spacer(modifier = Modifier.width(48.dp))
         }
 
         // Список завдань
@@ -1492,14 +1524,22 @@ fun TasksTable() {
                 modifier = Modifier.fillMaxWidth()
             ) {
                 items(tasks) { task ->
-                    TaskRow(task = task, onDeleteClick = {
-                        // Видаляємо завдання та оновлюємо список
-                        val taskName = task.get("name")?.asString ?: return@TaskRow
-                        tasksManager.removeTask(taskName)
-                        refreshTasksList()
-                    })
+                    TaskRow(
+                        task = task,
+                        onDeleteClick = {
+                            // Видаляємо завдання та оновлюємо список
+                            val taskName = task.get("name")?.asString ?: return@TaskRow
+                            tasksManager.removeTask(taskName)
+                            refreshTasksList()
+                        },
+                        // Додаємо виклик оновлення при редагуванні
+                        onTaskUpdated = {
+                            refreshTasksList()
+                        }
+                    )
                     HorizontalDivider(Modifier, DividerDefaults.Thickness, DividerDefaults.color)
                 }
+
             }
         }
     }
@@ -1542,7 +1582,11 @@ fun TasksTable() {
 }
 
 @Composable
-fun TaskRow(task: JsonObject, onDeleteClick: () -> Unit) {
+fun TaskRow(
+    task: JsonObject,
+    onDeleteClick: () -> Unit,
+    onTaskUpdated: () -> Unit
+) {
     val tasksManager = TasksManager.getInstance()
     var showDeleteConfirmation by remember { mutableStateOf(false) }
     var showEditDialog by remember { mutableStateOf(false) }
@@ -1553,14 +1597,14 @@ fun TaskRow(task: JsonObject, onDeleteClick: () -> Unit) {
             .padding(8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // Назва
+        // Name
         Text(
             text = task.get("name")?.asString ?: "Невідома назва",
             style = MaterialTheme.typography.bodyMedium,
             modifier = Modifier.weight(1f)
         )
 
-        // Опис
+        // Desc
         Text(
             text = task.get("description")?.asString ?: "",
             style = MaterialTheme.typography.bodyMedium,
@@ -1569,14 +1613,20 @@ fun TaskRow(task: JsonObject, onDeleteClick: () -> Unit) {
             overflow = TextOverflow.Ellipsis
         )
 
-        // Тип установлення
+        // Install Type
         Text(
             text = task.get("install_type")?.asString ?: "",
             style = MaterialTheme.typography.bodyMedium,
             modifier = Modifier.weight(1f)
         )
+        // Available version
+        Text(
+            text = task.get("install_version")?.asString ?: "",
+            style = MaterialTheme.typography.bodyMedium,
+            modifier = Modifier.weight(1f)
+        )
 
-        // Статус (enabled) як чекбокс
+        // Status
         var enabled by remember { mutableStateOf(task.get("enabled")?.asBoolean ?: false) }
 
         Checkbox(
@@ -1594,7 +1644,7 @@ fun TaskRow(task: JsonObject, onDeleteClick: () -> Unit) {
             modifier = Modifier.weight(0.5f)
         )
 
-        // Кнопки дій
+        // Buttons
         Row(
             modifier = Modifier.padding(start = 8.dp)
         ) {
@@ -1624,15 +1674,21 @@ fun TaskRow(task: JsonObject, onDeleteClick: () -> Unit) {
             dismissButtonText = "Скасувати"
         )
         // Діалогове вікно редагування завдання
-        TaskEditDialog(
-            isOpen = showEditDialog,
-            task = task,
-            onDismissRequest = { showEditDialog = false },
-            onSaveRequest = { updatedTask ->
-                val name = task.get("name")?.asString ?: return@TaskEditDialog
-                tasksManager.updateTask(name, updatedTask)
-            }
-        )
-
+        if (showEditDialog) {
+            TaskEditDialog(
+                isOpen = showEditDialog,
+                task = task,
+                onDismissRequest = { showEditDialog = false },
+                onSaveRequest = { updatedTask ->
+                    val name = task.get("name")?.asString ?: return@TaskEditDialog
+                    val result = tasksManager.updateTask(name, updatedTask)
+                    if (result) {
+                        // Викликаємо функцію оновлення після успішного збереження
+                        onTaskUpdated()
+                        showEditDialog = false
+                    }
+                }
+            )
+        }
     }
 }

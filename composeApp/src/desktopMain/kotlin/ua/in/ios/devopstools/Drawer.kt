@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
@@ -47,18 +48,19 @@ fun NavigationDrawer() {
             when (currentScreen) {
                 "Tasks" -> TasksTable()
                 "Settings" -> Text(
-                    "Налаштування",
+                    "Settings",
                     modifier = Modifier.padding(16.dp)
                 )
                 "Help" -> Text(
-                    "Допомога та зворотній зв'язок",
+                    "Help",
                     modifier = Modifier.padding(16.dp)
                 )
                 "Update Tasks" -> Text(
-                    "Updated Tasks",
+                    "Update Tasks",
                     modifier = Modifier.padding(16.dp)
                 )
                 "System Info" -> SystemInfoView()
+                "Logs" -> LogViewer(modifier = Modifier.fillMaxSize().padding(16.dp))
                 else -> TasksTable()
 //                    Text(
 //                    "DevOps Tools - допомога у встановленні та оновленні DevOps інструментів",
@@ -92,8 +94,9 @@ fun DetailedDrawer(
                     Spacer(Modifier.height(12.dp))
 
                     NavigationDrawerItem(
-                        label = { Text("Завдання") },
+                        label = { Text("Tasks") },
                         selected = selectedItem == "Tasks",
+                        icon = { Icon(ICON_CONNECT, contentDescription = null) },
                         onClick = {
                             selectedItem = "Tasks"
                             onScreenSelected("Tasks")
@@ -103,8 +106,9 @@ fun DetailedDrawer(
                         }
                     )
                     NavigationDrawerItem(
-                        label = { Text("Перевірити оновлення") },
+                        label = { Text("Check for updates") },
                         selected = selectedItem == "Updates",
+                        icon = { Icon(ICON_REFRESH, contentDescription = null) },
                         onClick = {
                             selectedItem = "Updates"
                             onScreenSelected("Updates")
@@ -114,7 +118,7 @@ fun DetailedDrawer(
                         }
                     )
                     NavigationDrawerItem(
-                        label = { Text("Системна інформація") },
+                        label = { Text("System information") },
                         selected = selectedItem == "System Info",
                         icon = { Icon(ICON_INFO, contentDescription = null) },
                         onClick = {
@@ -126,10 +130,24 @@ fun DetailedDrawer(
                         }
                     )
 
+                    NavigationDrawerItem(
+                        label = { Text("Logs") },
+                        selected = selectedItem == "Logs",
+                        icon = { Icon(ICON_LOGS, contentDescription = null) },
+                        onClick = {
+                            selectedItem = "Logs"
+                            onScreenSelected("Logs")
+                            scope.launch {
+                                drawerState.close()
+                            }
+                        }
+                    )
+
+
                     HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
 
                     NavigationDrawerItem(
-                        label = { Text("Налаштування") },
+                        label = { Text("Settings") },
                         selected = selectedItem == "Settings",
                         icon = { Icon(ICON_SETTINGS, contentDescription = null) },
                         onClick = {
@@ -142,7 +160,7 @@ fun DetailedDrawer(
                     )
 
                     NavigationDrawerItem(
-                        label = {Text("Оновити завдання")},
+                        label = {Text("Update Tasks")},
                         selected = selectedItem == "Update Tasks",
                         icon = { Icon(ICON_REFRESH, contentDescription = null) },
                         onClick = {
@@ -156,7 +174,7 @@ fun DetailedDrawer(
                     )
 
                     NavigationDrawerItem(
-                        label = { Text("Допомога") },
+                        label = { Text("Help") },
                         selected = selectedItem == "Help",
                         icon = { Icon(ICON_HELP, contentDescription = null) },
                         onClick = {
