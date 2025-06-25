@@ -6,6 +6,10 @@ import com.google.gson.GsonBuilder
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
+
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+
 import java.io.File
 import java.io.FileReader
 import java.io.FileWriter
@@ -305,37 +309,6 @@ class TasksManager {
 
     private fun downloadTasksFromUrl() {
         reloadTasks(LoadStrategy.REPLACE_ALL)
-    }
-
-    /**
-     * Converts a regular GitHub URL to the corresponding API URL
-     */
-    fun convertGithubUrlToApiUrl_old(githubUrl: String): String {
-        // Check if it's a GitHub URL
-        if (!githubUrl.contains("github.com")) {
-            return ""
-        }
-        try {
-            val regex = "https?://github\\.com/([\\w\\-\\.]+/[\\w\\-\\.]+)(?:\\.git|/.*)?".toRegex()
-            val matchResult = regex.find(githubUrl)
-
-            if (matchResult != null) {
-                val repoPath = matchResult.groupValues[1].trim()
-                // Remove .git if it's at the end (although our regex already handles this)
-                val cleanRepoPath = repoPath.replace("\\.git$".toRegex(), "")
-                logger.i("TasksManager", "Extracted GitHub repository path: $cleanRepoPath from URL: $githubUrl")
-                //println("Extracted GitHub repository path: $cleanRepoPath from URL: $githubUrl")
-                return "https://api.github.com/repos/$cleanRepoPath"
-            } else {
-                logger.w("TasksManager", "Failed to extract repository path from URL: $githubUrl")
-                //println("Failed to extract repository path from URL: $githubUrl")
-            }
-        } catch (e: Exception) {
-            logger.e("TasksManager", "Error converting GitHub URL", e)
-            //println("Error converting GitHub URL: ${e.message}")
-        }
-
-        return ""
     }
 
     /**
@@ -887,6 +860,40 @@ class TasksManager {
         fun getInstance(): TasksManager {
             return instance ?: synchronized(this) {
                 instance ?: TasksManager().also { instance = it }
+            }
+        }
+    }
+}
+
+
+/**
+ * Utility class for tasks and applications management
+ */
+object TaskUtils {
+    private val logger = Logger.getInstance()
+
+    /**
+     * Checks and returns the current version of an application installed in the system
+     *
+     * @param task The task for which to check the version
+     * @return String with application version or status message ("Not installed", "Check error")
+     */
+    suspend fun checkCurrentVersion(task: JsonObject): String {
+        return withContext(Dispatchers.IO) {
+            try {
+                val installType = getInstallTypeForTask(task)
+                if (installType != null) {
+                    val version = installType.getCurrentVersion(task)
+                    version.ifEmpty {
+                        "Not installed"
+                    }
+                } else {
+                    logger.w("TaskUtils", "Could not determine installation type for task: ${task.get("name")?.asString ?: "unknown"}")
+                    "Check error"
+                }
+            } catch (e: Exception) {
+                logger.e("TaskUtils", "Error checking current version", e)
+                "Check error: ${e.message}"
             }
         }
     }

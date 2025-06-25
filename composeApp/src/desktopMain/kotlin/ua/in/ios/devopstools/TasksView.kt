@@ -97,8 +97,8 @@ fun TaskEditDialog(
             }
         }
 
-        val taskName = remember { mutableStateOf(TextFieldValue(task.get("name")?.asString ?: "")) }
-        val taskDescription = remember { mutableStateOf(TextFieldValue(task.get("description")?.asString ?: "")) }
+        //val taskName = remember { mutableStateOf(TextFieldValue(task.get("name")?.asString ?: "")) }
+        //val taskDescription = remember { mutableStateOf(TextFieldValue(task.get("description")?.asString ?: "")) }
 
         var name by remember { mutableStateOf(task.get("name")?.asString ?: "") }
         var description by remember { mutableStateOf(task.get("description")?.asString ?: "") }
@@ -117,7 +117,7 @@ fun TaskEditDialog(
         var selectedVersion by remember { mutableStateOf("") }
 
         // For installation file selection
-        var availableAssets by remember { mutableStateOf(listOf<String>()) }
+        //var availableAssets by remember { mutableStateOf(listOf<String>()) }
         var isLoadingAssets by remember { mutableStateOf(false) }
         var selectedAsset by remember { mutableStateOf("") }
         var filteredAssets by remember { mutableStateOf(listOf<String>()) }
@@ -157,18 +157,11 @@ fun TaskEditDialog(
             currentVersion = "Checking..."
 
             coroutineScope.launch {
-                val installType = getInstallTypeForTask(task)
-                if (installType != null) {
-                    currentVersion = installType.getCurrentVersion(task)
-                    if (currentVersion.isEmpty()) {
-                        currentVersion = "Not installed"
-                    }
-                } else {
-                    currentVersion = "Check error"
-                }
+                currentVersion = TaskUtils.checkCurrentVersion(task)
                 isCheckingCurrentVersion = false
             }
         }
+
 
         // Function to filter assets by patterns
         fun filterAssetsByPatterns(assets: List<String>, assetUrlMap: Map<String, String>) {
@@ -229,7 +222,7 @@ fun TaskEditDialog(
             if (installType != "github" || githubApiUrl.isEmpty()) return
 
             isLoadingAssets = true
-            availableAssets = listOf("Loading...")
+            //availableAssets = listOf("Loading...")
             selectedAsset = "" // Reset selected asset when version changes
             assetDownloadUrl = "" // Reset download URL
 
@@ -257,13 +250,13 @@ fun TaskEditDialog(
                         }
                     }
 
-                    availableAssets = assets
+                    //availableAssets = assets
 
                     // Filter assets by patterns for current system
                     filterAssetsByPatterns(assets, assetUrlMap)
 
                 } catch (e: Exception) {
-                    availableAssets = listOf("Loading error")
+                    //availableAssets = listOf("Loading error")
                     filteredAssets = emptyList()
                     logger.e("TasksManager", "Error loading assets:", e)
                     //println("Error loading assets: ${e.message}")
