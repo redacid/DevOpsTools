@@ -900,7 +900,7 @@ fun TaskEditDialog(
                                 Button(
                                     onClick = { installTool() },
                                     enabled = selectedAsset.isNotEmpty() && !isInstalling && assetDownloadUrl.isNotEmpty(),
-                                    modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)
+                                    //modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)
                                 ) {
                                     Text("Install")
                                 }
@@ -913,7 +913,7 @@ fun TaskEditDialog(
                             ) {
                                 Button(
                                     onClick = { loadAvailableVersions() },
-                                    modifier = Modifier.weight(1f),
+                                    //modifier = Modifier.weight(1f),
                                     enabled = !isLoadingVersions && githubApiUrl.isNotEmpty()
                                 ) {
                                     Text("Check Available Versions")
@@ -932,7 +932,7 @@ fun TaskEditDialog(
                                             }
                                         }
                                     },
-                                    modifier = Modifier.weight(1f),
+                                    //modifier = Modifier.weight(1f),
                                     enabled = githubUrl.isNotEmpty()
                                 ) {
                                     Text("Open Repository")
@@ -1476,7 +1476,7 @@ fun TasksTable() {
             )
             // Available version
             Text(
-                "Available version",
+                "Version",
                 style = MaterialTheme.typography.titleSmall,
                 modifier = Modifier.weight(1f),
                 color = MaterialTheme.colorScheme.onSurfaceVariant

@@ -5,13 +5,15 @@
       "binary_name": "yq",
       "description": "A lightweight and portable command-line YAML, JSON, INI and XML processor",
       "install_type": "github",
-      "install_version": "",
+      "install_version": "v4.45.4",
       "version_cmd": "--version",
       "installed_as": "binary",
       "enabled": true,
       "github": {
         "url": "https://github.com/mikefarah/yq",
-        "api_url": "https://api.github.com/repos/mikefarah/yq"
+        "api_url": "https://api.github.com/repos/mikefarah/yq",
+        "asset": "yq_linux_amd64",
+        "asset_type": "binary"
       }
     },
     {
@@ -19,12 +21,15 @@
       "binary_name": "jq",
       "description": "A lightweight and flexible command-line JSON processor",
       "install_type": "github",
-      "install_version": "",
+      "install_version": "jq-1.8.0",
       "version_cmd": "--version",
       "installed_as": "binary",
       "enabled": true,
       "github": {
-        "url": "https://github.com/jqlang/jq"
+        "url": "https://github.com/jqlang/jq",
+        "api_url": "https://api.github.com/repos/jqlang/jq",
+        "asset": "jq-linux-amd64",
+        "asset_type": "binary"
       }
     },
     {
@@ -32,12 +37,109 @@
       "binary_name": "dive",
       "description": "A tool for exploring a Docker image, layer contents, and discovering ways to shrink the size of your Docker/OCI image",
       "install_type": "github",
-      "install_version": "",
+      "install_version": "v0.13.1",
       "version_cmd": "--version",
       "installed_as": "deb",
       "enabled": true,
       "github": {
-        "url": "https://github.com/wagoodman/dive"
+        "url": "https://github.com/wagoodman/dive",
+        "api_url": "https://api.github.com/repos/wagoodman/dive",
+        "asset": "dive_0.13.1_linux_amd64.deb",
+        "asset_type": "deb_based"
+      }
+    },
+    {
+      "name": "kubeval",
+      "description": "kubeval is a tool for validating a Kubernetes YAML or JSON configuration file. It does so using schemas generated from the Kubernetes OpenAPI specification, and therefore can validate schemas for multiple versions of Kubernetes",
+      "binary_name": "kubeval",
+      "install_type": "github",
+      "version_cmd": "--version",
+      "installed_as": "",
+      "enabled": true,
+      "install_version": "v0.16.1",
+      "github": {
+        "url": "https://github.com/instrumenta/kubeval",
+        "api_url": "https://api.github.com/repos/instrumenta/kubeval",
+        "asset": "kubeval-linux-amd64.tar.gz",
+        "asset_type": "package"
+      }
+    },
+    {
+      "name": "glab",
+      "description": "GLab is an open source GitLab CLI tool bringing GitLab to your terminal next to where you are already working with git and your code without switching between windows and browser tabs",
+      "binary_name": "glab",
+      "install_type": "github",
+      "version_cmd": "--version",
+      "installed_as": "",
+      "enabled": true,
+      "install_version": "v1.22.0",
+      "github": {
+        "url": "https://github.com/profclems/glab",
+        "api_url": "https://api.github.com/repos/profclems/glab",
+        "asset": "glab_1.22.0_Linux_x86_64.deb",
+        "asset_type": "deb_based"
+      }
+    },
+    {
+      "name": "regsync",
+      "description": "regclient is a client interface to OCI conformant registries and content shipped with the OCI Image Layout. It includes a Go library and several CLI commands",
+      "binary_name": "regsync",
+      "install_type": "github",
+      "version_cmd": "version",
+      "installed_as": "",
+      "enabled": true,
+      "install_version": "v0.8.3",
+      "github": {
+        "url": "https://github.com/regclient/regclient",
+        "api_url": "https://api.github.com/repos/regclient/regclient",
+        "asset": "regsync-linux-amd64",
+        "asset_type": "binary"
+      }
+    },
+    {
+      "name": "regbot",
+      "description": "regclient is a client interface to OCI conformant registries and content shipped with the OCI Image Layout. It includes a Go library and several CLI commands",
+      "binary_name": "regbot",
+      "install_type": "github",
+      "version_cmd": "version",
+      "installed_as": "",
+      "enabled": true,
+      "install_version": "v0.8.3",
+      "github": {
+        "url": "https://github.com/regclient/regclient",
+        "api_url": "https://api.github.com/repos/regclient/regclient",
+        "asset": "regbot-linux-amd64",
+        "asset_type": "binary"
+      }
+    },
+    {
+      "name": "regctl",
+      "description": "regclient is a client interface to OCI conformant registries and content shipped with the OCI Image Layout. It includes a Go library and several CLI commands",
+      "binary_name": "regctl",
+      "install_type": "github",
+      "version_cmd": "version",
+      "installed_as": "",
+      "enabled": true,
+      "install_version": "v0.8.3",
+      "github": {
+        "url": "https://github.com/regclient/regclient",
+        "api_url": "https://api.github.com/repos/regclient/regclient",
+        "asset": "regctl-linux-amd64",
+        "asset_type": "binary"
+      }
+    },
+    {
+      "name": "helm",
+      "description": "Helm is a tool for managing Charts. Charts are packages of pre-configured Kubernetes resources",
+      "binary_name": "helm",
+      "install_type": "github",
+      "version_cmd": "version",
+      "installed_as": "",
+      "enabled": true,
+      "install_version": "v3.18.3",
+      "github": {
+        "url": "https://github.com/helm/helm",
+        "api_url": "https://api.github.com/repos/helm/helm"
       }
     }
   ]
