@@ -25,8 +25,8 @@ fun ConfirmationDialog(
     onConfirm: () -> Unit,
     title: String,
     text: String,
-    confirmButtonText: String = "Підтвердити",
-    dismissButtonText: String = "Скасувати"
+    confirmButtonText: String = "Confirm",
+    dismissButtonText: String = "Cancel"
 ) {
     if (isOpen) {
         AlertDialog(
@@ -70,10 +70,10 @@ fun TaskLoadStrategyDialog(
 
         AlertDialog(
             onDismissRequest = onDismissRequest,
-            title = { Text("Вибір стратегії завантаження") },
+            title = { Text("Choosing a download strategy") },
             text = {
                 Column(modifier = Modifier.fillMaxWidth()) {
-                    Text("Виберіть спосіб завантаження завдань:", modifier = Modifier.padding(bottom = 16.dp))
+                    Text("Choose a way to download tasks:", modifier = Modifier.padding(bottom = 16.dp))
 
                     // Радіо-кнопки для вибору стратегії
                     Column {
@@ -91,10 +91,10 @@ fun TaskLoadStrategyDialog(
                                 Spacer(modifier = Modifier.width(8.dp))
                                 Text(
                                     text = when (strategy) {
-                                        TasksManager.LoadStrategy.REPLACE_ALL -> "Завантажити і замінити всі"
-                                        TasksManager.LoadStrategy.ADD_TO_EXISTING -> "Завантажити і додати до поточних"
-                                        TasksManager.LoadStrategy.ADD_MISSING -> "Завантажити і додати лише відсутні"
-                                        TasksManager.LoadStrategy.UPDATE_AND_ADD -> "Оновити існуючі та додати нові"
+                                        TasksManager.LoadStrategy.REPLACE_ALL -> "Download and replace all"
+                                        TasksManager.LoadStrategy.ADD_TO_EXISTING -> "Download and add to current"
+                                        TasksManager.LoadStrategy.ADD_MISSING -> "Download and add only missing"
+                                        TasksManager.LoadStrategy.UPDATE_AND_ADD -> "Update existing and add new"
                                     }
                                 )
                             }
@@ -109,12 +109,12 @@ fun TaskLoadStrategyDialog(
                         onDismissRequest()
                     }
                 ) {
-                    Text("Завантажити")
+                    Text("Download")
                 }
             },
             dismissButton = {
                 OutlinedButton(onClick = onDismissRequest) {
-                    Text("Скасувати")
+                    Text("Cancel")
                 }
             },
             properties = DialogProperties(

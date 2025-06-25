@@ -12,6 +12,9 @@ import java.io.FileWriter
 import java.net.URL
 import java.nio.file.Files
 import java.nio.file.Paths
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 class TasksManager {
     private val gson: Gson = GsonBuilder().setPrettyPrinting().create()
@@ -367,53 +370,14 @@ class TasksManager {
     }
 
     /**
-     * Performs an HTTP request to GitHub API with authentication token if available
+     * Виконує HTTP запит до GitHub API з підтримкою авторизації
      *
-     * @param apiUrl URL for GitHub API request
-     * @return response content as string or null in case of error
+     * @param apiUrl URL для запиту до GitHub API
+     * @return Відповідь у вигляді рядка або null у випадку помилки
      */
     private fun fetchFromGithubApi(apiUrl: String): String? {
-        try {
-            val githubToken = settingsManager.getString("settings.github_token", "")
-            val connection = URL(apiUrl).openConnection() as java.net.HttpURLConnection
-
-            // Set up connection
-            connection.requestMethod = "GET"
-            connection.setRequestProperty("Accept", "application/vnd.github.v3+json")
-
-            // Add authorization token if available
-            if (githubToken.isNotEmpty()) {
-                connection.setRequestProperty("Authorization", "token $githubToken")
-                logger.i("TasksManager", "Using GitHub token for API request to: $apiUrl")
-                //println("Using GitHub token for API request to: $apiUrl")
-            }
-
-            // Check response status
-            val responseCode = connection.responseCode
-            if (responseCode != 200) {
-                logger.w("TasksManager", "Error when requesting GitHub API: HTTP $responseCode")
-                //println("Error when requesting GitHub API: HTTP $responseCode")
-                logger.w("TasksManager", "Response: ${connection.responseMessage}")
-                //println("Response: ${connection.responseMessage}")
-
-                // Read error text if available
-                val errorStream = connection.errorStream
-                if (errorStream != null) {
-                    val errorText = errorStream.bufferedReader().use { it.readText() }
-                    logger.w("TasksManager", "Error details: $errorText")
-                    //println("Error details: $errorText")
-                }
-                return null
-            }
-
-            // Read and return response
-            return connection.inputStream.bufferedReader().use { it.readText() }
-        } catch (e: Exception) {
-            logger.e("TasksManager", "Error when requesting GitHub API", e)
-            //println("Exception when requesting GitHub API: ${e.message}")
-            e.printStackTrace()
-            return null
-        }
+        val result = fetchFromGithubApiWithRateInfo(apiUrl)
+        return result?.first
     }
 
     private fun createEmptyTasks() {
@@ -539,25 +503,184 @@ class TasksManager {
     }
 
     /**
-     * Gets list of releases for a GitHub task
+     * Обробляє заголовки відповіді HTTP для отримання інформації про пагінацію та рейт-ліміти GitHub API
      *
-     * @param apiUrl URL to GitHub API for repository
-     * @return JsonArray with releases or null in case of error
+     * @param connection HTTP з'єднання, з якого треба отримати заголовки
+     * @return Пара (Map<String, String> з інформацією про пагінацію, Map<String, String> з інформацією про рейт-ліміти)
      */
-    fun getGithubReleases(apiUrl: String): JsonArray? {
-        try {
-            val releasesUrl = "$apiUrl/releases"
-            val response = fetchFromGithubApi(releasesUrl)
+    private fun processGitHubResponseHeaders(connection: java.net.HttpURLConnection): Pair<Map<String, String>, Map<String, String>> {
+        val paginationInfo = mutableMapOf<String, String>()
+        val rateLimitInfo = mutableMapOf<String, String>()
 
-            if (response != null) {
-                return JsonParser.parseString(response).asJsonArray
+        // Обробка заголовку Link для пагінації
+        val linkHeader = connection.getHeaderField("Link")
+        if (linkHeader != null) {
+            // Розбираємо заголовок Link на окремі посилання
+            val linkPattern = "<([^>]*)>; rel=\"([^\"]*)\"".toRegex()
+            val matches = linkPattern.findAll(linkHeader)
+
+            for (match in matches) {
+                val url = match.groupValues[1]
+                val rel = match.groupValues[2]
+                paginationInfo[rel] = url
             }
-        } catch (e: Exception) {
-            logger.e("TasksManager", "Error getting releases from GitHub", e)
-            //println("Error getting releases from GitHub: ${e.message}")
+
+            logger.d("GitHub API-GRH", "Pagination links: ${paginationInfo.keys.joinToString()}")
         }
 
-        return null
+        // Обробка заголовків рейт-лімітів
+        val rateLimit = connection.getHeaderField("X-RateLimit-Limit")
+        val rateRemaining = connection.getHeaderField("X-RateLimit-Remaining")
+        val rateReset = connection.getHeaderField("X-RateLimit-Reset")
+        val rateUsed = connection.getHeaderField("X-RateLimit-Used")
+        val rateResource = connection.getHeaderField("X-RateLimit-Resource")
+
+        if (rateLimit != null) rateLimitInfo["limit"] = rateLimit
+        if (rateRemaining != null) rateLimitInfo["remaining"] = rateRemaining
+        if (rateReset != null) rateLimitInfo["reset"] = rateReset
+        if (rateUsed != null) rateLimitInfo["used"] = rateUsed
+        if (rateResource != null) rateLimitInfo["resource"] = rateResource
+
+        // Логуємо інформацію про рейт-ліміти
+        if (rateLimitInfo.isNotEmpty()) {
+            val resetTime = if (rateReset != null) {
+                val date = Date(rateReset.toLong() * 1000)
+                val sdf = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
+                sdf.format(date)
+            } else "unknown"
+
+            logger.i("GitHub API-GRH", "Rate limits: ${rateLimitInfo["remaining"] ?: "?"} / ${rateLimitInfo["limit"] ?: "?"} " +
+                    "requests remaining. Reset at $resetTime (resource: ${rateLimitInfo["resource"] ?: "core"})")
+        }
+
+        return Pair(paginationInfo, rateLimitInfo)
+    }
+
+    /**
+     * Виконує HTTP запит до GitHub API з підтримкою авторизації
+     *
+     * @param apiUrl URL для запиту до GitHub API
+     * @return Трійка (String? з відповіддю, Map з інформацією про рейт-ліміти, Map з інформацією про пагінацію)
+     *         або null у випадку помилки
+     */
+    private fun fetchFromGithubApiWithRateInfo(apiUrl: String): Triple<String?, Map<String, String>, Map<String, String>>? {
+        try {
+            val githubToken = settingsManager.getString("settings.github_token", "")
+            val connection = URL(apiUrl).openConnection() as java.net.HttpURLConnection
+
+            // Налаштування з'єднання
+            connection.requestMethod = "GET"
+            connection.setRequestProperty("Accept", "application/vnd.github.v3+json")
+            connection.setRequestProperty("X-GitHub-Api-Version", "2022-11-28")
+
+            // Додаємо токен авторизації, якщо доступний
+            if (githubToken.isNotEmpty()) {
+                connection.setRequestProperty("Authorization", "token $githubToken")
+                logger.i("GitHub API", "Using GitHub token for API request to: $apiUrl")
+            }
+
+            // Перевіряємо код відповіді
+            val responseCode = connection.responseCode
+
+            // Отримуємо інформацію про заголовки
+            val (paginationInfo, rateLimitInfo) = processGitHubResponseHeaders(connection)
+
+            if (responseCode != 200) {
+                logger.w("GitHub API", "Error when requesting GitHub API: HTTP $responseCode")
+                logger.w("GitHub API", "Response: ${connection.responseMessage}")
+
+                // Читаємо текст помилки, якщо доступний
+                val errorStream = connection.errorStream
+                if (errorStream != null) {
+                    val errorText = errorStream.bufferedReader().use { it.readText() }
+                    logger.w("GitHub API", "Error details: $errorText")
+                }
+
+                return Triple(null, rateLimitInfo, paginationInfo)
+            }
+
+            // Читаємо відповідь
+            val response = connection.inputStream.bufferedReader().use { it.readText() }
+            return Triple(response, rateLimitInfo, paginationInfo)
+        } catch (e: Exception) {
+            logger.e("GitHub API", "Error when requesting GitHub API", e)
+            e.printStackTrace()
+            return null
+        }
+    }
+
+    /**
+     * Отримує список релізів для GitHub завдання з підтримкою пагінації
+     *
+     * @param apiUrl URL до GitHub API для репозиторію
+     * @param maxPages Максимальна кількість сторінок для завантаження (0 = всі доступні)
+     * @return JsonArray з релізами або null у випадку помилки
+     */
+    fun getGithubReleases(apiUrl: String, maxPages: Int = 0): JsonArray? {
+        try {
+            val result = JsonArray()
+            var currentUrl = "$apiUrl/releases"
+            var currentPage = 1
+            var hasMore = true
+
+            while (hasMore && (maxPages == 0 || currentPage <= maxPages)) {
+                logger.d("GitHub API", "Fetching releases page $currentPage: $currentUrl")
+
+                // Виконуємо запит з отриманням інформації про рейт-ліміти та пагінацію
+                val apiResponse = fetchFromGithubApiWithRateInfo(currentUrl) ?: return null
+                val (response, rateLimitInfo, paginationLinks) = apiResponse
+
+                if (response == null) {
+                    logger.e("GitHub API", "Failed to fetch page $currentPage")
+                    return if (result.size() > 0) result else null
+                }
+
+                // Перевіряємо залишок лімітів
+                val remaining = rateLimitInfo["remaining"]?.toIntOrNull() ?: 0
+                if (remaining <= 1) {
+                    val resetTime = rateLimitInfo["reset"]?.toLongOrNull()
+                    if (resetTime != null) {
+                        val resetDate = Date(resetTime * 1000)
+                        val now = Date()
+                        val waitTimeMinutes = (resetDate.time - now.time) / 60000
+
+                        logger.w("GitHub API", "Rate limit almost exhausted! " +
+                                "Only $remaining requests left. Reset in ~$waitTimeMinutes minutes at " +
+                                SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(resetDate))
+
+                        // Якщо ми вже щось отримали, краще повернути частковий результат, ніж нічого
+                        if (result.size() > 0) {
+                            logger.i("GitHub API", "Returning partial results to avoid rate limit issues")
+                            hasMore = false
+                            break
+                        }
+                    }
+                }
+
+                // Парсимо відповідь і додаємо до результату
+                val pageReleases = JsonParser.parseString(response).asJsonArray
+                for (i in 0 until pageReleases.size()) {
+                    result.add(pageReleases.get(i))
+                }
+
+                logger.i("GitHub API", "Fetched ${pageReleases.size()} releases on page $currentPage, " +
+                        "total so far: ${result.size()}")
+
+                // Перевіряємо, чи є наступна сторінка
+                if (paginationLinks.containsKey("next")) {
+                    currentUrl = paginationLinks["next"] ?: break
+                    currentPage++
+                } else {
+                    hasMore = false
+                }
+            }
+
+            logger.i("GitHub API", "Successfully fetched ${result.size()} releases from GitHub")
+            return result
+        } catch (e: Exception) {
+            logger.e("GitHub API", "Error getting releases from GitHub", e)
+            return null
+        }
     }
 
     /**
