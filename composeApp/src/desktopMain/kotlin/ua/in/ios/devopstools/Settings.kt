@@ -41,7 +41,8 @@ class SettingsManager {
                 settings = JsonParser.parseReader(reader).asJsonObject
             }
         } catch (e: Exception) {
-            println("Помилка завантаження налаштувань: ${e.message}")
+            logger.e("TasksManager", "Error loading settings", e)
+            //println("Помилка завантаження налаштувань: ${e.message}")
             createDefaultSettings()
         }
     }
@@ -183,7 +184,8 @@ class SettingsManager {
                 gson.toJson(settings, writer)
             }
         } catch (e: Exception) {
-            println("Помилка збереження налаштувань: ${e.message}")
+            logger.e("TasksManager", "Error saving settings", e)
+            //println("Помилка збереження налаштувань: ${e.message}")
         }
     }
 

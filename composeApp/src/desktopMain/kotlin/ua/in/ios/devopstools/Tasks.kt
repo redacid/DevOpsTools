@@ -12,7 +12,6 @@ import java.io.FileWriter
 import java.net.URL
 import java.nio.file.Files
 import java.nio.file.Paths
-import java.io.IOException
 
 class TasksManager {
     private val gson: Gson = GsonBuilder().setPrettyPrinting().create()

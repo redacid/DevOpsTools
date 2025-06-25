@@ -13,14 +13,10 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.google.gson.JsonObject
 import kotlinx.coroutines.launch
-import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.TextFieldValue
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.DialogProperties
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -587,16 +583,6 @@ fun TaskEditDialog(
             }
         }
 
-//        LaunchedEffect(githubUrl) {
-//            if (githubUrl.isNotEmpty() && githubUrl.contains("github.com")) {
-//                val apiUrl = tasksManager.convertGithubUrlToApiUrl(githubUrl)
-//                if (apiUrl.isNotEmpty()) {
-//                    githubApiUrl = apiUrl
-//                    println("Generated API URL: $apiUrl from GitHub URL: $githubUrl")
-//                }
-//            }
-//        }
-
         // Installation progress dialog
         if (showInstallationDialog) {
             AlertDialog(
@@ -795,7 +781,6 @@ fun TaskEditDialog(
                                                 }
                                             }
                                         }
-
 
                                         // Button to refresh version list
                                         IconButton(

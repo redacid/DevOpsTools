@@ -96,8 +96,9 @@ abstract class BaseInstallType : InstallType {
 
                 Pair(exitCode, output)
             } catch (e: Exception) {
-                println("Помилка при виконанні команди '$command': ${e.message}")
-                Pair(-1, e.message ?: "Невідома помилка")
+                logger.e("TasksManager", "Error when executing command '$command'", e)
+                //println("Помилка при виконанні команди '$command': ${e.message}")
+                Pair(-1, e.message ?: "Unknown error")
             }
         }
     }
@@ -118,7 +119,8 @@ abstract class BaseInstallType : InstallType {
                 }
                 true
             } catch (e: Exception) {
-                println("Помилка при завантаженні файлу з '$url': ${e.message}")
+                logger.e("TasksManager", "Error when downloading file from '$url' to '$destination'", e)
+                //println("Помилка при завантаженні файлу з '$url': ${e.message}")
                 false
             }
         }
@@ -175,7 +177,8 @@ class GithubInstallType : BaseInstallType() {
         val releasesJson = try {
             URL(releasesUrl).readText()
         } catch (e: Exception) {
-            println("Помилка при завантаженні інформації про релізи: ${e.message}")
+            logger.e("TasksManager", "Error when getting releases info from '$releasesUrl'", e)
+            //println("Помилка при завантаженні інформації про релізи: ${e.message}")
             return false
         }
 
@@ -204,7 +207,8 @@ class GithubInstallType : BaseInstallType() {
                 }
                 true
             } catch (e: Exception) {
-                println("Помилка при видаленні бінарного файлу: ${e.message}")
+                logger.e("TasksManager", "Error when deleting file '$binaryPath'", e)
+                //println("Помилка при видаленні бінарного файлу: ${e.message}")
                 false
             }
         }
@@ -253,7 +257,8 @@ class GithubInstallType : BaseInstallType() {
                 ""
             }
         } catch (e: Exception) {
-            println("Помилка при завантаженні інформації про останній реліз: ${e.message}")
+            logger.e("TasksManager", "Error when getting latest release info from '$latestReleaseUrl'", e)
+            //println("Помилка при завантаженні інформації про останній реліз: ${e.message}")
             ""
         }
     }
@@ -280,7 +285,8 @@ class GithubInstallType : BaseInstallType() {
                 return "https://api.github.com/repos/$cleanRepoPath"
             }
         } catch (e: Exception) {
-            println("Помилка при конвертації GitHub URL: ${e.message}")
+            logger.e("TasksManager", "Error when converting github url '$githubUrl' to api url", e)
+            //println("Помилка при конвертації GitHub URL: ${e.message}")
         }
 
         return ""
