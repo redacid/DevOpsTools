@@ -41,6 +41,267 @@ fun getInstallTypeForTask(task: JsonObject): InstallType? {
     }
 }
 
+object SudoSession {
+    private var sessionStarted = false
+    private var sessionTimestamp = 0L
+    private const val SESSION_TIMEOUT_MS = 300000 // 5 хвилин
+    private val logger = Logger.getInstance()
+
+    /**
+     * Ініціює нову sudo сесію, запитуючи пароль один раз
+     * @return true якщо сесія успішно створена, false інакше
+     */
+    suspend fun startSession(): Boolean {
+        // Перевіряємо чи сесія вже активна і не застаріла
+        if (sessionStarted && (System.currentTimeMillis() - sessionTimestamp) < SESSION_TIMEOUT_MS) {
+            return true
+        }
+
+        return withContext(Dispatchers.IO) {
+            try {
+                // Пробуємо різні способи запуску sudo сесії
+                logger.i("TasksManager", "Starting new sudo session")
+
+                // Спочатку перевіряємо наявні графічні утиліти
+                val hasPkexec = executeCommandDirect("which pkexec").first == 0
+                val hasGksudo = executeCommandDirect("which gksudo").first == 0
+                val hasKdesu = executeCommandDirect("which kdesu").first == 0
+                val hasZenity = executeCommandDirect("which zenity").first == 0
+
+                // Спробуємо використати sudo -v для перевірки/оновлення часу кешування паролів
+                if (hasZenity) {
+                    try {
+                        // Запитуємо пароль через zenity
+                        val passwordCmd = "zenity --password --title=\"Введіть пароль адміністратора\""
+                        val passwordProcess = Runtime.getRuntime().exec(passwordCmd)
+                        val password = passwordProcess.inputStream.bufferedReader().use { it.readText() }
+                        val passwordExitCode = passwordProcess.waitFor()
+
+                        if (passwordExitCode == 0 && password.isNotEmpty()) {
+                            // Використовуємо sudo -v для оновлення таймстемпа паролів
+                            val sudoCmd = arrayOf("/bin/sh", "-c", "sudo -S -v")
+                            val process = Runtime.getRuntime().exec(sudoCmd)
+
+                            // Передаємо пароль у stdin процесу
+                            process.outputStream.writer().use { writer ->
+                                writer.write("$password\n")
+                                writer.flush()
+                            }
+
+                            val exitCode = process.waitFor()
+
+                            if (exitCode == 0) {
+                                logger.i("TasksManager", "Sudo session started successfully")
+                                sessionStarted = true
+                                sessionTimestamp = System.currentTimeMillis()
+                                return@withContext true
+                            }
+                        }
+                    } catch (e: Exception) {
+                        logger.e("TasksManager", "Error starting sudo session with zenity: ${e.message}")
+                    }
+                }
+
+                // Спробуємо використати pkexec, який сам запам'ятовує пароль на певний час
+                if (hasPkexec) {
+                    val result = executeCommandDirect("pkexec echo 'Authentication successful'")
+                    if (result.first == 0) {
+                        logger.i("TasksManager", "Sudo session started via pkexec")
+                        sessionStarted = true
+                        sessionTimestamp = System.currentTimeMillis()
+                        return@withContext true
+                    }
+                }
+
+                // Інші методи також можна спробувати
+
+                logger.w("TasksManager", "Failed to start sudo session")
+                return@withContext false
+            } catch (e: Exception) {
+                logger.e("TasksManager", "Error during sudo session start: ${e.message}")
+                return@withContext false
+            }
+        }
+    }
+
+    /**
+     * Перевіряє, чи активна sudo сесія
+     */
+    fun isSessionActive(): Boolean {
+        return sessionStarted && (System.currentTimeMillis() - sessionTimestamp) < SESSION_TIMEOUT_MS
+    }
+
+    /**
+     * Завершує sudo сесію
+     */
+    fun endSession() {
+        sessionStarted = false
+    }
+}
+
+/**
+ * Виконує команду з sudo, використовуючи сесію sudo для одноразового запиту пароля
+ */
+suspend fun executeCommandSudo(command: String, workingDir: String = ""): Boolean {
+    return withContext(Dispatchers.IO) {
+        try {
+            // Перевіряємо, чи команда потребує sudo
+            val useSudo = command.trim().startsWith("sudo ")
+
+            if (useSudo) {
+                val commandWithoutSudo = command.trim().substringAfter("sudo ").trim()
+
+                // Спочатку перевіряємо, чи є активна сесія
+                if (!SudoSession.isSessionActive()) {
+                    // Запускаємо нову сесію, якщо потрібно
+                    val sessionStarted = SudoSession.startSession()
+                    if (!sessionStarted) {
+                        logger.e("TasksManager", "Failed to start sudo session")
+
+                        // Якщо не вдалося запустити сесію, використовуємо звичайний метод
+                        return@withContext executeCommandSudoFallback(command, workingDir)
+                    }
+                }
+
+                // Виконуємо команду з sudo, без повторного введення пароля
+                logger.i("TasksManager", "Executing sudo command with active session")
+                val result = executeCommandDirect(command, workingDir)
+                return@withContext result.first == 0
+            } else {
+                // Якщо команда не потребує sudo, виконуємо її звичайним способом
+                val result = executeCommandDirect(command, workingDir)
+                return@withContext result.first == 0
+            }
+        } catch (e: Exception) {
+            logger.e("TasksManager", "Error executing sudo command: ${e.message}")
+            return@withContext false
+        }
+    }
+}
+
+/**
+ * Резервний метод для виконання sudo команд, якщо не вдалося запустити сесію
+ */
+private suspend fun executeCommandSudoFallback(command: String, workingDir: String = ""): Boolean {
+    return withContext(Dispatchers.IO) {
+        try {
+            // Перевіряємо, чи команда потребує sudo
+            val useSudo = command.trim().startsWith("sudo ")
+
+            if (useSudo) {
+                // Перевіряємо наявні графічні утиліти для введення пароля
+                val hasPkexec = executeCommandDirect("which pkexec").first == 0
+                val hasGksudo = executeCommandDirect("which gksudo").first == 0
+                val hasKdesu = executeCommandDirect("which kdesu").first == 0
+                val hasZenity = executeCommandDirect("which zenity").first == 0
+
+                val commandWithoutSudo = command.trim().substringAfter("sudo ").trim()
+
+                // Спробуємо використати pkexec
+                if (hasPkexec) {
+                    logger.i("TasksManager", "Using pkexec for sudo command")
+                    val result = executeCommandDirect("pkexec $commandWithoutSudo", workingDir)
+                    if (result.first == 0) {
+                        return@withContext true
+                    }
+                }
+
+                // Якщо pkexec не вдалося, спробуємо gksudo
+                if (hasGksudo) {
+                    logger.i("TasksManager", "Using gksudo for sudo command")
+                    val result = executeCommandDirect("gksudo $commandWithoutSudo", workingDir)
+                    if (result.first == 0) {
+                        return@withContext true
+                    }
+                }
+
+                // Якщо gksudo не вдалося, спробуємо kdesu
+                if (hasKdesu) {
+                    logger.i("TasksManager", "Using kdesu for sudo command")
+                    val result = executeCommandDirect("kdesu $commandWithoutSudo", workingDir)
+                    if (result.first == 0) {
+                        return@withContext true
+                    }
+                }
+
+                // Якщо все вище не вдалося, спробуємо zenity
+                if (hasZenity) {
+                    logger.i("TasksManager", "Using zenity+sudo -S for sudo command")
+                    try {
+                        // Запитуємо пароль через zenity
+                        val passwordCmd = "zenity --password --title=\"Введіть пароль адміністратора\""
+                        val passwordProcess = Runtime.getRuntime().exec(passwordCmd)
+                        val password = passwordProcess.inputStream.bufferedReader().use { it.readText() }
+                        val passwordExitCode = passwordProcess.waitFor()
+
+                        if (passwordExitCode == 0 && password.isNotEmpty()) {
+                            // Створюємо процес з sudo -S для отримання пароля через stdin
+                            val sudoCmd = arrayOf("/bin/sh", "-c", "sudo -S $commandWithoutSudo")
+                            val process = Runtime.getRuntime().exec(sudoCmd, null,
+                                if (workingDir.isEmpty()) null else File(workingDir))
+
+                            // Передаємо пароль у stdin процесу
+                            process.outputStream.writer().use { writer ->
+                                writer.write("$password\n")
+                                writer.flush()
+                            }
+
+                            val exitCode = process.waitFor()
+
+                            // Якщо код виходу 0, команда виконана успішно
+                            return@withContext exitCode == 0
+                        }
+                    } catch (e: Exception) {
+                        logger.e("TasksManager", "Error with zenity+sudo -S: ${e.message}")
+                    }
+                }
+
+                logger.e("TasksManager", "Failed to execute sudo command - no graphical sudo utility available")
+                return@withContext false
+            } else {
+                // Якщо команда не потребує sudo, виконуємо її звичайним способом
+                val result = executeCommandDirect(command, workingDir)
+                return@withContext result.first == 0
+            }
+        } catch (e: Exception) {
+            logger.e("TasksManager", "Error in sudo fallback: ${e.message}")
+            return@withContext false
+        }
+    }
+}
+
+suspend fun executeCommandDirect(command: String, workingDir: String = ""): Pair<Int, String> {
+    return withContext(Dispatchers.IO) {
+        try {
+            val processBuilder = ProcessBuilder()
+            if (workingDir.isNotEmpty()) {
+                processBuilder.directory(File(workingDir))
+            }
+
+            // Розділяємо команду на аргументи
+            val args = command.split("\\s+".toRegex())
+            processBuilder.command(args)
+
+            val process = processBuilder.start()
+            val output = process.inputStream.bufferedReader().use { it.readText() }
+            val errorOutput = process.errorStream.bufferedReader().use { it.readText() }
+            val exitCode = process.waitFor()
+
+            val combinedOutput = if (errorOutput.isNotEmpty()) {
+                "$output\n$errorOutput"
+            } else {
+                output
+            }
+
+            Pair(exitCode, combinedOutput.trim())
+        } catch (e: Exception) {
+            logger.e("TasksManager", "Error when executing direct command '$command'", e)
+            Pair(-1, e.message ?: "Unknown error")
+        }
+    }
+}
+
+
 /**
  * Component function to display available installation options for the current system
  */
@@ -337,18 +598,16 @@ fun TaskEditDialog(
         }
 
         // Helper function to execute shell commands
-        suspend fun executeCommand(command: String): Boolean {
+        suspend fun executeCommand2(command: String): Boolean {
             return withContext(Dispatchers.IO) {
                 try {
                     logger.i("TasksManager", "Executing command: $command")
-                    //println("Executing command: $command")
                     val process = Runtime.getRuntime().exec(arrayOf("/bin/sh", "-c", command))
                     val exitCode = process.waitFor()
 
                     if (exitCode != 0) {
                         val errorStream = process.errorStream.bufferedReader().readText()
                         logger.e("TasksManager", "Command failed with exit code $exitCode: $errorStream")
-                        //println("Command failed with exit code $exitCode: $errorStream")
                         installationStatus = "Command failed: $errorStream"
                         false
                     } else {
@@ -356,7 +615,6 @@ fun TaskEditDialog(
                     }
                 } catch (e: Exception) {
                     logger.e("TasksManager", "Error executing command:", e)
-                    //println("Error executing command: ${e.message}")
                     installationStatus = "Command error: ${e.message}"
                     false
                 }
@@ -407,11 +665,6 @@ fun TaskEditDialog(
             logger.i("TasksManager", "Selected asset: $selectedAsset")
             logger.i("TasksManager", "Asset type: $assetInstallType")
             logger.i("TasksManager", "Download URL: $assetDownloadUrl")
-
-            //println("Installing: $name")
-            //println("Selected asset: $selectedAsset")
-            //println("Asset type: $assetInstallType")
-            //println("Download URL: $assetDownloadUrl")
 
             coroutineScope.launch {
                 try {
@@ -490,19 +743,19 @@ fun TaskEditDialog(
                         "deb_based" -> {
                             // Install DEB package
                             val command = "sudo dpkg -i $destinationFile"
-                            executeCommand(command)
+                            executeCommandSudo(command)
                         }
                         "rpm_based" -> {
                             // Install RPM package
                             val command = "sudo rpm -i $destinationFile"
-                            executeCommand(command)
+                            executeCommandSudo(command)
                         }
                         "package" -> {
                             // Extract and copy binary from package
                             // Extract the archive
                             if (selectedAsset.endsWith(".tar.gz")) {
                                 val extractCommand = "tar -xzf $destinationFile -C $toolDir"
-                                val extractResult = executeCommand(extractCommand)
+                                val extractResult = executeCommandSudo(extractCommand)
 
                                 if (extractResult) {
                                     // Find the binary and copy it to the installation path
@@ -516,7 +769,8 @@ fun TaskEditDialog(
                                         val copyCommand = "sudo cp $foundBinary $installPath/$binaryFile"
                                         val chmodCommand = "sudo chmod +x $installPath/$binaryFile"
 
-                                        executeCommand(copyCommand) && executeCommand(chmodCommand)
+                                        executeCommandSudo(copyCommand) && executeCommandSudo(chmodCommand)
+
                                     } else {
                                         installationStatus = "Binary not found in the package"
                                         false
@@ -539,7 +793,7 @@ fun TaskEditDialog(
                             val copyCommand = "sudo cp $destinationFile $installPath/$binaryFile"
                             val finalChmodCommand = "sudo chmod +x $installPath/$binaryFile"
 
-                            executeCommand(chmodCommand) && executeCommand(copyCommand) && executeCommand(finalChmodCommand)
+                            executeCommandSudo(chmodCommand) && executeCommandSudo(copyCommand) && executeCommandSudo(finalChmodCommand)
                         }
                         else -> {
                             installationStatus = "Unsupported installation type: $assetInstallType"
