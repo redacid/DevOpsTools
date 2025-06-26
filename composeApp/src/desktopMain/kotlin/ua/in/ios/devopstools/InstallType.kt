@@ -76,9 +76,106 @@ interface InstallType {
  */
 abstract class BaseInstallType : InstallType {
     /**
-     * Виконує команду в системі
+     * Виконує команду в системі, використовуючи графічний інтерфейс для введення пароля, якщо потрібно
      */
     protected suspend fun executeCommand(command: String, workingDir: String = ""): Pair<Int, String> {
+        return withContext(Dispatchers.IO) {
+            try {
+                // Перевіряємо, чи команда потребує sudo
+                val useSudo = command.trim().startsWith("sudo ")
+
+                if (useSudo) {
+                    // Перевіряємо наявні графічні утиліти для введення пароля
+                    val hasPkexec = executeCommandDirect("which pkexec").first == 0
+                    val hasGksudo = executeCommandDirect("which gksudo").first == 0
+                    val hasKdesu = executeCommandDirect("which kdesu").first == 0
+                    val hasZenity = executeCommandDirect("which zenity").first == 0
+
+                    val commandWithoutSudo = command.trim().substringAfter("sudo ").trim()
+
+                    // Спробуємо використати pkexec (найбільш універсальний)
+                    if (hasPkexec) {
+                        logger.i("TasksManager", "Using pkexec for sudo command")
+                        val result = executeCommandDirect("pkexec $commandWithoutSudo", workingDir)
+                        if (result.first == 0) {
+                            return@withContext result
+                        }
+                    }
+
+                    // Якщо pkexec не вдалося, спробуємо gksudo (для GNOME)
+                    if (hasGksudo) {
+                        logger.i("TasksManager", "Using gksudo for sudo command")
+                        val result = executeCommandDirect("gksudo $commandWithoutSudo", workingDir)
+                        if (result.first == 0) {
+                            return@withContext result
+                        }
+                    }
+
+                    // Якщо gksudo не вдалося, спробуємо kdesu (для KDE)
+                    if (hasKdesu) {
+                        logger.i("TasksManager", "Using kdesu for sudo command")
+                        val result = executeCommandDirect("kdesu $commandWithoutSudo", workingDir)
+                        if (result.first == 0) {
+                            return@withContext result
+                        }
+                    }
+
+                    // Якщо все вище не вдалося, спробуємо zenity
+                    if (hasZenity) {
+                        logger.i("TasksManager", "Using zenity+sudo -S for sudo command")
+                        try {
+                            // Запитуємо пароль через zenity
+                            val passwordCmd = "zenity --password --title=\"Введіть пароль адміністратора\""
+                            val passwordProcess = Runtime.getRuntime().exec(passwordCmd)
+                            val password = passwordProcess.inputStream.bufferedReader().use { it.readText() }
+                            val passwordExitCode = passwordProcess.waitFor()
+
+                            if (passwordExitCode == 0 && password.isNotEmpty()) {
+                                // Створюємо процес з sudo -S для отримання пароля через stdin
+                                val sudoCmd = arrayOf("/bin/sh", "-c", "sudo -S $commandWithoutSudo")
+                                val process = Runtime.getRuntime().exec(sudoCmd)
+
+                                // Передаємо пароль у stdin процесу
+                                process.outputStream.writer().use { writer ->
+                                    writer.write("$password\n")
+                                    writer.flush()
+                                }
+
+                                val output = process.inputStream.bufferedReader().use { it.readText() }
+                                val errorOutput = process.errorStream.bufferedReader().use { it.readText() }
+                                val exitCode = process.waitFor()
+
+                                val combinedOutput = if (errorOutput.isNotEmpty()) {
+                                    "$output\n$errorOutput"
+                                } else {
+                                    output
+                                }
+
+                                return@withContext Pair(exitCode, combinedOutput.trim())
+                            }
+                        } catch (e: Exception) {
+                            logger.e("TasksManager", "Error with zenity+sudo -S: ${e.message}")
+                        }
+                    }
+
+                    // Якщо всі методи не вдалися, повертаємо помилку
+                    logger.e("TasksManager", "Failed to execute sudo command - no graphical sudo utility available")
+                    return@withContext Pair(-1, "Не вдалося виконати команду sudo. Встановіть pkexec, gksudo або kdesu.")
+                } else {
+                    // Якщо команда не потребує sudo, виконуємо її звичайним способом
+                    return@withContext executeCommandDirect(command, workingDir)
+                }
+            } catch (e: Exception) {
+                logger.e("TasksManager", "Error when executing command '$command'", e)
+                Pair(-1, e.message ?: "Unknown error")
+            }
+        }
+    }
+
+    /**
+     * Безпосереднє виконання команди без додаткової обробки
+     */
+    private suspend fun executeCommandDirect(command: String, workingDir: String = ""): Pair<Int, String> {
         return withContext(Dispatchers.IO) {
             try {
                 val processBuilder = ProcessBuilder()
@@ -92,12 +189,18 @@ abstract class BaseInstallType : InstallType {
 
                 val process = processBuilder.start()
                 val output = process.inputStream.bufferedReader().use { it.readText() }
+                val errorOutput = process.errorStream.bufferedReader().use { it.readText() }
                 val exitCode = process.waitFor()
 
-                Pair(exitCode, output)
+                val combinedOutput = if (errorOutput.isNotEmpty()) {
+                    "$output\n$errorOutput"
+                } else {
+                    output
+                }
+
+                Pair(exitCode, combinedOutput.trim())
             } catch (e: Exception) {
-                logger.e("TasksManager", "Error when executing command '$command'", e)
-                //println("Помилка при виконанні команди '$command': ${e.message}")
+                logger.e("TasksManager", "Error when executing direct command '$command'", e)
                 Pair(-1, e.message ?: "Unknown error")
             }
         }

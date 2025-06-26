@@ -52,8 +52,8 @@ class SettingsManager {
         val defaultSettings = JsonObject().apply {
             val settingsObj = JsonObject().apply {
                 addProperty("install_path", "/usr/bin")
-                addProperty("temp_path", "/tmp")
-                addProperty("tasks_url", "https://github.com/redacid/DevOpsTools/tasks.json")
+                addProperty("temp_path", "/tmp/devopstools")
+                addProperty("tasks_url", "https://github.com/redacid/DevOpsTools/blob/init/tasks.json")
 
                 // install_types масив
                 val installTypesArray = gson.toJsonTree(arrayOf(
