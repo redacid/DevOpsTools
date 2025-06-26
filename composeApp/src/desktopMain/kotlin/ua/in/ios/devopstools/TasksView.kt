@@ -1,6 +1,7 @@
 package ua.`in`.ios.devopstools
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -26,6 +27,8 @@ import java.net.URL
 import java.nio.file.Files
 import java.nio.file.Paths
 import java.nio.file.StandardCopyOption
+import androidx.compose.ui.text.style.TextAlign
+
 
 fun getInstallTypeForTask(task: JsonObject): InstallType? {
     val installType = task.get("install_type")?.asString ?: return null
@@ -48,7 +51,7 @@ fun InstallationOptionsSection(task: JsonObject) {
 
     if (options.isEmpty()) {
         Text(
-            text = "No installation options available for this system",
+            text = "No installation patterns available for this system",
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.error
         )
@@ -57,7 +60,7 @@ fun InstallationOptionsSection(task: JsonObject) {
 
     Column(modifier = Modifier.padding(vertical = 8.dp)) {
         Text(
-            text = "Available Installation Options",
+            text = "Used Installation patterns",
             style = MaterialTheme.typography.titleMedium,
             modifier = Modifier.padding(bottom = 8.dp)
         )
@@ -161,7 +164,6 @@ fun TaskEditDialog(
                 isCheckingCurrentVersion = false
             }
         }
-
 
         // Function to filter assets by patterns
         fun filterAssetsByPatterns(assets: List<String>, assetUrlMap: Map<String, String>) {
@@ -1049,7 +1051,6 @@ fun TaskAddDialog(
                 if (apiUrl.isNotEmpty()) {
                     githubApiUrl = apiUrl
                     logger.i("TasksManager", "Generated API URL: $apiUrl from GitHub URL: $githubUrl")
-                    //println("Generated API URL: $apiUrl from GitHub URL: $githubUrl")
                 }
             }
         }
@@ -1305,7 +1306,11 @@ fun TaskAddDialog(
                             // Fill the fields for the new task
                             newTask.addProperty("name", name)
                             newTask.addProperty("description", description)
-                            newTask.addProperty("binary_name", binaryName)
+                            if (binaryName.isEmpty()) {
+                                newTask.addProperty("binary_name", name)
+                            } else {
+                                newTask.addProperty("binary_name", binaryName)
+                            }
                             newTask.addProperty("install_type", installType)
                             newTask.addProperty("version_cmd", versionCmd)
                             newTask.addProperty("installed_as", installedAs)
@@ -1342,6 +1347,7 @@ fun TaskAddDialog(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TasksTable() {
     val tasksManager = TasksManager.getInstance()
@@ -1352,8 +1358,9 @@ fun TasksTable() {
     var isLoading by remember { mutableStateOf(false) }
     var loadResult by remember { mutableStateOf<Boolean?>(null) }
     val coroutineScope = rememberCoroutineScope()
+    var installedVersions by remember { mutableStateOf(mutableMapOf<String, String>()) }
 
-    // Завантажуємо завдання при першому відображенні компонента
+    // Load tasks when component is first displayed
     LaunchedEffect(tasksArray) {
         tasks = buildList {
             if (tasksArray != null) {
@@ -1362,9 +1369,19 @@ fun TasksTable() {
                 }
             }
         }
+        // Check installed versions for all tasks
+        coroutineScope.launch {
+            val versions = mutableMapOf<String, String>()
+            tasks.forEach { task ->
+                val name = task.get("name")?.asString ?: "unknown"
+                versions[name] = TaskUtils.checkCurrentVersion(task)
+            }
+            installedVersions = versions
+        }
+
     }
 
-    // Функція оновлення списку завдань після будь-якої операції
+    // Function to update task list after any operation
     fun refreshTasksList() {
         val updatedTasksArray = tasksManager.getTasksArray()
         tasks = buildList {
@@ -1374,6 +1391,16 @@ fun TasksTable() {
                 }
             }
         }
+        // Update installed versions after refreshing task list
+        coroutineScope.launch {
+            val versions = mutableMapOf<String, String>()
+            tasks.forEach { task ->
+                val name = task.get("name")?.asString ?: "unknown"
+                versions[name] = TaskUtils.checkCurrentVersion(task)
+            }
+            installedVersions = versions
+        }
+
     }
 
     fun refreshTasks() {
@@ -1390,18 +1417,30 @@ fun TasksTable() {
 
         tasks = tasksList
         isLoading = false
+
+        // Update installed versions after refreshing tasks
+        coroutineScope.launch {
+            val versions = mutableMapOf<String, String>()
+            tasks.forEach { task ->
+                val name = task.get("name")?.asString ?: "unknown"
+                versions[name] = TaskUtils.checkCurrentVersion(task)
+            }
+            installedVersions = versions
+        }
+
     }
 
     Column(
         modifier = Modifier.fillMaxSize().padding(16.dp)
     ) {
-        // Заголовок
+        // Header
         Text(
             "Task List",
             style = MaterialTheme.typography.headlineMedium,
             modifier = Modifier.padding(bottom = 16.dp)
         )
-        // Кнопка оновлення завдань
+
+        // Refresh tasks button
         Row(
             modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
             horizontalArrangement = Arrangement.spacedBy(16.dp)
@@ -1410,8 +1449,9 @@ fun TasksTable() {
                 onClick = { showLoadStrategyDialog = true },
                 enabled = !isLoading
             ) {
-                Text("Update tasks")
+                Text("Download task list")
             }
+
             Button(
                 onClick = { showAddDialog = true }
             ) {
@@ -1420,12 +1460,12 @@ fun TasksTable() {
                 Text("Add")
             }
 
-            // Показуємо індикатор завантаження
+            // Show loading indicator
             if (isLoading) {
                 CircularProgressIndicator(modifier = Modifier.size(24.dp))
             }
 
-            // Показуємо результат завантаження
+            // Show loading result
             loadResult?.let { success ->
                 if (success) {
                     Text(
@@ -1441,55 +1481,7 @@ fun TasksTable() {
             }
         }
 
-        // Заголовки таблиці
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(MaterialTheme.colorScheme.surfaceVariant)
-                .padding(8.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                "Name",
-                style = MaterialTheme.typography.titleSmall,
-                modifier = Modifier.weight(1f),
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            Text(
-                "Description",
-                style = MaterialTheme.typography.titleSmall,
-                modifier = Modifier.weight(2f),
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            Text(
-                "Install Type",
-                style = MaterialTheme.typography.titleSmall,
-                modifier = Modifier.weight(1f),
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            // Available version
-            Text(
-                "Version",
-                style = MaterialTheme.typography.titleSmall,
-                modifier = Modifier.weight(1f),
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            Text(
-                "Status",
-                style = MaterialTheme.typography.titleSmall,
-                modifier = Modifier.weight(0.5f),
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            Text(
-                "Actions",
-                style = MaterialTheme.typography.titleSmall,
-                modifier = Modifier.weight(0.5f),
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            //Spacer(modifier = Modifier.width(48.dp))
-        }
-
-        // Список завдань
+        // Tasks table
         if (tasks.isEmpty()) {
             Box(
                 modifier = Modifier.fillMaxWidth().height(200.dp),
@@ -1498,26 +1490,218 @@ fun TasksTable() {
                 Text("Tasks are missing or loaded...")
             }
         } else {
-            LazyColumn(
+            Card(
                 modifier = Modifier.fillMaxWidth()
             ) {
-                items(tasks) { task ->
-                    TaskRow(
-                        task = task,
-                        onDeleteClick = {
-                            // Видаляємо завдання та оновлюємо список
-                            val taskName = task.get("name")?.asString ?: return@TaskRow
-                            tasksManager.removeTask(taskName)
-                            refreshTasksList()
-                        },
-                        // Додаємо виклик оновлення при редагуванні
-                        onTaskUpdated = {
-                            refreshTasksList()
-                        }
-                    )
-                    HorizontalDivider(Modifier, DividerDefaults.Thickness, DividerDefaults.color)
-                }
+                // Define constant relative sizes for columns
+                val nameWidth = 0.12f
+                val descriptionWidth = 0.25f
+                val installTypeWidth = 0.12f
+                val versionWidth = 0.12f
+                val installedVersionWidth = 0.12f
+                val statusWidth = 0.07f
+                val actionsWidth = 0.20f
 
+                // Table headers
+                Surface(
+                    color = MaterialTheme.colorScheme.surfaceVariant,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 12.dp, vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            "Name",
+                            style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                            modifier = Modifier.weight(nameWidth),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Text(
+                            "Description",
+                            style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                            modifier = Modifier.weight(descriptionWidth),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Text(
+                            "Install Type",
+                            style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                            modifier = Modifier.weight(installTypeWidth),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Text(
+                            "Version",
+                            style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                            modifier = Modifier.weight(versionWidth),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Text(
+                            "Installed Version",
+                            style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                            modifier = Modifier.weight(installedVersionWidth),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Text(
+                            "Status",
+                            style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                            modifier = Modifier.weight(statusWidth),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            textAlign = TextAlign.Center
+                        )
+                        Text(
+                            "Actions",
+                            style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                            modifier = Modifier.weight(actionsWidth),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            textAlign = TextAlign.Center
+                        )
+                    }
+
+                }
+                HorizontalDivider()
+                // Tasks list
+                LazyColumn(
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    items(tasks) { task ->
+                        val taskName = task.get("name")?.asString ?: "Unknown name"
+
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 12.dp, vertical = 8.dp)
+                                .clickable { },
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            // Name
+                            Text(
+                                text = task.get("name")?.asString ?: "Unknown name",
+                                style = MaterialTheme.typography.bodyMedium,
+                                modifier = Modifier
+                                    .padding(start = 12.dp )
+                                    .weight(nameWidth),
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+
+                            // Description
+                            Text(
+                                text = task.get("description")?.asString ?: "",
+                                style = MaterialTheme.typography.bodyMedium,
+                                modifier = Modifier.weight(descriptionWidth),
+                                maxLines = 2,
+                                overflow = TextOverflow.Ellipsis
+                            )
+
+                            // Install Type
+                            Text(
+                                text = task.get("install_type")?.asString ?: "",
+                                style = MaterialTheme.typography.bodyMedium,
+                                modifier = Modifier.weight(installTypeWidth),
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+
+                            // Version
+                            Text(
+                                text = task.get("install_version")?.asString ?: "",
+                                style = MaterialTheme.typography.bodyMedium,
+                                modifier = Modifier.weight(versionWidth),
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                            // Installed Version from TaskUtils.checkCurrentVersion
+                            val currentVersion = installedVersions[taskName] ?: "Checking..."
+                            Text(
+                                text = currentVersion,
+                                style = MaterialTheme.typography.bodyMedium,
+                                modifier = Modifier.weight(installedVersionWidth),
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                color = when {
+                                    currentVersion == "Checking..." -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                                    currentVersion.startsWith("Not installed") -> MaterialTheme.colorScheme.error
+                                    currentVersion.startsWith("Check error") -> MaterialTheme.colorScheme.error
+                                    else -> MaterialTheme.colorScheme.primary
+                                }
+                            )
+
+
+                            // Status
+                            var enabled by remember { mutableStateOf(task.get("enabled")?.asBoolean ?: false) }
+                            Box(
+                                modifier = Modifier.weight(statusWidth),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Checkbox(
+                                    checked = enabled,
+                                    onCheckedChange = { isChecked ->
+                                        enabled = isChecked
+                                        task.addProperty("enabled", isChecked)
+                                        val name = task.get("name")?.asString ?: return@Checkbox
+                                        tasksManager.updateTask(name, task)
+                                    }
+                                )
+                            }
+
+                            // Actions
+                            var showDeleteConfirmation by remember { mutableStateOf(false) }
+                            var showEditDialog by remember { mutableStateOf(false) }
+
+                            Row(
+                                modifier = Modifier.weight(actionsWidth),
+                                horizontalArrangement = Arrangement.Center,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                // Edit button
+                                IconButton(onClick = { showEditDialog = true }) {
+                                    Icon(ICON_EDIT, contentDescription = "Edit")
+                                }
+
+                                // Delete button
+                                IconButton(onClick = { showDeleteConfirmation = true }) {
+                                    Icon(ICON_DELETE, contentDescription = "Delete")
+                                }
+                            }
+
+                            // Dialog windows
+                            //val taskName = task.get("name")?.asString ?: "Unknown task"
+
+                            ConfirmationDialog(
+                                isOpen = showDeleteConfirmation,
+                                onDismissRequest = { showDeleteConfirmation = false },
+                                onConfirm = {
+                                    val name = task.get("name")?.asString ?: return@ConfirmationDialog
+                                    tasksManager.removeTask(name)
+                                    refreshTasksList()
+                                },
+                                title = "Delete Confirmation",
+                                text = "Are you sure you want to delete the task \"$taskName\"?",
+                                confirmButtonText = "Delete",
+                                dismissButtonText = "Cancel"
+                            )
+
+                            if (showEditDialog) {
+                                TaskEditDialog(
+                                    isOpen = showEditDialog,
+                                    task = task,
+                                    onDismissRequest = { showEditDialog = false },
+                                    onSaveRequest = { updatedTask ->
+                                        val name = task.get("name")?.asString ?: return@TaskEditDialog
+                                        val result = tasksManager.updateTask(name, updatedTask)
+                                        if (result) {
+                                            refreshTasksList()
+                                            showEditDialog = false
+                                        }
+                                    }
+                                )
+                            }
+                        }
+                        HorizontalDivider()
+                    }
+                }
             }
         }
     }
@@ -1541,11 +1725,9 @@ fun TasksTable() {
         isOpen = showLoadStrategyDialog,
         onDismissRequest = { showLoadStrategyDialog = false },
         onStrategySelected = { strategy ->
-            // We start downloading with the strategy selected
             isLoading = true
             loadResult = null
 
-            // We use previously created Coroutinescope
             coroutineScope.launch {
                 val success = tasksManager.reloadTasks(strategy)
                 isLoading = false
@@ -1557,116 +1739,4 @@ fun TasksTable() {
             }
         }
     )
-}
-
-@Composable
-fun TaskRow(
-    task: JsonObject,
-    onDeleteClick: () -> Unit,
-    onTaskUpdated: () -> Unit
-) {
-    val tasksManager = TasksManager.getInstance()
-    var showDeleteConfirmation by remember { mutableStateOf(false) }
-    var showEditDialog by remember { mutableStateOf(false) }
-
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(8.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        // Name
-        Text(
-            text = task.get("name")?.asString ?: "Невідома назва",
-            style = MaterialTheme.typography.bodyMedium,
-            modifier = Modifier.weight(1f)
-        )
-
-        // Desc
-        Text(
-            text = task.get("description")?.asString ?: "",
-            style = MaterialTheme.typography.bodyMedium,
-            modifier = Modifier.weight(2f),
-            maxLines = 2,
-            overflow = TextOverflow.Ellipsis
-        )
-
-        // Install Type
-        Text(
-            text = task.get("install_type")?.asString ?: "",
-            style = MaterialTheme.typography.bodyMedium,
-            modifier = Modifier.weight(1f)
-        )
-        // Available version
-        Text(
-            text = task.get("install_version")?.asString ?: "",
-            style = MaterialTheme.typography.bodyMedium,
-            modifier = Modifier.weight(1f)
-        )
-
-        // Status
-        var enabled by remember { mutableStateOf(task.get("enabled")?.asBoolean ?: false) }
-
-        Checkbox(
-            checked = enabled,
-            onCheckedChange = { isChecked ->
-                enabled = isChecked
-
-                // Оновлюємо значення в об'єкті завдання
-                task.addProperty("enabled", isChecked)
-
-                // Зберігаємо зміни
-                val taskName = task.get("name")?.asString ?: return@Checkbox
-                tasksManager.updateTask(taskName, task)
-            },
-            modifier = Modifier.weight(0.5f)
-        )
-
-        // Buttons
-        Row(
-            modifier = Modifier.padding(start = 8.dp)
-        ) {
-            // Кнопка редагування
-            IconButton(
-                onClick = { showEditDialog = true }
-            ) {
-                Icon(ICON_EDIT, contentDescription = "Редагувати")
-            }
-
-            // Кнопка видалення
-            IconButton(
-                onClick = { showDeleteConfirmation = true }
-            ) {
-                Icon(ICON_DELETE, contentDescription = "Видалити")
-            }
-        }
-
-        val taskName = task.get("name")?.asString ?: "Невідоме завдання"
-        ConfirmationDialog(
-            isOpen = showDeleteConfirmation,
-            onDismissRequest = { showDeleteConfirmation = false },
-            onConfirm = onDeleteClick,
-            title = "Підтвердження видалення",
-            text = "Ви дійсно бажаєте видалити завдання \"$taskName\"?",
-            confirmButtonText = "Видалити",
-            dismissButtonText = "Скасувати"
-        )
-        // Діалогове вікно редагування завдання
-        if (showEditDialog) {
-            TaskEditDialog(
-                isOpen = showEditDialog,
-                task = task,
-                onDismissRequest = { showEditDialog = false },
-                onSaveRequest = { updatedTask ->
-                    val name = task.get("name")?.asString ?: return@TaskEditDialog
-                    val result = tasksManager.updateTask(name, updatedTask)
-                    if (result) {
-                        // Викликаємо функцію оновлення після успішного збереження
-                        onTaskUpdated()
-                        showEditDialog = false
-                    }
-                }
-            )
-        }
-    }
 }

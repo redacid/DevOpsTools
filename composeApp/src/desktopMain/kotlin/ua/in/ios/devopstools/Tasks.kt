@@ -883,8 +883,11 @@ object TaskUtils {
             try {
                 val installType = getInstallTypeForTask(task)
                 if (installType != null) {
-                    val version = installType.getCurrentVersion(task)
-                    version.ifEmpty {
+                    val rawVersion = installType.getCurrentVersion(task)
+                    if (rawVersion.isNotEmpty()) {
+                        // Витягуємо версію за допомогою регулярних виразів
+                        extractVersionNumber(rawVersion, task)
+                    } else {
                         "Not installed"
                     }
                 } else {
@@ -897,4 +900,134 @@ object TaskUtils {
             }
         }
     }
+
+    /**
+     * Витягує номер версії з рядка виводу команди
+     *
+     * @param output Вихід команди версії
+     * @param task Завдання для якого визначається версія
+     * @return Номер версії або вихідний рядок, якщо версію не вдалося витягти
+     */
+
+    private fun extractVersionNumber(output: String, task: JsonObject): String {
+        // Отримуємо патерн для розбору з завдання, якщо він є
+        val versionPattern = task.get("version_pattern")?.asString
+
+        if (versionPattern != null && versionPattern.isNotEmpty()) {
+            try {
+                val regex = versionPattern.toRegex()
+                val matchResult = regex.find(output)
+                if (matchResult != null && matchResult.groupValues.size > 1) {
+                    return matchResult.groupValues[1]
+                }
+            } catch (e: Exception) {
+                logger.e("TaskUtils", "Error parsing version with pattern: $versionPattern", e)
+            }
+        }
+
+        // Перевірка форматів версій, які треба зберегти як є
+        val standardVersionPatterns = listOf(
+            "^v?(\\d+\\.\\d+\\.\\d+(?:-\\w+(?:\\.\\d+)?)?)$".toRegex(), // Чисті версії: 1.2.3, v1.2.3, 1.2.3-beta, 1.2.3-beta.4
+            "^v?(\\d+\\.\\d+\\.\\d+(?:-\\w+(?:\\.\\d+)?)?)-?\\w*$".toRegex() // Версії з невеликим суфіксом: 1.2.3-1, v1.2.3-alpha
+        )
+
+        for (pattern in standardVersionPatterns) {
+            try {
+                val matchResult = pattern.find(output.trim())
+                if (matchResult != null) {
+                    // Якщо вивід команди вже є чистою версією - повертаємо її як є
+                    return output.trim()
+                }
+            } catch (e: Exception) {
+                continue
+            }
+        }
+
+        // Витягуємо версію з тексту, якщо вона там є
+        val versionExtractionPatterns = listOf(
+            "v?(\\d+\\.\\d+\\.\\d+(?:-\\w+(?:\\.\\d+)?)?)".toRegex(), // Стандартні версії в тексті
+            "version\\s+(\\d+\\.\\d+\\.\\d+(?:-\\w+(?:\\.\\d+)?)?)".toRegex(RegexOption.IGNORE_CASE), // version X.Y.Z
+            "версія\\s+(\\d+\\.\\d+\\.\\d+(?:-\\w+(?:\\.\\d+)?)?)".toRegex(RegexOption.IGNORE_CASE) // версія X.Y.Z (для локалізованих програм)
+        )
+
+        for (pattern in versionExtractionPatterns) {
+            try {
+                val matchResult = pattern.find(output)
+                if (matchResult != null && matchResult.groupValues.size > 1) {
+                    val version = matchResult.groupValues[1]
+                    // Перевіряємо, чи починається з "v" і повертаємо відповідно
+                    return if (matchResult.groupValues[0].startsWith("v") && !version.startsWith("v")) {
+                        "v$version"
+                    } else {
+                        version
+                    }
+                }
+            } catch (e: Exception) {
+                continue
+            }
+        }
+
+        // Якщо нічого не знайдено, повертаємо обрізаний вивід (перший рядок)
+        val firstLine = output.trim().split("\n").firstOrNull() ?: output
+        // Обмежуємо довжину виводу до 50 символів, щоб уникнути дуже довгих рядків
+        return if (firstLine.length > 50) firstLine.substring(0, 47) + "..." else firstLine
+    }
+
+
+    private fun extractVersionNumber2(output: String, task: JsonObject): String {
+        // Отримуємо патерн для розбору з завдання, якщо він є
+        val versionPattern = task.get("version_pattern")?.asString
+
+        if (versionPattern != null && versionPattern.isNotEmpty()) {
+            try {
+                val regex = versionPattern.toRegex()
+                val matchResult = regex.find(output)
+                if (matchResult != null && matchResult.groupValues.size > 1) {
+                    return matchResult.groupValues[1]
+                }
+            } catch (e: Exception) {
+                logger.e("TaskUtils", "Error parsing version with pattern: $versionPattern", e)
+            }
+        }
+
+        // Використовуємо загальні патерни для витягування версії
+        val commonPatterns = listOf(
+            "v?(\\d+\\.\\d+\\.\\d+(?:-\\w+(?:\\.\\d+)?)?)".toRegex(), // Стандартні версії: 1.2.3, v1.2.3, 1.2.3-beta, 1.2.3-beta.4
+            "version\\s+(\\d+\\.\\d+\\.\\d+(?:-\\w+(?:\\.\\d+)?)?)".toRegex(RegexOption.IGNORE_CASE), // version X.Y.Z
+            "(\\d+\\.\\d+\\.\\d+(?:-\\w+(?:\\.\\d+)?)?).+".toRegex(), // Версія на початку рядка
+            ".+(\\d+\\.\\d+\\.\\d+(?:-\\w+(?:\\.\\d+)?)?).+".toRegex(), // Версія всередині рядка
+            ".+(\\d+\\.\\d+\\.\\d+(?:-\\w+(?:\\.\\d+)?)?)$".toRegex(), // Версія в кінці рядка
+            "(\\d+\\.\\d+\\.\\d+)".toRegex() // Просто X.Y.Z
+        )
+
+        for (pattern in commonPatterns) {
+            try {
+                val matchResult = pattern.find(output)
+                if (matchResult != null && matchResult.groupValues.size > 1) {
+                    return matchResult.groupValues[1]
+                }
+            } catch (e: Exception) {
+                // Продовжуємо перевірку з наступним патерном
+                continue
+            }
+        }
+
+        // Витягуємо перший набір чисел, розділених крапками
+        val simplifiedPattern = "(\\d+(?:\\.\\d+)+)".toRegex()
+        try {
+            val matchResult = simplifiedPattern.find(output)
+            if (matchResult != null && matchResult.groupValues.size > 1) {
+                return matchResult.groupValues[1]
+            }
+        } catch (e: Exception) {
+            logger.e("TaskUtils", "Error parsing version with simplified pattern", e)
+        }
+
+        // Якщо нічого не знайдено, повертаємо обрізаний вивід (перший рядок)
+        val firstLine = output.trim().split("\n").firstOrNull() ?: output
+        // Обмежуємо довжину виводу до 50 символів, щоб уникнути дуже довгих рядків
+        return if (firstLine.length > 50) firstLine.substring(0, 47) + "..." else firstLine
+    }
+
+
 }
