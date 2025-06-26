@@ -41,107 +41,29 @@ fun getInstallTypeForTask(task: JsonObject): InstallType? {
     }
 }
 
-object SudoSession {
-    private var sessionStarted = false
-    private var sessionTimestamp = 0L
-    private const val SESSION_TIMEOUT_MS = 300000 // 5 хвилин
-    private val logger = Logger.getInstance()
+object SudoPasswordCache {
+    private var cachedPassword: String? = null
+    private var cacheTimestamp: Long = 0
+    private const val CACHE_TIMEOUT_MS = 300000 // 5 хвилин
 
-    /**
-     * Ініціює нову sudo сесію, запитуючи пароль один раз
-     * @return true якщо сесія успішно створена, false інакше
-     */
-    suspend fun startSession(): Boolean {
-        // Перевіряємо чи сесія вже активна і не застаріла
-        if (sessionStarted && (System.currentTimeMillis() - sessionTimestamp) < SESSION_TIMEOUT_MS) {
-            return true
+    fun getPassword(): String? {
+        // Перевіряємо чи пароль в кеші і чи не застарів він
+        if (cachedPassword != null && (System.currentTimeMillis() - cacheTimestamp) < CACHE_TIMEOUT_MS) {
+            return cachedPassword
         }
-
-        return withContext(Dispatchers.IO) {
-            try {
-                // Пробуємо різні способи запуску sudo сесії
-                logger.i("TasksManager", "Starting new sudo session")
-
-                // Спочатку перевіряємо наявні графічні утиліти
-                val hasPkexec = executeCommandDirect("which pkexec").first == 0
-                val hasGksudo = executeCommandDirect("which gksudo").first == 0
-                val hasKdesu = executeCommandDirect("which kdesu").first == 0
-                val hasZenity = executeCommandDirect("which zenity").first == 0
-
-                // Спробуємо використати sudo -v для перевірки/оновлення часу кешування паролів
-                if (hasZenity) {
-                    try {
-                        // Запитуємо пароль через zenity
-                        val passwordCmd = "zenity --password --title=\"Введіть пароль адміністратора\""
-                        val passwordProcess = Runtime.getRuntime().exec(passwordCmd)
-                        val password = passwordProcess.inputStream.bufferedReader().use { it.readText() }
-                        val passwordExitCode = passwordProcess.waitFor()
-
-                        if (passwordExitCode == 0 && password.isNotEmpty()) {
-                            // Використовуємо sudo -v для оновлення таймстемпа паролів
-                            val sudoCmd = arrayOf("/bin/sh", "-c", "sudo -S -v")
-                            val process = Runtime.getRuntime().exec(sudoCmd)
-
-                            // Передаємо пароль у stdin процесу
-                            process.outputStream.writer().use { writer ->
-                                writer.write("$password\n")
-                                writer.flush()
-                            }
-
-                            val exitCode = process.waitFor()
-
-                            if (exitCode == 0) {
-                                logger.i("TasksManager", "Sudo session started successfully")
-                                sessionStarted = true
-                                sessionTimestamp = System.currentTimeMillis()
-                                return@withContext true
-                            }
-                        }
-                    } catch (e: Exception) {
-                        logger.e("TasksManager", "Error starting sudo session with zenity: ${e.message}")
-                    }
-                }
-
-                // Спробуємо використати pkexec, який сам запам'ятовує пароль на певний час
-                if (hasPkexec) {
-                    val result = executeCommandDirect("pkexec echo 'Authentication successful'")
-                    if (result.first == 0) {
-                        logger.i("TasksManager", "Sudo session started via pkexec")
-                        sessionStarted = true
-                        sessionTimestamp = System.currentTimeMillis()
-                        return@withContext true
-                    }
-                }
-
-                // Інші методи також можна спробувати
-
-                logger.w("TasksManager", "Failed to start sudo session")
-                return@withContext false
-            } catch (e: Exception) {
-                logger.e("TasksManager", "Error during sudo session start: ${e.message}")
-                return@withContext false
-            }
-        }
+        return null
     }
 
-    /**
-     * Перевіряє, чи активна sudo сесія
-     */
-    fun isSessionActive(): Boolean {
-        return sessionStarted && (System.currentTimeMillis() - sessionTimestamp) < SESSION_TIMEOUT_MS
+    fun setPassword(password: String) {
+        cachedPassword = password
+        cacheTimestamp = System.currentTimeMillis()
     }
 
-    /**
-     * Завершує sudo сесію
-     */
-    fun endSession() {
-        sessionStarted = false
+    fun clearPassword() {
+        cachedPassword = null
     }
 }
 
-/**
- * Виконує команду з sudo, використовуючи сесію sudo для одноразового запиту пароля
- */
 suspend fun executeCommandSudo(command: String, workingDir: String = ""): Boolean {
     return withContext(Dispatchers.IO) {
         try {
@@ -151,51 +73,75 @@ suspend fun executeCommandSudo(command: String, workingDir: String = ""): Boolea
             if (useSudo) {
                 val commandWithoutSudo = command.trim().substringAfter("sudo ").trim()
 
-                // Спочатку перевіряємо, чи є активна сесія
-                if (!SudoSession.isSessionActive()) {
-                    // Запускаємо нову сесію, якщо потрібно
-                    val sessionStarted = SudoSession.startSession()
-                    if (!sessionStarted) {
-                        logger.e("TasksManager", "Failed to start sudo session")
-
-                        // Якщо не вдалося запустити сесію, використовуємо звичайний метод
-                        return@withContext executeCommandSudoFallback(command, workingDir)
-                    }
-                }
-
-                // Виконуємо команду з sudo, без повторного введення пароля
-                logger.i("TasksManager", "Executing sudo command with active session")
-                val result = executeCommandDirect(command, workingDir)
-                return@withContext result.first == 0
-            } else {
-                // Якщо команда не потребує sudo, виконуємо її звичайним способом
-                val result = executeCommandDirect(command, workingDir)
-                return@withContext result.first == 0
-            }
-        } catch (e: Exception) {
-            logger.e("TasksManager", "Error executing sudo command: ${e.message}")
-            return@withContext false
-        }
-    }
-}
-
-/**
- * Резервний метод для виконання sudo команд, якщо не вдалося запустити сесію
- */
-private suspend fun executeCommandSudoFallback(command: String, workingDir: String = ""): Boolean {
-    return withContext(Dispatchers.IO) {
-        try {
-            // Перевіряємо, чи команда потребує sudo
-            val useSudo = command.trim().startsWith("sudo ")
-
-            if (useSudo) {
                 // Перевіряємо наявні графічні утиліти для введення пароля
+                val hasZenity = executeCommandDirect("which zenity").first == 0
                 val hasPkexec = executeCommandDirect("which pkexec").first == 0
                 val hasGksudo = executeCommandDirect("which gksudo").first == 0
                 val hasKdesu = executeCommandDirect("which kdesu").first == 0
-                val hasZenity = executeCommandDirect("which zenity").first == 0
 
-                val commandWithoutSudo = command.trim().substringAfter("sudo ").trim()
+                // Спочатку перевіряємо, чи є кешований пароль
+                val cachedPassword = SudoPasswordCache.getPassword()
+                if (cachedPassword != null && hasZenity) {
+                    // Використовуємо кешований пароль
+                    logger.i("TasksManager", "Using cached sudo password")
+                    val sudoCmd = arrayOf("/bin/sh", "-c", "echo '$cachedPassword' | sudo -S $commandWithoutSudo")
+
+                    val process = Runtime.getRuntime().exec(sudoCmd, null,
+                        if (workingDir.isEmpty()) null else File(workingDir))
+
+                    val output = process.inputStream.bufferedReader().use { it.readText() }
+                    val errorOutput = process.errorStream.bufferedReader().use { it.readText() }
+                    val exitCode = process.waitFor()
+
+                    // Якщо команда виконалася успішно, повертаємо true
+                    if (exitCode == 0) {
+                        return@withContext true
+                    } else {
+                        // Якщо команда не виконалася (можливо, пароль більше не дійсний),
+                        // очищаємо кеш і продовжуємо з іншими методами
+                        logger.w("TasksManager", "Cached sudo password failed, clearing cache")
+                        SudoPasswordCache.clearPassword()
+                    }
+                }
+
+                // Якщо немає кешованого пароля або він не спрацював, пробуємо інші методи
+
+                // Спробуємо використати zenity для запиту пароля (і кешування)
+                if (hasZenity) {
+                    logger.i("TasksManager", "Using zenity for sudo password")
+                    try {
+                        // Запитуємо пароль через zenity
+                        val passwordCmd = "zenity --password --title=\"Введіть пароль адміністратора\""
+                        val passwordProcess = Runtime.getRuntime().exec(passwordCmd)
+                        val password = passwordProcess.inputStream.bufferedReader().use { it.readText() }
+                        val passwordExitCode = passwordProcess.waitFor()
+
+                        if (passwordExitCode == 0 && password.isNotEmpty()) {
+                            // Зберігаємо пароль у кеш
+                            SudoPasswordCache.setPassword(password)
+
+                            // Використовуємо sudo -S з отриманим паролем
+                            val sudoCmd = arrayOf("/bin/sh", "-c", "echo '$password' | sudo -S $commandWithoutSudo")
+                            val process = Runtime.getRuntime().exec(sudoCmd, null,
+                                if (workingDir.isEmpty()) null else File(workingDir))
+
+                            val output = process.inputStream.bufferedReader().use { it.readText() }
+                            val errorOutput = process.errorStream.bufferedReader().use { it.readText() }
+                            val exitCode = process.waitFor()
+
+                            // Якщо команда не виконалася, очищаємо кеш
+                            if (exitCode != 0) {
+                                SudoPasswordCache.clearPassword()
+                            }
+
+                            return@withContext exitCode == 0
+                        }
+                    } catch (e: Exception) {
+                        logger.e("TasksManager", "Error with zenity+sudo: ${e.message}")
+                    }
+                }
+
+                // Якщо zenity не вдалося, пробуємо інші методи без кешування пароля
 
                 // Спробуємо використати pkexec
                 if (hasPkexec) {
@@ -206,7 +152,7 @@ private suspend fun executeCommandSudoFallback(command: String, workingDir: Stri
                     }
                 }
 
-                // Якщо pkexec не вдалося, спробуємо gksudo
+                // Спробуємо використати gksudo
                 if (hasGksudo) {
                     logger.i("TasksManager", "Using gksudo for sudo command")
                     val result = executeCommandDirect("gksudo $commandWithoutSudo", workingDir)
@@ -215,7 +161,7 @@ private suspend fun executeCommandSudoFallback(command: String, workingDir: Stri
                     }
                 }
 
-                // Якщо gksudo не вдалося, спробуємо kdesu
+                // Спробуємо використати kdesu
                 if (hasKdesu) {
                     logger.i("TasksManager", "Using kdesu for sudo command")
                     val result = executeCommandDirect("kdesu $commandWithoutSudo", workingDir)
@@ -224,39 +170,8 @@ private suspend fun executeCommandSudoFallback(command: String, workingDir: Stri
                     }
                 }
 
-                // Якщо все вище не вдалося, спробуємо zenity
-                if (hasZenity) {
-                    logger.i("TasksManager", "Using zenity+sudo -S for sudo command")
-                    try {
-                        // Запитуємо пароль через zenity
-                        val passwordCmd = "zenity --password --title=\"Введіть пароль адміністратора\""
-                        val passwordProcess = Runtime.getRuntime().exec(passwordCmd)
-                        val password = passwordProcess.inputStream.bufferedReader().use { it.readText() }
-                        val passwordExitCode = passwordProcess.waitFor()
-
-                        if (passwordExitCode == 0 && password.isNotEmpty()) {
-                            // Створюємо процес з sudo -S для отримання пароля через stdin
-                            val sudoCmd = arrayOf("/bin/sh", "-c", "sudo -S $commandWithoutSudo")
-                            val process = Runtime.getRuntime().exec(sudoCmd, null,
-                                if (workingDir.isEmpty()) null else File(workingDir))
-
-                            // Передаємо пароль у stdin процесу
-                            process.outputStream.writer().use { writer ->
-                                writer.write("$password\n")
-                                writer.flush()
-                            }
-
-                            val exitCode = process.waitFor()
-
-                            // Якщо код виходу 0, команда виконана успішно
-                            return@withContext exitCode == 0
-                        }
-                    } catch (e: Exception) {
-                        logger.e("TasksManager", "Error with zenity+sudo -S: ${e.message}")
-                    }
-                }
-
-                logger.e("TasksManager", "Failed to execute sudo command - no graphical sudo utility available")
+                // Якщо всі методи не вдалися, повертаємо помилку
+                logger.e("TasksManager", "Failed to execute sudo command - no suitable sudo method available")
                 return@withContext false
             } else {
                 // Якщо команда не потребує sudo, виконуємо її звичайним способом
@@ -264,7 +179,7 @@ private suspend fun executeCommandSudoFallback(command: String, workingDir: Stri
                 return@withContext result.first == 0
             }
         } catch (e: Exception) {
-            logger.e("TasksManager", "Error in sudo fallback: ${e.message}")
+            logger.e("TasksManager", "Error executing sudo command: ${e.message}")
             return@withContext false
         }
     }
