@@ -41,182 +41,6 @@ fun getInstallTypeForTask(task: JsonObject): InstallType? {
     }
 }
 
-object SudoPasswordCache {
-    private var cachedPassword: String? = null
-    private var cacheTimestamp: Long = 0
-    private const val CACHE_TIMEOUT_MS = 300000 // 5 хвилин
-
-    fun getPassword(): String? {
-        // Перевіряємо чи пароль в кеші і чи не застарів він
-        if (cachedPassword != null && (System.currentTimeMillis() - cacheTimestamp) < CACHE_TIMEOUT_MS) {
-            return cachedPassword
-        }
-        return null
-    }
-
-    fun setPassword(password: String) {
-        cachedPassword = password
-        cacheTimestamp = System.currentTimeMillis()
-    }
-
-    fun clearPassword() {
-        cachedPassword = null
-    }
-}
-
-suspend fun executeCommandSudo(command: String, workingDir: String = ""): Boolean {
-    return withContext(Dispatchers.IO) {
-        try {
-            // Перевіряємо, чи команда потребує sudo
-            val useSudo = command.trim().startsWith("sudo ")
-
-            if (useSudo) {
-                val commandWithoutSudo = command.trim().substringAfter("sudo ").trim()
-
-                // Перевіряємо наявні графічні утиліти для введення пароля
-                val hasZenity = executeCommandDirect("which zenity").first == 0
-                val hasPkexec = executeCommandDirect("which pkexec").first == 0
-                val hasGksudo = executeCommandDirect("which gksudo").first == 0
-                val hasKdesu = executeCommandDirect("which kdesu").first == 0
-
-                // Спочатку перевіряємо, чи є кешований пароль
-                val cachedPassword = SudoPasswordCache.getPassword()
-                if (cachedPassword != null && hasZenity) {
-                    // Використовуємо кешований пароль
-                    logger.i("TasksManager", "Using cached sudo password")
-                    val sudoCmd = arrayOf("/bin/sh", "-c", "echo '$cachedPassword' | sudo -S $commandWithoutSudo")
-
-                    val process = Runtime.getRuntime().exec(sudoCmd, null,
-                        if (workingDir.isEmpty()) null else File(workingDir))
-
-                    val output = process.inputStream.bufferedReader().use { it.readText() }
-                    val errorOutput = process.errorStream.bufferedReader().use { it.readText() }
-                    val exitCode = process.waitFor()
-
-                    // Якщо команда виконалася успішно, повертаємо true
-                    if (exitCode == 0) {
-                        return@withContext true
-                    } else {
-                        // Якщо команда не виконалася (можливо, пароль більше не дійсний),
-                        // очищаємо кеш і продовжуємо з іншими методами
-                        logger.w("TasksManager", "Cached sudo password failed, clearing cache")
-                        SudoPasswordCache.clearPassword()
-                    }
-                }
-
-                // Якщо немає кешованого пароля або він не спрацював, пробуємо інші методи
-
-                // Спробуємо використати zenity для запиту пароля (і кешування)
-                if (hasZenity) {
-                    logger.i("TasksManager", "Using zenity for sudo password")
-                    try {
-                        // Запитуємо пароль через zenity
-                        val passwordCmd = "zenity --password --title=\"Введіть пароль адміністратора\""
-                        val passwordProcess = Runtime.getRuntime().exec(passwordCmd)
-                        val password = passwordProcess.inputStream.bufferedReader().use { it.readText() }
-                        val passwordExitCode = passwordProcess.waitFor()
-
-                        if (passwordExitCode == 0 && password.isNotEmpty()) {
-                            // Зберігаємо пароль у кеш
-                            SudoPasswordCache.setPassword(password)
-
-                            // Використовуємо sudo -S з отриманим паролем
-                            val sudoCmd = arrayOf("/bin/sh", "-c", "echo '$password' | sudo -S $commandWithoutSudo")
-                            val process = Runtime.getRuntime().exec(sudoCmd, null,
-                                if (workingDir.isEmpty()) null else File(workingDir))
-
-                            val output = process.inputStream.bufferedReader().use { it.readText() }
-                            val errorOutput = process.errorStream.bufferedReader().use { it.readText() }
-                            val exitCode = process.waitFor()
-
-                            // Якщо команда не виконалася, очищаємо кеш
-                            if (exitCode != 0) {
-                                SudoPasswordCache.clearPassword()
-                            }
-
-                            return@withContext exitCode == 0
-                        }
-                    } catch (e: Exception) {
-                        logger.e("TasksManager", "Error with zenity+sudo: ${e.message}")
-                    }
-                }
-
-                // Якщо zenity не вдалося, пробуємо інші методи без кешування пароля
-
-                // Спробуємо використати pkexec
-                if (hasPkexec) {
-                    logger.i("TasksManager", "Using pkexec for sudo command")
-                    val result = executeCommandDirect("pkexec $commandWithoutSudo", workingDir)
-                    if (result.first == 0) {
-                        return@withContext true
-                    }
-                }
-
-                // Спробуємо використати gksudo
-                if (hasGksudo) {
-                    logger.i("TasksManager", "Using gksudo for sudo command")
-                    val result = executeCommandDirect("gksudo $commandWithoutSudo", workingDir)
-                    if (result.first == 0) {
-                        return@withContext true
-                    }
-                }
-
-                // Спробуємо використати kdesu
-                if (hasKdesu) {
-                    logger.i("TasksManager", "Using kdesu for sudo command")
-                    val result = executeCommandDirect("kdesu $commandWithoutSudo", workingDir)
-                    if (result.first == 0) {
-                        return@withContext true
-                    }
-                }
-
-                // Якщо всі методи не вдалися, повертаємо помилку
-                logger.e("TasksManager", "Failed to execute sudo command - no suitable sudo method available")
-                return@withContext false
-            } else {
-                // Якщо команда не потребує sudo, виконуємо її звичайним способом
-                val result = executeCommandDirect(command, workingDir)
-                return@withContext result.first == 0
-            }
-        } catch (e: Exception) {
-            logger.e("TasksManager", "Error executing sudo command: ${e.message}")
-            return@withContext false
-        }
-    }
-}
-
-suspend fun executeCommandDirect(command: String, workingDir: String = ""): Pair<Int, String> {
-    return withContext(Dispatchers.IO) {
-        try {
-            val processBuilder = ProcessBuilder()
-            if (workingDir.isNotEmpty()) {
-                processBuilder.directory(File(workingDir))
-            }
-
-            // Розділяємо команду на аргументи
-            val args = command.split("\\s+".toRegex())
-            processBuilder.command(args)
-
-            val process = processBuilder.start()
-            val output = process.inputStream.bufferedReader().use { it.readText() }
-            val errorOutput = process.errorStream.bufferedReader().use { it.readText() }
-            val exitCode = process.waitFor()
-
-            val combinedOutput = if (errorOutput.isNotEmpty()) {
-                "$output\n$errorOutput"
-            } else {
-                output
-            }
-
-            Pair(exitCode, combinedOutput.trim())
-        } catch (e: Exception) {
-            logger.e("TasksManager", "Error when executing direct command '$command'", e)
-            Pair(-1, e.message ?: "Unknown error")
-        }
-    }
-}
-
-
 /**
  * Component function to display available installation options for the current system
  */
@@ -559,7 +383,6 @@ fun TaskEditDialog(
                     binaryFile?.absolutePath ?: ""
                 } catch (e: Exception) {
                     logger.e("TasksManager", "Error finding binary file:", e)
-                    //println("Error finding binary: ${e.message}")
                     ""
                 }
             }
@@ -611,9 +434,6 @@ fun TaskEditDialog(
                             logger.i("TasksManager", "Downloading from: $assetDownloadUrl")
                             logger.i("TasksManager", "Downloading to: $destinationFile")
 
-                            //println("Downloading from: $assetDownloadUrl")
-                            //println("Downloading to: $destinationFile")
-
                             URL(assetDownloadUrl).openStream().use { input ->
                                 Files.copy(input, Paths.get(destinationFile), StandardCopyOption.REPLACE_EXISTING)
                             }
@@ -625,11 +445,9 @@ fun TaskEditDialog(
                                 return@withContext false
                             }
                             logger.i("TasksManager", "File downloaded successfully: ${downloadedFile.absolutePath}, size: ${downloadedFile.length()} bytes")
-                            //println("File downloaded successfully: ${downloadedFile.absolutePath}, size: ${downloadedFile.length()} bytes")
                             true
                         } catch (e: Exception) {
                             logger.e("TasksManager", "Error downloading file:", e)
-                            //println("Error downloading file from '$assetDownloadUrl': ${e.message}")
                             installationStatus = "Download error: ${e.message}"
                             false
                         }
@@ -730,7 +548,6 @@ fun TaskEditDialog(
                 } catch (e: Exception) {
                     installationStatus = "Installation error: ${e.message}"
                     logger.e("TasksManager", "Installation error", e)
-                    //println("Installation error: ${e.message}")
                     e.printStackTrace()
                 } finally {
                     installationProgress = 1.0f
