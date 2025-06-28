@@ -48,9 +48,13 @@ suspend fun executeCommandSudo(command: String, workingDir: String = ""): Boolea
                     // Use cached password
                     logger.i("TasksManager", "Using cached sudo password")
                     val sudoCmd = arrayOf("/bin/sh", "-c", "echo '$cachedPassword' | sudo -S $commandWithoutSudo")
-                    logger.d("TasksManager", "Executing command: ${sudoCmd.joinToString(" ")}")
-                    val process = Runtime.getRuntime().exec(sudoCmd, null,
-                        if (workingDir.isEmpty()) null else File(workingDir))
+                    logger.d("TasksManager", "Executing command: ${
+                        sudoCmd.joinToString(" ").replace(cachedPassword, "*****")
+                    }")
+                    val process = Runtime.getRuntime().exec(
+                        sudoCmd, null,
+                        if (workingDir.isEmpty()) null else File(workingDir)
+                    )
 
                     val output = process.inputStream.bufferedReader().use { it.readText() }
                     val errorOutput = process.errorStream.bufferedReader().use { it.readText() }
@@ -84,9 +88,13 @@ suspend fun executeCommandSudo(command: String, workingDir: String = ""): Boolea
 
                             // Use Sudo -s with a password received
                             val sudoCmd = arrayOf("/bin/sh", "-c", "echo '$password' | sudo -S $commandWithoutSudo")
-                            val process = Runtime.getRuntime().exec(sudoCmd, null,
-                                if (workingDir.isEmpty()) null else File(workingDir))
-                            logger.d("TasksManager", "Executing command: ${sudoCmd.joinToString(" ")}")
+                            val process = Runtime.getRuntime().exec(
+                                sudoCmd, null,
+                                if (workingDir.isEmpty()) null else File(workingDir)
+                            )
+                            logger.d("TasksManager", "Executing command: ${
+                                sudoCmd.joinToString(" ").replace(password, "*****")
+                            }")
                             val output = process.inputStream.bufferedReader().use { it.readText() }
                             val errorOutput = process.errorStream.bufferedReader().use { it.readText() }
                             val exitCode = process.waitFor()
