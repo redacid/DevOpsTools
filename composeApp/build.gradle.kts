@@ -67,9 +67,21 @@ compose.desktop {
                 "--add-modules=java.naming",
                 "-DbuildVersion=$buildVersion"
             )
-            targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb, TargetFormat.Rpm)
-            packageName = "ua.in.ios.devopstools"
+            targetFormats(TargetFormat.Deb, TargetFormat.Rpm)
+            packageName = "devopstools"
             packageVersion = version.toString()
+            description = "DevOps Tools Installer"
+            linux {
+                //iconFile.set(project.file("kubernetes_manager_icon.png"))
+                menuGroup = "Development;System"
+                shortcut = true
+                debMaintainer = "Serhii Rudenko <sr@ios.in.ua>"
+                appCategory = "System"
+                appRelease = "1"
+                debPackageVersion = packageVersion
+                rpmPackageVersion = packageVersion
+                appCategory = "Development/Tools"
+            }
         }
     }
 }
