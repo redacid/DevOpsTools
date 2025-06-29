@@ -1,6 +1,5 @@
 package ua.`in`.ios.devopstools
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -17,7 +16,6 @@ import kotlinx.coroutines.launch
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.window.DialogProperties
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -28,7 +26,337 @@ import java.nio.file.Files
 import java.nio.file.Paths
 import java.nio.file.StandardCopyOption
 import androidx.compose.ui.text.style.TextAlign
+import kotlin.collections.component1
+import kotlin.collections.component2
+import kotlin.text.ifEmpty
 
+@Composable
+fun installingGithub(task: JsonObject) {
+    var isInstalling by remember { mutableStateOf(false) }
+    var selectedAsset by remember { mutableStateOf("") }
+    var assetDownloadUrl by remember { mutableStateOf("") }
+    var filteredAssets by remember { mutableStateOf(listOf<String>()) }
+    var showInstallationDialog by remember { mutableStateOf(false) }
+    var installationStatus by remember { mutableStateOf("") }
+    var installationProgress by remember { mutableStateOf(0f) }
+    var name by remember { mutableStateOf(task.get("name")?.asString ?: "") }
+    var assetInstallType by remember { mutableStateOf("") }
+    val coroutineScope = rememberCoroutineScope()
+    val settingsManager = SettingsManager.getInstance()
+    val tasksManager = TasksManager.getInstance()
+    var binaryName by remember { mutableStateOf(task.get("binary_name")?.asString ?: "") }
+    var currentVersion by remember { mutableStateOf("") }
+    var githubUrl by remember { mutableStateOf("") }
+    var githubApiUrl by remember { mutableStateOf("") }
+    var installType by remember { mutableStateOf(task.get("install_type")?.asString ?: "") }
+    var installVersion by remember { mutableStateOf(task.get("install_version")?.asString ?: "") }
+    var isLoadingAssets by remember { mutableStateOf(false) }
+
+    if (task.has("github")) {
+        val githubObj = task.getAsJsonObject("github")
+        githubUrl = githubObj.get("url")?.asString ?: ""
+        githubApiUrl = githubObj.get("api_url")?.asString ?: ""
+
+        // Load installation file if already selected
+        if (githubObj.has("asset")) {
+            selectedAsset = githubObj.get("asset")?.asString ?: ""
+            assetInstallType = githubObj.get("asset_type")?.asString ?: ""
+        }
+    }
+
+    if (isInstalling || selectedAsset.isEmpty() || assetDownloadUrl.isEmpty()) return
+
+    suspend fun findBinary(directory: String, binaryName: String): String {
+        return withContext(Dispatchers.IO) {
+            try {
+                val dir = File(directory)
+
+                // Find the binary file recursively
+                fun searchRecursively(dir: File): File? {
+                    dir.listFiles()?.forEach { file ->
+                        if (file.isFile && file.name == binaryName && file.canExecute()) {
+                            return file
+                        } else if (file.isDirectory) {
+                            val found = searchRecursively(file)
+                            if (found != null) return found
+                        }
+                    }
+                    return null
+                }
+
+                val binaryFile = searchRecursively(dir)
+                binaryFile?.absolutePath ?: ""
+            } catch (e: Exception) {
+                logger.e("TasksManager", "Error finding binary file:", e)
+                ""
+            }
+        }
+    }
+
+    // Function to filter assets by patterns
+    fun filterAssetsByPatterns(assets: List<String>, assetUrlMap: Map<String, String>) {
+        val options = tasksManager.getAvailableInstallationOptions(task)
+        val filtered = mutableListOf<String>()
+
+        // Score each asset by patterns
+        val assetScores = mutableMapOf<String, Pair<Int, String>>() // asset -> (score, installType)
+
+        // Initialize scores
+        assets.forEach { assetScores[it] = Pair(0, "") }
+
+        // Check each pattern
+        options.forEach { (type, patterns) ->
+            patterns.forEach { pattern ->
+                val regexPattern = pattern.replace(".", "\\.").replace("*", ".*")
+                val regex = regexPattern.toRegex(RegexOption.IGNORE_CASE)
+
+                assets.forEach { asset ->
+                    if (regex.matches(asset)) {
+                        // Store highest score and install type
+                        val currentScore = assetScores[asset]?.first ?: 0
+                        val score = when (type) {
+                            "deb_based" -> 400
+                            "rpm_based" -> 300
+                            "package" -> 200
+                            "binary" -> 100
+                            else -> 50
+                        }
+
+                        if (score > currentScore) {
+                            assetScores[asset] = Pair(score, type)
+                        }
+                    }
+                }
+            }
+        }
+
+        // Select only those that scored more than 0
+        filtered.addAll(assetScores.filter { it.value.first > 0 }.keys.sorted())
+
+        filteredAssets = filtered
+
+        // Select first item if available
+        if (filtered.isNotEmpty() && (selectedAsset.isEmpty() || !filtered.contains(selectedAsset))) {
+            selectedAsset = filtered[0]
+            // Save install type
+            assetInstallType = assetScores[selectedAsset]?.second ?: ""
+            // Save download URL
+            assetDownloadUrl = assetUrlMap[selectedAsset] ?: ""
+        } else if (selectedAsset.isNotEmpty() && assetUrlMap.containsKey(selectedAsset)) {
+            assetDownloadUrl = assetUrlMap[selectedAsset] ?: ""
+        }
+    }
+
+    // Function to load available files for selected version
+    fun loadAssetsForVersion(version: String) {
+        if (installType != "github" || githubApiUrl.isEmpty()) return
+
+        isLoadingAssets = true
+        //availableAssets = listOf("Loading...")
+        selectedAsset = "" // Reset selected asset when version changes
+        assetDownloadUrl = "" // Reset download URL
+
+        coroutineScope.launch {
+            try {
+                //val releaseUrl = "$githubApiUrl/releases/tags/$version"
+                //val releaseJson = URL(releaseUrl).readText()
+                val release = tasksManager.getGithubReleaseByTag(githubApiUrl, version)
+                //val release = com.google.gson.JsonParser.parseString(releaseJson).asJsonObject
+
+                val assets = mutableListOf<String>()
+                val assetUrlMap = mutableMapOf<String, String>() // Map asset name to download URL
+
+                if (release?.has("assets") == true && release.get("assets").isJsonArray) {
+                    val assetsArray = release.getAsJsonArray("assets")
+                    for (i in 0 until assetsArray.size()) {
+                        val asset = assetsArray.get(i).asJsonObject
+                        val assetName = asset.get("name").asString
+                        assets.add(assetName)
+
+                        // Store download URL for each asset
+                        if (asset.has("browser_download_url")) {
+                            assetUrlMap[assetName] = asset.get("browser_download_url").asString
+                        }
+                    }
+                }
+
+                //availableAssets = assets
+                // Filter assets by patterns for current system
+                filterAssetsByPatterns(assets, assetUrlMap)
+
+            } catch (e: Exception) {
+                //availableAssets = listOf("Loading error")
+                filteredAssets = emptyList()
+                logger.e("TasksManager", "Error loading assets:", e)
+                e.printStackTrace()
+            }
+
+            isLoadingAssets = false
+        }
+    }
+
+    loadAssetsForVersion(installVersion)
+
+    // Show installation dialog
+    showInstallationDialog = true
+    isInstalling = true
+    installationStatus = "Preparing installation..."
+    installationProgress = 0.1f
+
+    // Для налагодження виведемо додаткову інформацію
+    logger.i("Installing", "Installing: $name")
+    logger.i("Installing", "Selected asset: $selectedAsset")
+    logger.i("Installing", "Asset type: $assetInstallType")
+    logger.i("Installing", "Download URL: $assetDownloadUrl")
+
+//    coroutineScope.launch {
+//        try {
+//            // Get temporary directory
+//            val tempDir = settingsManager.getString("settings.temp_path", "/tmp")
+//            val toolDir = "$tempDir/${name.replace(" ", "_")}"
+//
+//            // Create directory if it doesn't exist
+//            installationStatus = "Creating temporary directory..."
+//            installationProgress = 0.2f
+//            val toolDirFile = File(toolDir)
+//            if (!toolDirFile.exists()) {
+//                toolDirFile.mkdirs()
+//            }
+//
+//            // Створюємо шлях для завантаження файлу
+//            val destinationFile = "$toolDir/$selectedAsset"
+//
+//            // Download the file
+//            installationStatus = "Downloading file: $selectedAsset"
+//            installationProgress = 0.3f
+//
+//            val success = withContext(Dispatchers.IO) {
+//                try {
+//                    val destFile = File(destinationFile)
+//                    if (!destFile.parentFile.exists()) {
+//                        destFile.parentFile.mkdirs()
+//                    }
+//                    logger.i("Installing", "Downloading from: $assetDownloadUrl")
+//                    logger.i("Installing", "Downloading to: $destinationFile")
+//
+//                    URL(assetDownloadUrl).openStream().use { input ->
+//                        Files.copy(input, Paths.get(destinationFile), StandardCopyOption.REPLACE_EXISTING)
+//                    }
+//
+//                    // Перевіряємо чи файл був успішно завантажений
+//                    val downloadedFile = File(destinationFile)
+//                    if (!downloadedFile.exists()) {
+//                        installationStatus = "Download failed: File does not exist after download"
+//                        return@withContext false
+//                    }
+//                    logger.i("TasksManager", "File downloaded successfully: ${downloadedFile.absolutePath}, size: ${downloadedFile.length()} bytes")
+//                    true
+//                } catch (e: Exception) {
+//                    logger.e("TasksManager", "Error downloading file:", e)
+//                    installationStatus = "Download error: ${e.message}"
+//                    false
+//                }
+//            }
+//
+//            if (!success) {
+//                installationProgress = 1.0f
+//                isInstalling = false
+//                return@launch
+//            }
+//
+//            // Process the file based on its type
+//            installationStatus = "Installing..."
+//            installationProgress = 0.7f
+//
+//            // Для перевірки файлу перед встановленням
+//            val fileToInstall = File(destinationFile)
+//            if (!fileToInstall.exists()) {
+//                installationStatus = "Installation failed: File not found at $destinationFile"
+//                installationProgress = 1.0f
+//                isInstalling = false
+//                return@launch
+//            }
+//
+//            val installResult = when (assetInstallType) {
+//                "deb_based" -> {
+//                    // Install DEB package
+//                    val command = "sudo dpkg -i $destinationFile"
+//                    executeCommandSudo(command)
+//                }
+//                "rpm_based" -> {
+//                    // Install RPM package
+//                    val command = "sudo rpm -i $destinationFile"
+//                    executeCommandSudo(command)
+//                }
+//                "package" -> {
+//                    // Extract and copy binary from package
+//                    // Extract the archive
+//                    if (selectedAsset.endsWith(".tar.gz")) {
+//                        val extractCommand = "tar -xzf $destinationFile -C $toolDir"
+//                        val extractResult = executeCommandSudo(extractCommand)
+//
+//                        if (extractResult) {
+//                            // Find the binary and copy it to the installation path
+//                            val installPath = settingsManager.getString("settings.install_path", "/usr/bin")
+//                            val binaryFile = binaryName.ifEmpty { name }
+//                            // Search for the binary in the extracted files
+//                            val foundBinary = findBinary(toolDir, binaryFile)
+//
+//                            if (foundBinary.isNotEmpty()) {
+//                                val copyCommand = "sudo cp $foundBinary $installPath/$binaryFile"
+//                                val chmodCommand = "sudo chmod +x $installPath/$binaryFile"
+//
+//                                executeCommandSudo(copyCommand) && executeCommandSudo(chmodCommand)
+//
+//                            } else {
+//                                installationStatus = "Binary not found in the package"
+//                                false
+//                            }
+//                        } else {
+//                            false
+//                        }
+//                    } else {
+//                        installationStatus = "Unsupported package format"
+//                        false
+//                    }
+//                }
+//                "binary" -> {
+//                    // Copy binary file directly
+//                    val installPath = settingsManager.getString("settings.install_path", "/usr/bin")
+//                    val binaryFile = binaryName.ifEmpty { name }
+//                    // Make the binary executable
+//                    val chmodCommand = "chmod +x $destinationFile"
+//                    val copyCommand = "sudo cp $destinationFile $installPath/$binaryFile"
+//                    val finalChmodCommand = "sudo chmod +x $installPath/$binaryFile"
+//                    executeCommandSudo(chmodCommand) && executeCommandSudo(copyCommand) && executeCommandSudo(finalChmodCommand)
+//                }
+//                else -> {
+//                    installationStatus = "Unsupported installation type: $assetInstallType"
+//                    false
+//                }
+//            }
+//
+//            installationProgress = 0.9f
+//
+//            if (installResult) {
+//                installationStatus = "Installation completed successfully"
+//                // Refresh current version after installation
+//                delay(1000) // Wait a moment for the installation to settle
+//                currentVersion = getInstallTypeForTask(task)?.getCurrentVersion(task) ?: "Unknown"
+//            } else {
+//                installationStatus = "Installation failed"
+//            }
+//
+//        } catch (e: Exception) {
+//            installationStatus = "Installation error: ${e.message}"
+//            logger.e("Installing", "Installation error", e)
+//            e.printStackTrace()
+//        } finally {
+//            installationProgress = 1.0f
+//            isInstalling = false
+//        }
+//    }
+}
 
 fun getInstallTypeForTask(task: JsonObject): InstallType? {
     val installType = task.get("install_type")?.asString ?: return null
@@ -75,7 +403,7 @@ fun InstallationOptionsSection(task: JsonObject) {
 
             patterns.forEach { pattern ->
                 Text(
-                    text = "• $pattern",
+                    text = "$pattern",
                     style = MaterialTheme.typography.bodyMedium,
                     modifier = Modifier.padding(start = 16.dp, bottom = 2.dp)
                 )
@@ -99,10 +427,6 @@ fun TaskEditDialog(
                 add(entry.key, entry.value)
             }
         }
-
-        //val taskName = remember { mutableStateOf(TextFieldValue(task.get("name")?.asString ?: "")) }
-        //val taskDescription = remember { mutableStateOf(TextFieldValue(task.get("description")?.asString ?: "")) }
-
         var name by remember { mutableStateOf(task.get("name")?.asString ?: "") }
         var description by remember { mutableStateOf(task.get("description")?.asString ?: "") }
         var binaryName by remember { mutableStateOf(task.get("binary_name")?.asString ?: "") }
@@ -111,32 +435,27 @@ fun TaskEditDialog(
         var installedAs by remember { mutableStateOf(task.get("installed_as")?.asString ?: "") }
         var enabled by remember { mutableStateOf(task.get("enabled")?.asBoolean ?: false) }
         var installVersion by remember { mutableStateOf(task.get("install_version")?.asString ?: "") }
-
         // For version checking
         var currentVersion by remember { mutableStateOf("") }
         var isCheckingCurrentVersion by remember { mutableStateOf(false) }
         var availableVersions by remember { mutableStateOf(listOf<String>()) }
         var isLoadingVersions by remember { mutableStateOf(false) }
         var selectedVersion by remember { mutableStateOf("") }
-
         // For installation file selection
         //var availableAssets by remember { mutableStateOf(listOf<String>()) }
         var isLoadingAssets by remember { mutableStateOf(false) }
         var selectedAsset by remember { mutableStateOf("") }
         var filteredAssets by remember { mutableStateOf(listOf<String>()) }
         var assetInstallType by remember { mutableStateOf("") }
-
         // For installation process
         var isInstalling by remember { mutableStateOf(false) }
         var installationStatus by remember { mutableStateOf("") }
         var installationProgress by remember { mutableStateOf(0f) }
         var showInstallationDialog by remember { mutableStateOf(false) }
-
         // GitHub-specific fields, if they exist
         var githubUrl by remember { mutableStateOf("") }
         var githubApiUrl by remember { mutableStateOf("") }
         var assetDownloadUrl by remember { mutableStateOf("") }
-
         if (task.has("github")) {
             val githubObj = task.getAsJsonObject("github")
             githubUrl = githubObj.get("url")?.asString ?: ""
@@ -148,7 +467,6 @@ fun TaskEditDialog(
                 assetInstallType = githubObj.get("asset_type")?.asString ?: ""
             }
         }
-
         // Create scope for coroutines
         val coroutineScope = rememberCoroutineScope()
         val tasksManager = TasksManager.getInstance()
@@ -253,7 +571,6 @@ fun TaskEditDialog(
                     }
 
                     //availableAssets = assets
-
                     // Filter assets by patterns for current system
                     filterAssetsByPatterns(assets, assetUrlMap)
 
@@ -261,7 +578,6 @@ fun TaskEditDialog(
                     //availableAssets = listOf("Loading error")
                     filteredAssets = emptyList()
                     logger.e("TasksManager", "Error loading assets:", e)
-                    //println("Error loading assets: ${e.message}")
                     e.printStackTrace()
                 }
 
@@ -336,30 +652,6 @@ fun TaskEditDialog(
             }
         }
 
-        // Helper function to execute shell commands
-        suspend fun executeCommand2(command: String): Boolean {
-            return withContext(Dispatchers.IO) {
-                try {
-                    logger.i("TasksManager", "Executing command: $command")
-                    val process = Runtime.getRuntime().exec(arrayOf("/bin/sh", "-c", command))
-                    val exitCode = process.waitFor()
-
-                    if (exitCode != 0) {
-                        val errorStream = process.errorStream.bufferedReader().readText()
-                        logger.e("TasksManager", "Command failed with exit code $exitCode: $errorStream")
-                        installationStatus = "Command failed: $errorStream"
-                        false
-                    } else {
-                        true
-                    }
-                } catch (e: Exception) {
-                    logger.e("TasksManager", "Error executing command:", e)
-                    installationStatus = "Command error: ${e.message}"
-                    false
-                }
-            }
-        }
-
         // Helper function to find a binary file in a directory
         suspend fun findBinary(directory: String, binaryName: String): String {
             return withContext(Dispatchers.IO) {
@@ -399,10 +691,10 @@ fun TaskEditDialog(
             installationProgress = 0.1f
 
             // Для налагодження виведемо додаткову інформацію
-            logger.i("TasksManager", "Installing: $name")
-            logger.i("TasksManager", "Selected asset: $selectedAsset")
-            logger.i("TasksManager", "Asset type: $assetInstallType")
-            logger.i("TasksManager", "Download URL: $assetDownloadUrl")
+            logger.i("Installing", "Installing: $name")
+            logger.i("Installing", "Selected asset: $selectedAsset")
+            logger.i("Installing", "Asset type: $assetInstallType")
+            logger.i("Installing", "Download URL: $assetDownloadUrl")
 
             coroutineScope.launch {
                 try {
@@ -431,8 +723,8 @@ fun TaskEditDialog(
                             if (!destFile.parentFile.exists()) {
                                 destFile.parentFile.mkdirs()
                             }
-                            logger.i("TasksManager", "Downloading from: $assetDownloadUrl")
-                            logger.i("TasksManager", "Downloading to: $destinationFile")
+                            logger.i("Installing", "Downloading from: $assetDownloadUrl")
+                            logger.i("Installing", "Downloading to: $destinationFile")
 
                             URL(assetDownloadUrl).openStream().use { input ->
                                 Files.copy(input, Paths.get(destinationFile), StandardCopyOption.REPLACE_EXISTING)
@@ -494,7 +786,6 @@ fun TaskEditDialog(
                                     // Find the binary and copy it to the installation path
                                     val installPath = settingsManager.getString("settings.install_path", "/usr/bin")
                                     val binaryFile = binaryName.ifEmpty { name }
-
                                     // Search for the binary in the extracted files
                                     val foundBinary = findBinary(toolDir, binaryFile)
 
@@ -520,12 +811,10 @@ fun TaskEditDialog(
                             // Copy binary file directly
                             val installPath = settingsManager.getString("settings.install_path", "/usr/bin")
                             val binaryFile = binaryName.ifEmpty { name }
-
                             // Make the binary executable
                             val chmodCommand = "chmod +x $destinationFile"
                             val copyCommand = "sudo cp $destinationFile $installPath/$binaryFile"
                             val finalChmodCommand = "sudo chmod +x $installPath/$binaryFile"
-
                             executeCommandSudo(chmodCommand) && executeCommandSudo(copyCommand) && executeCommandSudo(finalChmodCommand)
                         }
                         else -> {
@@ -547,7 +836,7 @@ fun TaskEditDialog(
 
                 } catch (e: Exception) {
                     installationStatus = "Installation error: ${e.message}"
-                    logger.e("TasksManager", "Installation error", e)
+                    logger.e("Installing", "Installation error", e)
                     e.printStackTrace()
                 } finally {
                     installationProgress = 1.0f
@@ -730,7 +1019,11 @@ fun TaskEditDialog(
                                                 trailingIcon = {
                                                     ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)
                                                 },
-                                                modifier = Modifier.menuAnchor().fillMaxWidth(),
+                                                modifier = Modifier.menuAnchor(
+                                                    type = MenuAnchorType.PrimaryNotEditable,
+                                                    enabled = true
+                                                ).fillMaxWidth(),
+
                                                 singleLine = true
                                             )
 
@@ -801,6 +1094,7 @@ fun TaskEditDialog(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
+
                                 OutlinedTextField(
                                     value = githubUrl,
                                     onValueChange = { githubUrl = it },
@@ -808,7 +1102,23 @@ fun TaskEditDialog(
                                     modifier = Modifier.weight(1f).padding(vertical = 4.dp),
                                     singleLine = true
                                 )
-
+                                IconButton(
+                                    onClick = {
+                                        if (githubUrl.isNotEmpty()) {
+                                            // Open GitHub repository in browser
+                                            try {
+                                                val url = java.net.URI(githubUrl).toURL()
+                                                java.awt.Desktop.getDesktop().browse(url.toURI())
+                                            } catch (e: Exception) {
+                                                logger.e("TasksManager", "Error opening URL:", e)
+                                            }
+                                        }
+                                    },
+                                    enabled = githubUrl.isNotEmpty()
+                                ) {
+                                    Icon(ICON_LINK, contentDescription = "Open")
+                                    Spacer(Modifier.width(4.dp))
+                                }
                                 OutlinedTextField(
                                     value = githubApiUrl,
                                     onValueChange = { githubApiUrl = it },
@@ -842,7 +1152,11 @@ fun TaskEditDialog(
                                         trailingIcon = {
                                             ExposedDropdownMenuDefaults.TrailingIcon(expanded = assetExpanded)
                                         },
-                                        modifier = Modifier.menuAnchor().fillMaxWidth(),
+                                        modifier = Modifier.menuAnchor(
+                                            type = MenuAnchorType.PrimaryNotEditable,
+                                            enabled = true
+                                        ).fillMaxWidth(),
+
                                         singleLine = true
                                     )
 
@@ -892,32 +1206,33 @@ fun TaskEditDialog(
                                 modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
                                 horizontalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
-                                Button(
-                                    onClick = { loadAvailableVersions() },
-                                    //modifier = Modifier.weight(1f),
-                                    enabled = !isLoadingVersions && githubApiUrl.isNotEmpty()
-                                ) {
-                                    Text("Check Available Versions")
-                                }
+//                                Button(
+//                                    onClick = { loadAvailableVersions() },
+//                                    //modifier = Modifier.weight(1f),
+//                                    enabled = !isLoadingVersions && githubApiUrl.isNotEmpty()
+//                                ) {
+//                                    Text("Check Available Versions")
+//                                }
 
-                                OutlinedButton(
-                                    onClick = {
-                                        if (githubUrl.isNotEmpty()) {
-                                            // Open GitHub repository in browser
-                                            try {
-                                                val url = java.net.URI(githubUrl).toURL()
-                                                java.awt.Desktop.getDesktop().browse(url.toURI())
-                                            } catch (e: Exception) {
-                                                logger.e("TasksManager", "Error opening URL:", e)
-                                                //println("Error opening URL: ${e.message}")
-                                            }
-                                        }
-                                    },
-                                    //modifier = Modifier.weight(1f),
-                                    enabled = githubUrl.isNotEmpty()
-                                ) {
-                                    Text("Open Repository")
-                                }
+//                                OutlinedButton(
+//                                    onClick = {
+//                                        if (githubUrl.isNotEmpty()) {
+//                                            // Open GitHub repository in browser
+//                                            try {
+//                                                val url = java.net.URI(githubUrl).toURL()
+//                                                java.awt.Desktop.getDesktop().browse(url.toURI())
+//                                            } catch (e: Exception) {
+//                                                logger.e("TasksManager", "Error opening URL:", e)
+//                                            }
+//                                        }
+//                                    },
+//                                    //modifier = Modifier.weight(1f),
+//                                    enabled = githubUrl.isNotEmpty()
+//                                ) {
+//                                    Icon(ICON_LINK, contentDescription = "Open")
+//                                    Spacer(Modifier.width(4.dp))
+//                                    Text("Open")
+//                                }
                             }
                         }
 
@@ -1036,7 +1351,7 @@ fun TaskAddDialog(
                 val apiUrl = tasksManager.convertGithubUrlToApiUrl(githubUrl)
                 if (apiUrl.isNotEmpty()) {
                     githubApiUrl = apiUrl
-                    logger.i("TasksManager", "Generated API URL: $apiUrl from GitHub URL: $githubUrl")
+                    logger.i("TaskAddDialog", "Generated API URL: $apiUrl from GitHub URL: $githubUrl")
                 }
             }
         }
@@ -1155,7 +1470,10 @@ fun TaskAddDialog(
                                         trailingIcon = {
                                             ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedInstallType)
                                         },
-                                        modifier = Modifier.menuAnchor().fillMaxWidth(),
+                                        modifier = Modifier.menuAnchor(
+                                            type = MenuAnchorType.PrimaryNotEditable,
+                                            enabled = true
+                                        ).fillMaxWidth(),
                                         singleLine = true
                                     )
 
@@ -1271,8 +1589,7 @@ fun TaskAddDialog(
                                             val url = java.net.URI(githubUrl).toURL()
                                             java.awt.Desktop.getDesktop().browse(url.toURI())
                                         } catch (e: Exception) {
-                                            logger.e("TasksManager", "Error opening URL:", e)
-                                            //println("Error opening URL: ${e.message}")
+                                            logger.e("TaskAddDialog", "Error opening URL:", e)
                                         }
                                     }
                                 },
@@ -1364,35 +1681,12 @@ fun TasksTable() {
             }
             installedVersions = versions
         }
-
     }
 
     // Function to update task list after any operation
-    fun refreshTasksList() {
-        val updatedTasksArray = tasksManager.getTasksArray()
-        tasks = buildList {
-            if (updatedTasksArray != null) {
-                for (i in 0 until updatedTasksArray.size()) {
-                    add(updatedTasksArray.get(i).asJsonObject)
-                }
-            }
-        }
-        // Update installed versions after refreshing task list
-        coroutineScope.launch {
-            val versions = mutableMapOf<String, String>()
-            tasks.forEach { task ->
-                val name = task.get("name")?.asString ?: "unknown"
-                versions[name] = TaskUtils.checkCurrentVersion(task)
-            }
-            installedVersions = versions
-        }
-
-    }
-
     fun refreshTasks() {
         isLoading = true
         val tasksArray = tasksManager.getTasksArray()
-
         val tasksList = mutableListOf<JsonObject>()
         if (tasksArray != null) {
             for (i in 0 until tasksArray.size()) {
@@ -1400,10 +1694,8 @@ fun TasksTable() {
                 tasksList.add(task)
             }
         }
-
         tasks = tasksList
         isLoading = false
-
         // Update installed versions after refreshing tasks
         coroutineScope.launch {
             val versions = mutableMapOf<String, String>()
@@ -1413,7 +1705,6 @@ fun TasksTable() {
             }
             installedVersions = versions
         }
-
     }
 
     Column(
@@ -1425,7 +1716,6 @@ fun TasksTable() {
             style = MaterialTheme.typography.headlineMedium,
             modifier = Modifier.padding(bottom = 16.dp)
         )
-
         // Refresh tasks button
         Row(
             modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
@@ -1437,7 +1727,13 @@ fun TasksTable() {
             ) {
                 Text("Download task list")
             }
-
+            Button(
+                onClick = { refreshTasks() },
+            ) {
+                Icon(ICON_REFRESH, contentDescription = "Refresh")
+                Spacer(Modifier.width(4.dp))
+                Text("Refresh")
+            }
             Button(
                 onClick = { showAddDialog = true }
             ) {
@@ -1445,12 +1741,10 @@ fun TasksTable() {
                 Spacer(Modifier.width(4.dp))
                 Text("Add")
             }
-
             // Show loading indicator
             if (isLoading) {
                 CircularProgressIndicator(modifier = Modifier.size(24.dp))
             }
-
             // Show loading result
             loadResult?.let { success ->
                 if (success) {
@@ -1480,13 +1774,14 @@ fun TasksTable() {
                 modifier = Modifier.fillMaxWidth()
             ) {
                 // Define constant relative sizes for columns
-                val nameWidth = 0.12f
+                val nameWidth = 0.10f
                 val descriptionWidth = 0.25f
                 val installTypeWidth = 0.12f
-                val versionWidth = 0.12f
+                val versionWidth = 0.10f
                 val installedVersionWidth = 0.12f
                 val statusWidth = 0.07f
-                val actionsWidth = 0.20f
+                val installWidth = 0.14f
+                val actionsWidth = 0.10f
 
                 // Table headers
                 Surface(
@@ -1537,6 +1832,13 @@ fun TasksTable() {
                             textAlign = TextAlign.Center
                         )
                         Text(
+                            "Install",
+                            style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                            modifier = Modifier.weight(installWidth),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            textAlign = TextAlign.Center
+                        )
+                        Text(
                             "Actions",
                             style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
                             modifier = Modifier.weight(actionsWidth),
@@ -1544,7 +1846,6 @@ fun TasksTable() {
                             textAlign = TextAlign.Center
                         )
                     }
-
                 }
                 HorizontalDivider()
                 // Tasks list
@@ -1631,10 +1932,18 @@ fun TasksTable() {
                                     }
                                 )
                             }
-
+                            // Install
+                            Row(
+                                modifier = Modifier.weight(installWidth),
+                                horizontalArrangement = Arrangement.Center,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                InstallButton(task)
+                            }
                             // Actions
                             var showDeleteConfirmation by remember { mutableStateOf(false) }
                             var showEditDialog by remember { mutableStateOf(false) }
+
 
                             Row(
                                 modifier = Modifier.weight(actionsWidth),
@@ -1645,7 +1954,6 @@ fun TasksTable() {
                                 IconButton(onClick = { showEditDialog = true }) {
                                     Icon(ICON_EDIT, contentDescription = "Edit")
                                 }
-
                                 // Delete button
                                 IconButton(onClick = { showDeleteConfirmation = true }) {
                                     Icon(ICON_DELETE, contentDescription = "Delete")
@@ -1661,7 +1969,8 @@ fun TasksTable() {
                                 onConfirm = {
                                     val name = task.get("name")?.asString ?: return@ConfirmationDialog
                                     tasksManager.removeTask(name)
-                                    refreshTasksList()
+                                    //refreshTasksList()
+                                    refreshTasks()
                                 },
                                 title = "Delete Confirmation",
                                 text = "Are you sure you want to delete the task \"$taskName\"?",
@@ -1678,7 +1987,8 @@ fun TasksTable() {
                                         val name = task.get("name")?.asString ?: return@TaskEditDialog
                                         val result = tasksManager.updateTask(name, updatedTask)
                                         if (result) {
-                                            refreshTasksList()
+                                            //refreshTasksList()
+                                            refreshTasks()
                                             showEditDialog = false
                                         }
                                     }
@@ -1720,7 +2030,8 @@ fun TasksTable() {
                 loadResult = success
 
                 if (success) {
-                    refreshTasksList()
+                    //refreshTasksList()
+                    refreshTasks()
                 }
             }
         }

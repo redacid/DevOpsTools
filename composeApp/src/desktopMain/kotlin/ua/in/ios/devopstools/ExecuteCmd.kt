@@ -138,7 +138,7 @@ suspend fun executeCommandSudo(command: String, workingDir: String = ""): Boolea
                 logger.e("TasksManager", "Failed to execute sudo command - no suitable sudo method available")
                 return@withContext false
             } else {
-                // Якщо команда не потребує sudo, виконуємо її звичайним способом
+                // If the command does not need Sudo, perform it in the usual way
                 val result = executeCommandDirect(command, workingDir)
                 return@withContext result.first == 0
             }
@@ -157,7 +157,7 @@ suspend fun executeCommandDirect(command: String, workingDir: String = ""): Pair
                 processBuilder.directory(File(workingDir))
             }
 
-            // Розділяємо команду на аргументи
+            // Divide the command into arguments
             val args = command.split("\\s+".toRegex())
             processBuilder.command(args)
 

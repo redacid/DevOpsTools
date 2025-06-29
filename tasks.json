@@ -141,6 +141,70 @@
         "url": "https://github.com/helm/helm",
         "api_url": "https://api.github.com/repos/helm/helm"
       }
+    },
+    {
+      "name": "cmctl",
+      "description": "The cert-manager Command Line Tool",
+      "binary_name": "cmctl",
+      "install_type": "github",
+      "version_cmd": "version",
+      "installed_as": "",
+      "enabled": true,
+      "install_version": "v2.2.0",
+      "github": {
+        "url": "https://github.com/cert-manager/cmctl",
+        "api_url": "https://api.github.com/repos/cert-manager/cmctl",
+        "asset": "cmctl_linux_amd64",
+        "asset_type": "binary"
+      }
+    },
+    {
+      "name": "eksctl",
+      "description": "The official CLI for Amazon EKS",
+      "binary_name": "eksctl",
+      "install_type": "github",
+      "version_cmd": "version",
+      "installed_as": "",
+      "enabled": true,
+      "install_version": "v0.210.0",
+      "github": {
+        "url": "https://github.com/eksctl-io/eksctl",
+        "api_url": "https://api.github.com/repos/eksctl-io/eksctl",
+        "asset": "eksctl_Linux_amd64.tar.gz",
+        "asset_type": "package"
+      }
+    },
+    {
+      "name": "gh",
+      "description": "gh is GitHub on the command line. It brings pull requests, issues, and other GitHub concepts to the terminal next to where you are already working with git and your code",
+      "binary_name": "gh",
+      "install_type": "github",
+      "version_cmd": "--version",
+      "installed_as": "",
+      "enabled": true,
+      "install_version": "v2.74.2",
+      "github": {
+        "url": "https://github.com/cli/cli/",
+        "api_url": "https://api.github.com/repos/cli/cli",
+        "asset": "gh_2.74.2_linux_amd64.deb",
+        "asset_type": "deb_based"
+      }
+    },
+    {
+      "name": "kubeconform",
+      "description": "Kubeconform is a Kubernetes manifest validation tool. Incorporate it into your CI, or use it locally to validate your Kubernetes configuration!",
+      "binary_name": "kubeconform",
+      "install_type": "github",
+      "version_cmd": "-v",
+      "installed_as": "",
+      "enabled": true,
+      "install_version": "v0.6.8",
+      "github": {
+        "url": "https://github.com/redacid/kubeconform",
+        "api_url": "https://api.github.com/repos/redacid/kubeconform",
+        "asset": "kubeconform-linux-amd64.tar.gz",
+        "asset_type": "package"
+      }
     }
   ]
 }
