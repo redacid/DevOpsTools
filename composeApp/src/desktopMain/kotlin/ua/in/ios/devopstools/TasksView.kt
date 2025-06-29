@@ -1938,7 +1938,10 @@ fun TasksTable() {
                                 horizontalArrangement = Arrangement.Center,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                InstallButton(task)
+                                InstallButton(
+                                    task,
+                                    onInstallComplete = { refreshTasks() }
+                                )
                             }
                             // Actions
                             var showDeleteConfirmation by remember { mutableStateOf(false) }

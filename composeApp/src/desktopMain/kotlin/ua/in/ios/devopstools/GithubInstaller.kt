@@ -328,7 +328,7 @@ class GithubInstaller {
 }
 
 @Composable
-fun InstallButton(task: JsonObject) {
+fun InstallButton(task: JsonObject, onInstallComplete: () -> Unit) {
     var isInstalling by remember { mutableStateOf(false) }
     var installationStatus by remember { mutableStateOf("") }
     var installationProgress by remember { mutableStateOf(0f) }
@@ -343,6 +343,7 @@ fun InstallButton(task: JsonObject) {
                     installationStatus = state.installationStatus
                     installationProgress = state.installationProgress
                 }
+                onInstallComplete()
             }
         },
         enabled = !isInstalling
