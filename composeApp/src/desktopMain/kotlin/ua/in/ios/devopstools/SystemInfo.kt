@@ -194,8 +194,7 @@ class SystemInfo private constructor() {
             try {
                 Files.createDirectories(Paths.get(info.packageCachePath))
             } catch (e: Exception) {
-                logger.e("TasksManager", "Error creating package cache directory", e)
-                //println("Error creating package cache directory: ${e.message}")
+                logger.e("SystemInfo.detectSystemInfo", "Error creating package cache directory", e)
             }
         }
 

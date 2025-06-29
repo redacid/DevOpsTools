@@ -891,11 +891,11 @@ object TaskUtils {
                         "Not installed"
                     }
                 } else {
-                    logger.w("TaskUtils", "Could not determine installation type for task: ${task.get("name")?.asString ?: "unknown"}")
+                    logger.w("TaskUtils.checkCurrentVersion", "Could not determine installation type for task: ${task.get("name")?.asString ?: "unknown"}")
                     "Check error"
                 }
             } catch (e: Exception) {
-                logger.e("TaskUtils", "Error checking current version", e)
+                logger.e("TaskUtils.checkCurrentVersion", "Error checking current version", e)
                 "Check error: ${e.message}"
             }
         }
@@ -921,7 +921,7 @@ object TaskUtils {
                     return matchResult.groupValues[1]
                 }
             } catch (e: Exception) {
-                logger.e("TaskUtils", "Error parsing version with pattern: $versionPattern", e)
+                logger.e("TaskUtils.extractVersionNumber", "Error parsing version with pattern: $versionPattern", e)
             }
         }
 
@@ -986,7 +986,7 @@ object TaskUtils {
                     return matchResult.groupValues[1]
                 }
             } catch (e: Exception) {
-                logger.e("TaskUtils", "Error parsing version with pattern: $versionPattern", e)
+                logger.e("TaskUtils.extractVersionNumber2", "Error parsing version with pattern: $versionPattern", e)
             }
         }
 
@@ -1020,7 +1020,7 @@ object TaskUtils {
                 return matchResult.groupValues[1]
             }
         } catch (e: Exception) {
-            logger.e("TaskUtils", "Error parsing version with simplified pattern", e)
+            logger.e("TaskUtils.extractVersionNumber2", "Error parsing version with simplified pattern", e)
         }
 
         // Якщо нічого не знайдено, повертаємо обрізаний вивід (перший рядок)

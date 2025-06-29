@@ -158,8 +158,6 @@ class GithubInstaller {
         task: JsonObject,
         onStateChange: (InstallationState) -> Unit
     ) {
-        //val state = InstallationState()
-
         try {
             // Initialize state from task
             state.name = task.get("name")?.asString ?: ""
@@ -205,8 +203,6 @@ class GithubInstaller {
             state.installationStatus = "Downloading file: ${state.selectedAsset}"
             state.installationProgress = 0.3f
             onStateChange(state)
-
-
 
             val downloadSuccess = withContext(Dispatchers.IO) {
                 try {
@@ -371,5 +367,4 @@ fun InstallButton(task: JsonObject, onInstallComplete: () -> Unit) {
             )
         }
     }
-
 }

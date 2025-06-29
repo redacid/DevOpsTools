@@ -46,9 +46,9 @@ suspend fun executeCommandSudo(command: String, workingDir: String = ""): Boolea
                 val cachedPassword = SudoPasswordCache.getPassword()
                 if (cachedPassword != null && hasZenity) {
                     // Use cached password
-                    logger.i("TasksManager", "Using cached sudo password")
+                    logger.i("executeCommandSudo.cachedPassword", "Using cached sudo password")
                     val sudoCmd = arrayOf("/bin/sh", "-c", "echo '$cachedPassword' | sudo -S $commandWithoutSudo")
-                    logger.d("TasksManager", "Executing command: ${
+                    logger.d("executeCommandSudo.cachedPassword", "Executing command: ${
                         sudoCmd.joinToString(" ").replace(cachedPassword, "*****")
                     }")
                     val process = Runtime.getRuntime().exec(
@@ -66,7 +66,7 @@ suspend fun executeCommandSudo(command: String, workingDir: String = ""): Boolea
                     } else {
                         // If the command is not fulfilled (perhaps the password is no longer valid),
                         // clean the cache and continue with other methods
-                        logger.w("TasksManager", "Cached sudo password failed, clearing cache")
+                        logger.w("executeCommandSudo.cachedPassword", "Cached sudo password failed, clearing cache")
                         SudoPasswordCache.clearPassword()
                     }
                 }
@@ -74,7 +74,7 @@ suspend fun executeCommandSudo(command: String, workingDir: String = ""): Boolea
                 // If there is no cached password or it has not worked, try other methods
                 // Let's try to use Zenity to request a password (and cache)
                 if (hasZenity) {
-                    logger.i("TasksManager", "Using zenity for sudo password")
+                    logger.i("executeCommandSudo.hasZenity", "Using zenity for sudo password")
                     try {
                         // Ask the password via Zenity
                         val passwordCmd = arrayOf("zenity", "--password", "--title=Введіть пароль адміністратора")
@@ -92,7 +92,7 @@ suspend fun executeCommandSudo(command: String, workingDir: String = ""): Boolea
                                 sudoCmd, null,
                                 if (workingDir.isEmpty()) null else File(workingDir)
                             )
-                            logger.d("TasksManager", "Executing command: ${
+                            logger.d("executeCommandSudo.hasZenity", "Executing command: ${
                                 sudoCmd.joinToString(" ").replace(password, "*****")
                             }")
                             val output = process.inputStream.bufferedReader().use { it.readText() }
@@ -107,12 +107,12 @@ suspend fun executeCommandSudo(command: String, workingDir: String = ""): Boolea
                             return@withContext exitCode == 0
                         }
                     } catch (e: Exception) {
-                        logger.e("TasksManager", "Error with zenity+sudo: ${e.message}")
+                        logger.e("executeCommandSudo.hasZenity", "Error with zenity+sudo: ${e.message}")
                     }
                 }
 
                 if (hasPkexec) {
-                    logger.i("TasksManager", "Using pkexec for sudo command")
+                    logger.i("executeCommandSudo.hasPkexec", "Using pkexec for sudo command")
                     val result = executeCommandDirect("pkexec $commandWithoutSudo", workingDir)
                     if (result.first == 0) {
                         return@withContext true
@@ -120,7 +120,7 @@ suspend fun executeCommandSudo(command: String, workingDir: String = ""): Boolea
                 }
 
                 if (hasGksudo) {
-                    logger.i("TasksManager", "Using gksudo for sudo command")
+                    logger.i("executeCommandSudo.hasGksudo", "Using gksudo for sudo command")
                     val result = executeCommandDirect("gksudo $commandWithoutSudo", workingDir)
                     if (result.first == 0) {
                         return@withContext true
@@ -128,14 +128,14 @@ suspend fun executeCommandSudo(command: String, workingDir: String = ""): Boolea
                 }
 
                 if (hasKdesu) {
-                    logger.i("TasksManager", "Using kdesu for sudo command")
+                    logger.i("executeCommandSudo.hasKdesu", "Using kdesu for sudo command")
                     val result = executeCommandDirect("kdesu $commandWithoutSudo", workingDir)
                     if (result.first == 0) {
                         return@withContext true
                     }
                 }
 
-                logger.e("TasksManager", "Failed to execute sudo command - no suitable sudo method available")
+                logger.e("executeCommandSudo", "Failed to execute sudo command - no suitable sudo method available")
                 return@withContext false
             } else {
                 // If the command does not need Sudo, perform it in the usual way
@@ -143,7 +143,7 @@ suspend fun executeCommandSudo(command: String, workingDir: String = ""): Boolea
                 return@withContext result.first == 0
             }
         } catch (e: Exception) {
-            logger.e("TasksManager", "Error executing sudo command: ${e.message}")
+            logger.e("executeCommandSudo", "Error executing sudo command: ${e.message}")
             return@withContext false
         }
     }
@@ -174,7 +174,7 @@ suspend fun executeCommandDirect(command: String, workingDir: String = ""): Pair
 
             Pair(exitCode, combinedOutput.trim())
         } catch (e: Exception) {
-            logger.e("TasksManager", "Error when executing direct command '$command'", e)
+            logger.e("executeCommandDirect", "Error when executing direct command '$command'", e)
             Pair(-1, e.message ?: "Unknown error")
         }
     }

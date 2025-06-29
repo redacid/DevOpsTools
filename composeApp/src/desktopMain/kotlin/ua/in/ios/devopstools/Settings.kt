@@ -41,7 +41,7 @@ class SettingsManager {
                 settings = JsonParser.parseReader(reader).asJsonObject
             }
         } catch (e: Exception) {
-            logger.e("TasksManager", "Error loading settings", e)
+            logger.e("SettingsManager.loadSettings", "Error loading settings", e)
             //println("Помилка завантаження налаштувань: ${e.message}")
             createDefaultSettings()
         }
@@ -58,11 +58,11 @@ class SettingsManager {
                 // install_types масив
                 val installTypesArray = gson.toJsonTree(arrayOf(
                     "github",
-                    "distributive_package",
-                    "package",
-                    "remote_shell_script",
-                    "shell_cmd",
-                    "package_manager"
+//                    "distributive_package",
+//                    "package",
+//                    "remote_shell_script",
+//                    "shell_cmd",
+//                    "package_manager"
                 )).asJsonArray
                 add("install_types", installTypesArray)
 
@@ -184,7 +184,7 @@ class SettingsManager {
                 gson.toJson(settings, writer)
             }
         } catch (e: Exception) {
-            logger.e("TasksManager", "Error saving settings", e)
+            logger.e("SettingsManager.saveSettings", "Error saving settings", e)
             //println("Помилка збереження налаштувань: ${e.message}")
         }
     }
