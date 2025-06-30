@@ -319,15 +319,13 @@ class GithubInstallType : BaseInstallType() {
         val binaryName = task.get("binary_name")?.asString ?: return ""
         val versionCmd = task.get("version_cmd")?.asString ?: "--version"
 
-//        val (exitCode, output) = executeCommand("$binaryName $versionCmd")
+        val (exitCode, _) = executeCommand("which $binaryName")
+        return if (exitCode == 0) {
         val (_, output) = executeCommand("$binaryName $versionCmd")
-//        return if (exitCode == 0) {
-            // Витягуємо версію з виводу команди
-            // Це потребує додаткової обробки для різних програм
           return output.trim()
-//        } else {
-//            ""
-//        }
+        } else {
+            ""
+        }
     }
 
     override suspend fun getAvailableVersion(task: JsonObject): String {
