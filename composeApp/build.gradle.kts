@@ -88,7 +88,8 @@ compose.desktop {
                 "java.security.sasl",
                 "jdk.naming.dns",
                 "java.management",
-                "java.net.http"
+                "java.net.http",
+                "jdk.management"
             )
             targetFormats(TargetFormat.Deb, TargetFormat.Rpm)
             packageName = "devopstools"

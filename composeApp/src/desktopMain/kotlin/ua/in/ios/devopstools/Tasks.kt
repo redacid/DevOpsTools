@@ -737,6 +737,17 @@ class TasksManager {
             // For each type of installation pattern
             patternsObj.keySet().forEach { installType ->
                 if (patternsObj.has(installType) && patternsObj.get(installType).isJsonArray) {
+                    logger.d("TaskManager.getAvailableInstallationOptions", "$taskName Available $installType patterns: ${patternsObj.get(installType).asJsonArray}")
+
+                    if (installType == "deb_based" && !systemInfo.supportsDeb) {
+                        logger.w("TaskManager.getAvailableInstallationOptions", "deb based install options not supported")
+                        return@forEach
+                    }
+                    if (installType == "rpm_based" && !systemInfo.supportsRpm) {
+                        logger.w("TaskManager.getAvailableInstallationOptions", "rpm based install options not supported")
+                        return@forEach
+                    }
+
                     val patterns = patternsObj.getAsJsonArray(installType)
                     val patternList = mutableListOf<String>()
 
