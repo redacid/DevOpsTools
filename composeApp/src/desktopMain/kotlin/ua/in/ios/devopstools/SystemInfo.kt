@@ -5,7 +5,6 @@ import java.io.File
 import java.io.InputStreamReader
 import java.nio.file.Files
 import java.nio.file.Paths
-import com.sun.management.OperatingSystemMXBean
 import java.lang.management.ManagementFactory
 
 /**

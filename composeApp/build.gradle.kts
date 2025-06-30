@@ -47,9 +47,9 @@ kotlin {
             implementation(libs.androidx.lifecycle.runtimeCompose)
             implementation("com.google.code.gson:gson:2.10.1")
         }
-        commonTest.dependencies {
-            implementation(libs.kotlin.test)
-        }
+//        commonTest.dependencies {
+//            implementation(libs.kotlin.test)
+//        }
         desktopMain.dependencies {
             implementation(compose.desktop.currentOs)
             implementation(libs.kotlinx.coroutinesSwing)
