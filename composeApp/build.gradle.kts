@@ -62,10 +62,33 @@ compose.desktop {
     application {
         mainClass = "ua.in.ios.devopstools.MainKt"
 
+        jvmArgs += listOf(
+            "--add-opens=java.base/java.lang=ALL-UNNAMED",
+            "--add-opens=java.base/java.util=ALL-UNNAMED",
+            "--add-opens=java.base/java.lang.reflect=ALL-UNNAMED",
+            "--add-opens=java.base/java.text=ALL-UNNAMED",
+            "--add-opens=java.desktop/java.awt.font=ALL-UNNAMED"
+        )
+
+        buildTypes.release.proguard {
+            isEnabled.set(false)
+            //configurationFiles.from("proguard-rules.pro")
+            jvmArgs += "-DbuildVersion=$buildVersion"
+
+        }
+
         nativeDistributions {
             jvmArgs += listOf(
                 "--add-modules=java.naming",
                 "-DbuildVersion=$buildVersion"
+            )
+            modules(
+                "java.naming",
+                "java.security.jgss",
+                "java.security.sasl",
+                "jdk.naming.dns",
+                "java.management",
+                "java.net.http"
             )
             targetFormats(TargetFormat.Deb, TargetFormat.Rpm)
             packageName = "devopstools"
