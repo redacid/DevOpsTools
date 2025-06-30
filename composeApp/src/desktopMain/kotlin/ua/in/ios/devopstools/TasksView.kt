@@ -373,7 +373,7 @@ fun getInstallTypeForTask(task: JsonObject): InstallType? {
  * Component function to display available installation options for the current system
  */
 @Composable
-fun InstallationOptionsSection(task: JsonObject) {
+fun InstallationPatternsSection(task: JsonObject) {
     val tasksManager = TasksManager.getInstance()
     val options = tasksManager.getAvailableInstallationOptions(task)
 
@@ -507,11 +507,10 @@ fun TaskEditDialog(
                             val score = when (type) {
                                 "deb_based" -> 400
                                 "rpm_based" -> 300
-                                "package" -> 200
-                                "binary" -> 100
+                                "binary" -> 200
+                                "package" -> 100
                                 else -> 50
                             }
-
                             if (score > currentScore) {
                                 assetScores[asset] = Pair(score, type)
                             }
@@ -936,7 +935,6 @@ fun TaskEditDialog(
                                     modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
                                     singleLine = true
                                 )
-
                                 OutlinedTextField(
                                     value = installType,
                                     onValueChange = { installType = it },
@@ -946,7 +944,6 @@ fun TaskEditDialog(
                                     readOnly = true,
                                     enabled = false
                                 )
-
                                 OutlinedTextField(
                                     value = versionCmd,
                                     onValueChange = { versionCmd = it },
@@ -967,7 +964,6 @@ fun TaskEditDialog(
                                     modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
                                     singleLine = true
                                 )
-
                                 // Current version section with update button
                                 Row(
                                     modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
@@ -982,7 +978,6 @@ fun TaskEditDialog(
                                         readOnly = true,
                                         enabled = false
                                     )
-
                                     IconButton(
                                         onClick = { checkCurrentVersion() },
                                         enabled = !isCheckingCurrentVersion
@@ -1089,12 +1084,10 @@ fun TaskEditDialog(
                                 style = MaterialTheme.typography.titleMedium,
                                 modifier = Modifier.padding(vertical = 8.dp)
                             )
-
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
-
                                 OutlinedTextField(
                                     value = githubUrl,
                                     onValueChange = { githubUrl = it },
@@ -1130,110 +1123,78 @@ fun TaskEditDialog(
                             }
 
                             // Installation file selection section
-                            if (filteredAssets.isNotEmpty()) {
-                                Text(
-                                    "Installation File",
-                                    style = MaterialTheme.typography.titleSmall,
-                                    modifier = Modifier.padding(vertical = 8.dp)
-                                )
-
-                                var assetExpanded by remember { mutableStateOf(false) }
-
-                                ExposedDropdownMenuBox(
-                                    expanded = assetExpanded,
-                                    onExpandedChange = { assetExpanded = it },
-                                    modifier = Modifier.fillMaxWidth()
-                                ) {
-                                    OutlinedTextField(
-                                        value = selectedAsset,
-                                        onValueChange = { },
-                                        label = { Text("Installation File") },
-                                        readOnly = true,
-                                        trailingIcon = {
-                                            ExposedDropdownMenuDefaults.TrailingIcon(expanded = assetExpanded)
-                                        },
-                                        modifier = Modifier.menuAnchor(
-                                            type = MenuAnchorType.PrimaryNotEditable,
-                                            enabled = true
-                                        ).fillMaxWidth(),
-
-                                        singleLine = true
+                                if (filteredAssets.isNotEmpty()) {
+                                    Text(
+                                        "Installation File",
+                                        style = MaterialTheme.typography.titleSmall,
+                                        modifier = Modifier.padding(vertical = 8.dp)
                                     )
-
-                                    ExposedDropdownMenu(
+                                    var assetExpanded by remember { mutableStateOf(false) }
+                                    // Asset to install
+                                    ExposedDropdownMenuBox(
                                         expanded = assetExpanded,
-                                        onDismissRequest = { assetExpanded = false }
+                                        onExpandedChange = { assetExpanded = it },
+                                        //modifier = Modifier.size(450.dp)
+                                        //modifier = Modifier.fillMaxWidth()
                                     ) {
-                                        if (isLoadingAssets) {
-                                            DropdownMenuItem(
-                                                text = { Text("Loading...") },
-                                                onClick = { }
-                                            )
-                                        } else {
-                                            filteredAssets.forEach { asset ->
+                                        OutlinedTextField(
+                                            value = selectedAsset,
+                                            onValueChange = { },
+                                            label = { Text("Installation File") },
+                                            readOnly = true,
+                                            trailingIcon = {
+                                                ExposedDropdownMenuDefaults.TrailingIcon(expanded = assetExpanded)
+                                            },
+                                            modifier = Modifier.menuAnchor(
+                                                type = MenuAnchorType.PrimaryNotEditable,
+                                                enabled = true
+                                            ).fillMaxWidth(),
+
+                                            singleLine = true
+                                        )
+                                        ExposedDropdownMenu(
+                                            expanded = assetExpanded,
+                                            onDismissRequest = { assetExpanded = false }
+                                        ) {
+                                            if (isLoadingAssets) {
                                                 DropdownMenuItem(
-                                                    text = { Text(asset) },
-                                                    onClick = {
-                                                        selectedAsset = asset
-                                                        assetExpanded = false
-                                                    }
+                                                    text = { Text("Loading...") },
+                                                    onClick = { }
                                                 )
+                                            } else {
+                                                filteredAssets.forEach { asset ->
+                                                    DropdownMenuItem(
+                                                        text = { Text(asset) },
+                                                        onClick = {
+                                                            selectedAsset = asset
+                                                            assetExpanded = false
+                                                        }
+                                                    )
+                                                }
                                             }
                                         }
                                     }
-                                }
+                                    if (assetInstallType.isNotEmpty()) {
+                                        Text(
+                                            "File type: $assetInstallType",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            modifier = Modifier.padding(top = 4.dp, bottom = 8.dp)
+                                        )
+                                    }
 
-                                if (assetInstallType.isNotEmpty()) {
-                                    Text(
-                                        "File type: $assetInstallType",
-                                        style = MaterialTheme.typography.bodySmall,
-                                        modifier = Modifier.padding(top = 4.dp, bottom = 8.dp)
+                                    // Install button
+                                    //Spacer(Modifier.width(4.dp))
+                                    ExtendedFloatingActionButton(
+                                        onClick = { installTool() },
+                                        //enabled = selectedAsset.isNotEmpty() && !isInstalling && assetDownloadUrl.isNotEmpty(),
+                                        icon = { Icon(ICON_PLAY,  "Install") },
+                                        text = { Text("Install") },
+                                        containerColor = MaterialTheme.colorScheme.primary,
+                                        contentColor = MaterialTheme.colorScheme.onPrimary,
+                                        elevation = FloatingActionButtonDefaults.elevation(0.dp),
+                                        modifier = Modifier.padding(top = 8.dp)
                                     )
                                 }
-
-                                // Install button
-                                Button(
-                                    onClick = { installTool() },
-                                    enabled = selectedAsset.isNotEmpty() && !isInstalling && assetDownloadUrl.isNotEmpty(),
-                                    //modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)
-                                ) {
-                                    Text("Install")
-                                }
-                            }
-
-                            // GitHub buttons
-                            Row(
-                                modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
-//                                Button(
-//                                    onClick = { loadAvailableVersions() },
-//                                    //modifier = Modifier.weight(1f),
-//                                    enabled = !isLoadingVersions && githubApiUrl.isNotEmpty()
-//                                ) {
-//                                    Text("Check Available Versions")
-//                                }
-
-//                                OutlinedButton(
-//                                    onClick = {
-//                                        if (githubUrl.isNotEmpty()) {
-//                                            // Open GitHub repository in browser
-//                                            try {
-//                                                val url = java.net.URI(githubUrl).toURL()
-//                                                java.awt.Desktop.getDesktop().browse(url.toURI())
-//                                            } catch (e: Exception) {
-//                                                logger.e("TasksManager", "Error opening URL:", e)
-//                                            }
-//                                        }
-//                                    },
-//                                    //modifier = Modifier.weight(1f),
-//                                    enabled = githubUrl.isNotEmpty()
-//                                ) {
-//                                    Icon(ICON_LINK, contentDescription = "Open")
-//                                    Spacer(Modifier.width(4.dp))
-//                                    Text("Open")
-//                                }
-                            }
                         }
 
                         // Status (enabled) as checkbox
@@ -1251,11 +1212,11 @@ fun TaskEditDialog(
                         Spacer(modifier = Modifier.height(16.dp))
                         HorizontalDivider()
                         Spacer(modifier = Modifier.height(16.dp))
-
-                        InstallationOptionsSection(task)
+                        InstallationPatternsSection(task)
                     }
                 }
             },
+            // Save button
             confirmButton = {
                 Button(
                     onClick = {
@@ -1291,6 +1252,7 @@ fun TaskEditDialog(
                     Text("Save")
                 }
             },
+            // Cancel button
             dismissButton = {
                 OutlinedButton(onClick = onDismissRequest) {
                     Text("Cancel")
