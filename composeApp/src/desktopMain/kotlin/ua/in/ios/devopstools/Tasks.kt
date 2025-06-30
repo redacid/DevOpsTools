@@ -332,11 +332,9 @@ class TasksManager {
                 return "https://api.github.com/repos/$cleanRepoPath"
             } else {
                 logger.w("TasksManager", "Failed to extract repository path from URL: $githubUrl")
-                //println("Failed to extract repository path from URL: $githubUrl")
             }
         } catch (e: Exception) {
             logger.e("TasksManager", "Error converting GitHub URL", e)
-            //println("Error converting GitHub URL: ${e.message}")
         }
 
         return ""
@@ -597,14 +595,14 @@ class TasksManager {
             var hasMore = true
 
             while (hasMore && (maxPages == 0 || currentPage <= maxPages)) {
-                logger.d("GitHub API", "Fetching releases page $currentPage: $currentUrl")
+                logger.d("TaskManager.getGithubReleases", "Fetching releases page $currentPage: $currentUrl")
 
                 // Виконуємо запит з отриманням інформації про рейт-ліміти та пагінацію
                 val apiResponse = fetchFromGithubApiWithRateInfo(currentUrl) ?: return null
                 val (response, rateLimitInfo, paginationLinks) = apiResponse
 
                 if (response == null) {
-                    logger.e("GitHub API", "Failed to fetch page $currentPage")
+                    logger.e("TaskManager.getGithubReleases", "Failed to fetch page $currentPage")
                     return if (result.size() > 0) result else null
                 }
 
@@ -617,13 +615,13 @@ class TasksManager {
                         val now = Date()
                         val waitTimeMinutes = (resetDate.time - now.time) / 60000
 
-                        logger.w("GitHub API", "Rate limit almost exhausted! " +
+                        logger.w("TaskManager.getGithubReleases", "Rate limit almost exhausted! " +
                                 "Only $remaining requests left. Reset in ~$waitTimeMinutes minutes at " +
                                 SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(resetDate))
 
                         // Якщо ми вже щось отримали, краще повернути частковий результат, ніж нічого
                         if (result.size() > 0) {
-                            logger.i("GitHub API", "Returning partial results to avoid rate limit issues")
+                            logger.i("TaskManager.getGithubReleases", "Returning partial results to avoid rate limit issues")
                             hasMore = false
                             break
                         }
@@ -636,7 +634,7 @@ class TasksManager {
                     result.add(pageReleases.get(i))
                 }
 
-                logger.i("GitHub API", "Fetched ${pageReleases.size()} releases on page $currentPage, " +
+                logger.i("TaskManager.getGithubReleases", "Fetched ${pageReleases.size()} releases on page $currentPage, " +
                         "total so far: ${result.size()}")
 
                 // Перевіряємо, чи є наступна сторінка
@@ -648,10 +646,10 @@ class TasksManager {
                 }
             }
 
-            logger.i("GitHub API", "Successfully fetched ${result.size()} releases from GitHub")
+            logger.i("TaskManager.getGithubReleases", "Successfully fetched ${result.size()} releases from GitHub")
             return result
         } catch (e: Exception) {
-            logger.e("GitHub API", "Error getting releases from GitHub", e)
+            logger.e("TaskManager.getGithubReleases", "Error getting releases from GitHub", e)
             return null
         }
     }
@@ -886,7 +884,9 @@ object TaskUtils {
                     val rawVersion = installType.getCurrentVersion(task)
                     if (rawVersion.isNotEmpty()) {
                         // Витягуємо версію за допомогою регулярних виразів
-                        extractVersionNumber(rawVersion, task)
+                        var extractedVersion = extractVersionNumber(rawVersion, task)
+                        logger.d("TaskUtils.checkCurrentVersion", "Current version for ${task.get("name")}: $rawVersion")
+                        return@withContext extractedVersion
                     } else {
                         "Not installed"
                     }
