@@ -95,7 +95,7 @@ abstract class BaseInstallType : InstallType {
 
                     // Спробуємо використати pkexec (найбільш універсальний)
                     if (hasPkexec) {
-                        logger.i("TasksManager", "Using pkexec for sudo command")
+                        logger.i("BaseInstallType.ExecuteCommand", "Using pkexec for sudo command")
                         val result = executeCommandDirect("pkexec $commandWithoutSudo", workingDir)
                         if (result.first == 0) {
                             return@withContext result
@@ -104,7 +104,7 @@ abstract class BaseInstallType : InstallType {
 
                     // Якщо pkexec не вдалося, спробуємо gksudo (для GNOME)
                     if (hasGksudo) {
-                        logger.i("TasksManager", "Using gksudo for sudo command")
+                        logger.i("BaseInstallType.ExecuteCommand", "Using gksudo for sudo command")
                         val result = executeCommandDirect("gksudo $commandWithoutSudo", workingDir)
                         if (result.first == 0) {
                             return@withContext result
@@ -113,7 +113,7 @@ abstract class BaseInstallType : InstallType {
 
                     // Якщо gksudo не вдалося, спробуємо kdesu (для KDE)
                     if (hasKdesu) {
-                        logger.i("TasksManager", "Using kdesu for sudo command")
+                        logger.i("BaseInstallType.ExecuteCommand", "Using kdesu for sudo command")
                         val result = executeCommandDirect("kdesu $commandWithoutSudo", workingDir)
                         if (result.first == 0) {
                             return@withContext result
@@ -122,7 +122,7 @@ abstract class BaseInstallType : InstallType {
 
                     // Якщо все вище не вдалося, спробуємо zenity
                     if (hasZenity) {
-                        logger.i("TasksManager", "Using zenity+sudo -S for sudo command")
+                        logger.i("BaseInstallType.ExecuteCommand", "Using zenity+sudo -S for sudo command")
                         try {
                             // Запитуємо пароль через zenity
                             val passwordCmd = "zenity --password --title=\"Введіть пароль адміністратора\""
@@ -154,19 +154,19 @@ abstract class BaseInstallType : InstallType {
                                 return@withContext Pair(exitCode, combinedOutput.trim())
                             }
                         } catch (e: Exception) {
-                            logger.e("TasksManager", "Error with zenity+sudo -S: ${e.message}")
+                            logger.e("BaseInstallType.ExecuteCommand", "Error with zenity+sudo -S: ${e.message}")
                         }
                     }
 
                     // Якщо всі методи не вдалися, повертаємо помилку
-                    logger.e("TasksManager", "Failed to execute sudo command - no graphical sudo utility available")
+                    logger.e("BaseInstallType.ExecuteCommand", "Failed to execute sudo command - no graphical sudo utility available")
                     return@withContext Pair(-1, "Не вдалося виконати команду sudo. Встановіть pkexec, gksudo або kdesu.")
                 } else {
                     // Якщо команда не потребує sudo, виконуємо її звичайним способом
                     return@withContext executeCommandDirect(command, workingDir)
                 }
             } catch (e: Exception) {
-                logger.e("TasksManager", "Error when executing command '$command'", e)
+                logger.e("BaseInstallType.ExecuteCommand", "Error when executing command '$command'", e)
                 Pair(-1, e.message ?: "Unknown error")
             }
         }
@@ -223,7 +223,6 @@ abstract class BaseInstallType : InstallType {
                 true
             } catch (e: Exception) {
                 logger.e("TasksManager", "Error when downloading file from '$url' to '$destination'", e)
-                //println("Помилка при завантаженні файлу з '$url': ${e.message}")
                 false
             }
         }
@@ -277,11 +276,11 @@ class GithubInstallType : BaseInstallType() {
         val releasesUrl = "$apiUrl/releases"
 
         // Завантажуємо інформацію про релізи
-        val releasesJson = try {
+        // val releasesJson = try {
+        try {
             URL(releasesUrl).readText()
         } catch (e: Exception) {
-            logger.e("TasksManager", "Error when getting releases info from '$releasesUrl'", e)
-            //println("Помилка при завантаженні інформації про релізи: ${e.message}")
+            logger.e("GithubInstallType.Install", "Error when getting releases info from '$releasesUrl'", e)
             return false
         }
 
@@ -310,8 +309,7 @@ class GithubInstallType : BaseInstallType() {
                 }
                 true
             } catch (e: Exception) {
-                logger.e("TasksManager", "Error when deleting file '$binaryPath'", e)
-                //println("Помилка при видаленні бінарного файлу: ${e.message}")
+                logger.e("GithubInstallType.Uninstall", "Error when deleting file '$binaryPath'", e)
                 false
             }
         }
@@ -321,14 +319,15 @@ class GithubInstallType : BaseInstallType() {
         val binaryName = task.get("binary_name")?.asString ?: return ""
         val versionCmd = task.get("version_cmd")?.asString ?: "--version"
 
-        val (exitCode, output) = executeCommand("$binaryName $versionCmd")
-        return if (exitCode == 0) {
+//        val (exitCode, output) = executeCommand("$binaryName $versionCmd")
+        val (_, output) = executeCommand("$binaryName $versionCmd")
+//        return if (exitCode == 0) {
             // Витягуємо версію з виводу команди
             // Це потребує додаткової обробки для різних програм
-            output.trim()
-        } else {
-            ""
-        }
+          return output.trim()
+//        } else {
+//            ""
+//        }
     }
 
     override suspend fun getAvailableVersion(task: JsonObject): String {
@@ -360,8 +359,7 @@ class GithubInstallType : BaseInstallType() {
                 ""
             }
         } catch (e: Exception) {
-            logger.e("TasksManager", "Error when getting latest release info from '$latestReleaseUrl'", e)
-            //println("Помилка при завантаженні інформації про останній реліз: ${e.message}")
+            logger.e("GithubInstallType.getAvailableVersion", "Error when getting latest release info from '$latestReleaseUrl'", e)
             ""
         }
     }
