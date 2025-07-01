@@ -17,7 +17,7 @@ logger.e("TasksManager", "Помилка при завантаженні зав�
 
 https://docs.github.com/en/rest/releases/assets?apiVersion=2022-11-28
 
-curl -L -H "Accept: application/vnd.github+json" -H "X-GitHub-Api-Version: 2022-11-28" https://api.github.com/repos/mikefarah/yq/releases
+curl -L -H "Accept: application/vnd.github+json" -H "X-GitHub-Api-Version: 2022-11-28" https://api.github.com/repos/helm/helm/releases
 
 curl -I -L -H "Accept: application/vnd.github+json" -H "Authorization: token " -H "X-GitHub-Api-Version: 2022-11-28" https://api.github.com/repos/mikefarah/yq/releases
 
@@ -82,48 +82,3 @@ x-github-request-id: EF88:1413CD:D6D2904:DCA9E49:685BA242
 
 curl -L -H "Accept: application/vnd.github+json" -H "X-GitHub-Api-Version: 2022-11-28" https://api.github.com/repos/jqlang/jq/releases
 
-[2025-06-25 12:14:21.044] DEBUG GitHub API-GGR: Fetching releases page 1: https://api.github.com/repos/mikefarah/yq/releases
-[2025-06-25 12:14:21.147] INFO GitHub API-GRI: Using GitHub token for API request to: https://api.github.com/repos/mikefarah/yq/releases
-[2025-06-25 12:14:22.802] DEBUG GitHub API: Pagination links: next, last
-[2025-06-25 12:14:22.803] INFO GitHub API: Rate limits: 4985 / 5000 requests remaining. Reset at 2025-06-25 12:40:44 (resource: core)
-[2025-06-25 12:14:23.547] INFO GitHub API-GGR: Fetched 30 releases on page 1, total so far: 30
-[2025-06-25 12:14:24.957] DEBUG GitHub API: Pagination links: next, last
-[2025-06-25 12:14:24.957] INFO GitHub API: Rate limits: 41 / 60 requests remaining. Reset at 2025-06-25 12:31:27 (resource: core)
-[2025-06-25 12:14:24.957] DEBUG GitHub API-GGR: Fetching releases page 2: https://api.github.com/repositories/43225113/releases?page=2
-[2025-06-25 12:14:24.958] INFO GitHub API-GRI: Using GitHub token for API request to: https://api.github.com/repositories/43225113/releases?page=2
-[2025-06-25 12:14:26.382] DEBUG GitHub API: Pagination links: prev, next, last, first
-[2025-06-25 12:14:26.382] INFO GitHub API: Rate limits: 4984 / 5000 requests remaining. Reset at 2025-06-25 12:40:44 (resource: core)
-[2025-06-25 12:14:26.912] INFO GitHub API-GGR: Fetched 30 releases on page 2, total so far: 60
-[2025-06-25 12:14:28.019] DEBUG GitHub API: Pagination links: prev, next, last, first
-[2025-06-25 12:14:28.020] INFO GitHub API: Rate limits: 40 / 60 requests remaining. Reset at 2025-06-25 12:31:27 (resource: core)
-[2025-06-25 12:14:28.020] DEBUG GitHub API-GGR: Fetching releases page 3: https://api.github.com/repositories/43225113/releases?page=3
-[2025-06-25 12:14:28.020] INFO GitHub API-GRI: Using GitHub token for API request to: https://api.github.com/repositories/43225113/releases?page=3
-[2025-06-25 12:14:29.390] DEBUG GitHub API: Pagination links: prev, next, last, first
-[2025-06-25 12:14:29.390] INFO GitHub API: Rate limits: 4983 / 5000 requests remaining. Reset at 2025-06-25 12:40:44 (resource: core)
-[2025-06-25 12:14:29.901] INFO GitHub API-GGR: Fetched 30 releases on page 3, total so far: 90
-[2025-06-25 12:14:30.691] DEBUG GitHub API: Pagination links: prev, next, last, first
-[2025-06-25 12:14:30.691] INFO GitHub API: Rate limits: 39 / 60 requests remaining. Reset at 2025-06-25 12:31:27 (resource: core)
-[2025-06-25 12:14:30.691] DEBUG GitHub API-GGR: Fetching releases page 4: https://api.github.com/repositories/43225113/releases?page=4
-[2025-06-25 12:14:30.691] INFO GitHub API-GRI: Using GitHub token for API request to: https://api.github.com/repositories/43225113/releases?page=4
-[2025-06-25 12:14:31.511] DEBUG GitHub API: Pagination links: prev, next, last, first
-[2025-06-25 12:14:31.512] INFO GitHub API: Rate limits: 4982 / 5000 requests remaining. Reset at 2025-06-25 12:40:44 (resource: core)
-[2025-06-25 12:14:31.888] INFO GitHub API-GGR: Fetched 30 releases on page 4, total so far: 120
-[2025-06-25 12:14:32.731] DEBUG GitHub API: Pagination links: prev, next, last, first
-[2025-06-25 12:14:32.731] INFO GitHub API: Rate limits: 38 / 60 requests remaining. Reset at 2025-06-25 12:31:27 (resource: core)
-[2025-06-25 12:14:32.731] DEBUG GitHub API-GGR: Fetching releases page 5: https://api.github.com/repositories/43225113/releases?page=5
-[2025-06-25 12:14:32.731] INFO GitHub API-GRI: Using GitHub token for API request to: https://api.github.com/repositories/43225113/releases?page=5
-[2025-06-25 12:14:33.236] DEBUG GitHub API: Pagination links: prev, next, last, first
-[2025-06-25 12:14:33.236] INFO GitHub API: Rate limits: 4981 / 5000 requests remaining. Reset at 2025-06-25 12:40:44 (resource: core)
-[2025-06-25 12:14:33.518] INFO GitHub API-GGR: Fetched 30 releases on page 5, total so far: 150
-[2025-06-25 12:14:33.975] DEBUG GitHub API: Pagination links: prev, next, last, first
-[2025-06-25 12:14:33.975] INFO GitHub API: Rate limits: 37 / 60 requests remaining. Reset at 2025-06-25 12:31:27 (resource: core)
-[2025-06-25 12:14:33.975] DEBUG GitHub API-GGR: Fetching releases page 6: https://api.github.com/repositories/43225113/releases?page=6
-[2025-06-25 12:14:33.975] INFO GitHub API-GRI: Using GitHub token for API request to: https://api.github.com/repositories/43225113/releases?page=6
-[2025-06-25 12:14:34.492] DEBUG GitHub API: Pagination links: prev, first
-[2025-06-25 12:14:34.493] INFO GitHub API: Rate limits: 4980 / 5000 requests remaining. Reset at 2025-06-25 12:40:44 (resource: core)
-[2025-06-25 12:14:34.544] INFO GitHub API-GGR: Fetched 3 releases on page 6, total so far: 153
-[2025-06-25 12:14:34.801] DEBUG GitHub API: Pagination links: prev, first
-[2025-06-25 12:14:34.802] INFO GitHub API: Rate limits: 36 / 60 requests remaining. Reset at 2025-06-25 12:31:27 (resource: core)
-[2025-06-25 12:14:34.802] INFO GitHub API-GGR: Successfully fetched 153 releases from GitHub
-[2025-06-25 12:14:34.803] INFO GitHub API-GRI: Using GitHub token for API request to: https://api.github.com/repos/mikefarah/yq/releases/tags/v4.45.4
-[2025-06-25 12:14:35.290] INFO GitHub API: Rate limits: 4979 / 5000 requests remaining. Reset at 2025-06-25 12:40:44 (resource: core)

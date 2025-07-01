@@ -139,7 +139,10 @@
       "install_version": "v3.18.3",
       "github": {
         "url": "https://github.com/helm/helm",
-        "api_url": "https://api.github.com/repos/helm/helm"
+        "api_url": "https://api.github.com/repos/helm/helm",
+        "parse_release_notes": true,
+        "asset": "helm-v3.18.3-linux-amd64.tar.gz",
+        "asset_type": "package"
       }
     },
     {
@@ -203,6 +206,48 @@
         "url": "https://github.com/redacid/kubeconform",
         "api_url": "https://api.github.com/repos/redacid/kubeconform",
         "asset": "kubeconform-linux-amd64.tar.gz",
+        "asset_type": "package"
+      }
+    },
+    {
+      "name": "studio-3t",
+      "description": "Mongo manager https://download-ce.studio3t.com/studio-3t/linux/2025.1.0/studio-3t-community-edition-linux-x64.tar.gz",
+      "binary_name": "studio-3t",
+      "install_type": "package",
+      "version_cmd": "--version",
+      "installed_as": "",
+      "enabled": false,
+      "install_version": "latest"
+    },
+    {
+      "name": "ansible",
+      "description": "Ansible is a radically simple IT automation system https://docs.ansible.com/ansible/latest/installation_guide/installation_distros.html#installing-ansible-on-ubuntu",
+      "binary_name": "ansible",
+      "install_type": "github",
+      "version_cmd": "--version",
+      "installed_as": "",
+      "enabled": false,
+      "install_version": "v2.19.0rc1",
+      "github": {
+        "url": "https://github.com/ansible/ansible",
+        "api_url": "https://api.github.com/repos/ansible/ansible",
+        "parse_release_notes": true
+      }
+    },
+    {
+      "name": "lazydocker",
+      "description": "A simple terminal UI for both docker and docker-compose, written in Go with the gocui library.",
+      "binary_name": "lazydocker",
+      "install_type": "github",
+      "version_cmd": "--version",
+      "installed_as": "",
+      "enabled": true,
+      "install_version": "v0.24.1",
+      "github": {
+        "url": "https://github.com/jesseduffield/lazydocker",
+        "api_url": "https://api.github.com/repos/jesseduffield/lazydocker",
+        "parse_release_notes": false,
+        "asset": "lazydocker_0.24.1_Linux_x86_64.tar.gz",
         "asset_type": "package"
       }
     }

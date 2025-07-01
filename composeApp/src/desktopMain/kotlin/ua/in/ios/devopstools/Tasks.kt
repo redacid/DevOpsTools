@@ -17,6 +17,44 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
+
+// Функція для парсингу посилань з release notes
+fun parseLinksFromReleaseNotes(body: String): Pair<List<String>, Map<String, String>> {
+    val assets = mutableListOf<String>()
+    val assetUrlMap = mutableMapOf<String, String>()
+
+    // Регулярний вираз для пошуку посилань у форматі Markdown
+    val markdownLinkPattern = """\[([^\]]+)\]\(([^)]+)\)""".toRegex()
+    val urlPattern = """https?://[^\s)]+""".toRegex()
+
+    // Шукаємо Markdown посилання
+    markdownLinkPattern.findAll(body).forEach { matchResult ->
+        val (text, url) = matchResult.destructured
+        // Перевіряємо, чи це посилання на файл для завантаження
+        if (url.contains("/download/") || url.endsWith(".deb") || url.endsWith(".rpm") ||
+            url.endsWith(".tar.gz") || url.endsWith(".zip")) {
+            assets.add(text)
+            assetUrlMap[text] = url
+        }
+    }
+
+    // Шукаємо прямі URL
+    urlPattern.findAll(body).forEach { matchResult ->
+        val url = matchResult.value
+        if (url.contains("/download/") || url.endsWith(".deb") || url.endsWith(".rpm") ||
+            url.endsWith(".tar.gz") || url.endsWith(".zip")) {
+            val fileName = url.substringAfterLast("/")
+            if (fileName.isNotEmpty() && !assets.contains(fileName)) {
+                assets.add(fileName)
+                assetUrlMap[fileName] = url
+            }
+        }
+    }
+
+    return Pair(assets, assetUrlMap)
+}
+
+
 class TasksManager {
     private val gson: Gson = GsonBuilder().setPrettyPrinting().create()
     private val homeDir: String = System.getProperty("user.home")
@@ -481,7 +519,7 @@ class TasksManager {
                 paginationInfo[rel] = url
             }
 
-            logger.d("GitHub API-GRH", "Pagination links: ${paginationInfo.keys.joinToString()}")
+            logger.d("TaskManager.processGitHubResponseHeaders", "Pagination links: ${paginationInfo.keys.joinToString()}")
         }
 
         // Обробка заголовків рейт-лімітів
@@ -505,7 +543,7 @@ class TasksManager {
                 sdf.format(date)
             } else "unknown"
 
-            logger.i("GitHub API-GRH", "Rate limits: ${rateLimitInfo["remaining"] ?: "?"} / ${rateLimitInfo["limit"] ?: "?"} " +
+            logger.i("TaskManager.processGitHubResponseHeaders", "Rate limits: ${rateLimitInfo["remaining"] ?: "?"} / ${rateLimitInfo["limit"] ?: "?"} " +
                     "requests remaining. Reset at $resetTime (resource: ${rateLimitInfo["resource"] ?: "core"})")
         }
 
@@ -532,7 +570,7 @@ class TasksManager {
             // Додаємо токен авторизації, якщо доступний
             if (githubToken.isNotEmpty()) {
                 connection.setRequestProperty("Authorization", "token $githubToken")
-                logger.i("GitHub API", "Using GitHub token for API request to: $apiUrl")
+                logger.i("TaskManager.fetchFromGithubApiWithRateInfo", "Using GitHub token for API request to: $apiUrl")
             }
 
             // Перевіряємо код відповіді
@@ -542,14 +580,14 @@ class TasksManager {
             val (paginationInfo, rateLimitInfo) = processGitHubResponseHeaders(connection)
 
             if (responseCode != 200) {
-                logger.w("GitHub API", "Error when requesting GitHub API: HTTP $responseCode")
-                logger.w("GitHub API", "Response: ${connection.responseMessage}")
+                logger.w("TaskManager.fetchFromGithubApiWithRateInfo", "Error when requesting GitHub API: HTTP $responseCode")
+                logger.w("TaskManager.fetchFromGithubApiWithRateInfo", "Response: ${connection.responseMessage}")
 
                 // Читаємо текст помилки, якщо доступний
                 val errorStream = connection.errorStream
                 if (errorStream != null) {
                     val errorText = errorStream.bufferedReader().use { it.readText() }
-                    logger.w("GitHub API", "Error details: $errorText")
+                    logger.w("TaskManager.fetchFromGithubApiWithRateInfo", "Error details: $errorText")
                 }
 
                 return Triple(null, rateLimitInfo, paginationInfo)
@@ -559,7 +597,7 @@ class TasksManager {
             val response = connection.inputStream.bufferedReader().use { it.readText() }
             return Triple(response, rateLimitInfo, paginationInfo)
         } catch (e: Exception) {
-            logger.e("GitHub API", "Error when requesting GitHub API", e)
+            logger.e("TaskManager.fetchFromGithubApiWithRateInfo", "Error when requesting GitHub API", e)
             e.printStackTrace()
             return null
         }
@@ -654,7 +692,7 @@ class TasksManager {
                 return JsonParser.parseString(response).asJsonObject
             }
         } catch (e: Exception) {
-            logger.e("TasksManager", "Error getting latest release from GitHub", e)
+            logger.e("TasksManager.getLatestGithubRelease", "Error getting latest release from GitHub", e)
             //println("Error getting latest release from GitHub: ${e.message}")
         }
 
@@ -677,7 +715,7 @@ class TasksManager {
                 return JsonParser.parseString(response).asJsonObject
             }
         } catch (e: Exception) {
-            logger.e("TasksManager", "Error getting release for tag $tag from GitHub", e)
+            logger.e("TasksManager.getGithubReleaseByTag", "Error getting release for tag $tag from GitHub", e)
             //println("Error getting release for tag $tag from GitHub: ${e.message}")
         }
 

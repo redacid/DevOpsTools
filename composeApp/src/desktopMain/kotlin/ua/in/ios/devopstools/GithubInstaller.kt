@@ -37,7 +37,8 @@ data class InstallationState(
     var githubApiUrl: String = "",
     var installType: String = "",
     var installVersion: String = "",
-    var isLoadingAssets: Boolean = false
+    var isLoadingAssets: Boolean = false,
+    var parseReleaseNotes: Boolean = false
 )
 
 /**
@@ -133,23 +134,46 @@ class GithubInstaller {
         return withContext(Dispatchers.IO) {
             try {
                 val release = tasksManager.getGithubReleaseByTag(state.githubApiUrl, state.installVersion)
-                logger.i("loadAssetsForVersion", "Api URL: ${state.githubApiUrl}")
+                logger.i("GithubInstaller.loadAssetsForVersion", "Api URL: ${state.githubApiUrl}")
                 val assets = mutableListOf<String>()
                 val assetUrlMap = mutableMapOf<String, String>() // Map asset name to download URL
 
-                if (release?.has("assets") == true && release.get("assets").isJsonArray) {
-                    val assetsArray = release.getAsJsonArray("assets")
-                    for (i in 0 until assetsArray.size()) {
-                        val asset = assetsArray.get(i).asJsonObject
-                        val assetName = asset.get("name").asString
-                        assets.add(assetName)
+//                if (release?.has("assets") == true && release.get("assets").isJsonArray) {
+//                    val assetsArray = release.getAsJsonArray("assets")
+//                    for (i in 0 until assetsArray.size()) {
+//                        val asset = assetsArray.get(i).asJsonObject
+//                        val assetName = asset.get("name").asString
+//                        assets.add(assetName)
+//
+//                        // Store download URL for each asset
+//                        if (asset.has("browser_download_url")) {
+//                            assetUrlMap[assetName] = asset.get("browser_download_url").asString
+//                        }
+//                    }
+//                }
 
-                        // Store download URL for each asset
-                        if (asset.has("browser_download_url")) {
-                            assetUrlMap[assetName] = asset.get("browser_download_url").asString
+                if (release != null) {
+                    if (state.parseReleaseNotes && release.has("body")) {
+                        // Парсимо посилання з release notes
+                        val body = release.get("body").asString
+                        val (parsedAssets, parsedUrls) = parseLinksFromReleaseNotes(body)
+                        assets.addAll(parsedAssets)
+                        assetUrlMap.putAll(parsedUrls)
+                    } else if (release.has("assets") && release.get("assets").isJsonArray) {
+                        // Стандартна обробка assets
+                        val assetsArray = release.getAsJsonArray("assets")
+                        for (i in 0 until assetsArray.size()) {
+                            val asset = assetsArray.get(i).asJsonObject
+                            val assetName = asset.get("name").asString
+                            assets.add(assetName)
+
+                            if (asset.has("browser_download_url")) {
+                                assetUrlMap[assetName] = asset.get("browser_download_url").asString
+                            }
                         }
                     }
                 }
+
                 filterAssetsByPatterns(assets, assetUrlMap, task, state)
             } catch (e: Exception) {
                 logger.e("loadAssetsForVersion", "Error loading assets:", e)
@@ -173,6 +197,7 @@ class GithubInstaller {
                 val githubObj = task.getAsJsonObject("github")
                 state.githubUrl = githubObj.get("url")?.asString ?: ""
                 state.githubApiUrl = githubObj.get("api_url")?.asString ?: ""
+                state.parseReleaseNotes = githubObj.get("parse_release_notes")?.asBoolean ?: false
 
                 if (githubObj.has("asset")) {
                     state.selectedAsset = githubObj.get("asset")?.asString ?: ""

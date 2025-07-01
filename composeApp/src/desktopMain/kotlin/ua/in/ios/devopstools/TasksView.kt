@@ -473,10 +473,13 @@ fun TaskEditDialog(
         var githubUrl by remember { mutableStateOf("") }
         var githubApiUrl by remember { mutableStateOf("") }
         var assetDownloadUrl by remember { mutableStateOf("") }
+        var parseReleaseNotes by remember { mutableStateOf(false) }
+
         if (task.has("github")) {
             val githubObj = task.getAsJsonObject("github")
             githubUrl = githubObj.get("url")?.asString ?: ""
             githubApiUrl = githubObj.get("api_url")?.asString ?: ""
+            parseReleaseNotes = githubObj.get("parse_release_notes")?.asBoolean ?: false
 
             // Load installation file if already selected
 //            if (githubObj.has("asset")) {
@@ -567,24 +570,28 @@ fun TaskEditDialog(
 
             coroutineScope.launch {
                 try {
-                    //val releaseUrl = "$githubApiUrl/releases/tags/$version"
-                    //val releaseJson = URL(releaseUrl).readText()
                     val release = tasksManager.getGithubReleaseByTag(githubApiUrl, version)
-                    //val release = com.google.gson.JsonParser.parseString(releaseJson).asJsonObject
-
                     val assets = mutableListOf<String>()
-                    val assetUrlMap = mutableMapOf<String, String>() // Map asset name to download URL
+                    val assetUrlMap = mutableMapOf<String, String>()
 
-                    if (release?.has("assets") == true && release.get("assets").isJsonArray) {
-                        val assetsArray = release.getAsJsonArray("assets")
-                        for (i in 0 until assetsArray.size()) {
-                            val asset = assetsArray.get(i).asJsonObject
-                            val assetName = asset.get("name").asString
-                            assets.add(assetName)
+                    if (release != null) {
+                        if (parseReleaseNotes && release.has("body")) {
+                            // Парсимо посилання з release notes
+                            val body = release.get("body").asString
+                            val (parsedAssets, parsedUrls) = parseLinksFromReleaseNotes(body)
+                            assets.addAll(parsedAssets)
+                            assetUrlMap.putAll(parsedUrls)
+                        } else if (release.has("assets") && release.get("assets").isJsonArray) {
+                            // Стандартна обробка assets
+                            val assetsArray = release.getAsJsonArray("assets")
+                            for (i in 0 until assetsArray.size()) {
+                                val asset = assetsArray.get(i).asJsonObject
+                                val assetName = asset.get("name").asString
+                                assets.add(assetName)
 
-                            // Store download URL for each asset
-                            if (asset.has("browser_download_url")) {
-                                assetUrlMap[assetName] = asset.get("browser_download_url").asString
+                                if (asset.has("browser_download_url")) {
+                                    assetUrlMap[assetName] = asset.get("browser_download_url").asString
+                                }
                             }
                         }
                     }
@@ -639,6 +646,7 @@ fun TaskEditDialog(
                         if (versions.isNotEmpty()) {
                             availableVersions = versions
                             selectedVersion = versions[0]
+                            // TODO condition for parse release notes
                             loadAssetsForVersion(selectedVersion)
                         } else {
                             // Спробуємо отримати останній реліз, якщо список релізів порожній
@@ -711,6 +719,7 @@ fun TaskEditDialog(
 
             // Для налагодження виведемо додаткову інформацію
             logger.i("TaskEditDialog.InstallTool", "Installing: $name")
+            logger.i("TaskEditDialog.InstallTool", "Parse Release Notes: $parseReleaseNotes")
             logger.i("TaskEditDialog.InstallTool", "Selected asset: $selectedAsset")
             logger.i("TaskEditDialog.InstallTool", "Asset type: $assetInstallType")
             logger.i("TaskEditDialog.InstallTool", "Download URL: $assetDownloadUrl")
@@ -1105,6 +1114,17 @@ fun TaskEditDialog(
                                 modifier = Modifier.padding(vertical = 8.dp)
                             )
                             Row(
+                                modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Checkbox(
+                                    checked = parseReleaseNotes,
+                                    onCheckedChange = { parseReleaseNotes = it }
+                                )
+                                Text("Parse Release Notes", modifier = Modifier.padding(start = 8.dp))
+                            }
+
+                            Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
@@ -1255,6 +1275,7 @@ fun TaskEditDialog(
                             val githubObj = JsonObject()
                             githubObj.addProperty("url", githubUrl)
                             githubObj.addProperty("api_url", githubApiUrl)
+                            githubObj.addProperty("parse_release_notes", parseReleaseNotes)
 
                             // Add selected asset
                             if (selectedAsset.isNotEmpty()) {
@@ -1440,6 +1461,13 @@ fun TasksTable() {
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         Text(
+                            "Install",
+                            style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                            modifier = Modifier.weight(installWidth),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            textAlign = TextAlign.Center
+                        )
+                        Text(
                             "Description",
                             style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
                             modifier = Modifier.weight(descriptionWidth),
@@ -1471,13 +1499,6 @@ fun TasksTable() {
                             textAlign = TextAlign.Center
                         )
                         Text(
-                            "Install",
-                            style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
-                            modifier = Modifier.weight(installWidth),
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            textAlign = TextAlign.Center
-                        )
-                        Text(
                             "Actions",
                             style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
                             modifier = Modifier.weight(actionsWidth),
@@ -1497,7 +1518,7 @@ fun TasksTable() {
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(horizontal = 12.dp, vertical = 8.dp)
+                                .padding(horizontal = 12.dp, vertical = 12.dp)
                                 .clickable { },
                             verticalAlignment = Alignment.CenterVertically
                         ) {
@@ -1506,17 +1527,31 @@ fun TasksTable() {
                                 text = task.get("name")?.asString ?: "Unknown name",
                                 style = MaterialTheme.typography.bodyMedium,
                                 modifier = Modifier
-                                    .padding(start = 12.dp )
+                                    .padding(start = 12.dp, end = 12.dp )
                                     .weight(nameWidth),
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis
                             )
-
+                            // Install
+                            Row(
+                                modifier = Modifier
+                                    .padding(start = 12.dp, end = 12.dp )
+                                    .weight(installWidth),
+                                horizontalArrangement = Arrangement.Center,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                InstallButton(
+                                    task,
+                                    onInstallComplete = { refreshTasks() }
+                                )
+                            }
                             // Description
                             Text(
                                 text = task.get("description")?.asString ?: "",
                                 style = MaterialTheme.typography.bodyMedium,
-                                modifier = Modifier.weight(descriptionWidth),
+                                modifier = Modifier
+                                    .padding(start = 12.dp, end = 12.dp )
+                                    .weight(descriptionWidth),
                                 maxLines = 2,
                                 overflow = TextOverflow.Ellipsis
                             )
@@ -1525,7 +1560,9 @@ fun TasksTable() {
                             Text(
                                 text = task.get("install_type")?.asString ?: "",
                                 style = MaterialTheme.typography.bodyMedium,
-                                modifier = Modifier.weight(installTypeWidth),
+                                modifier = Modifier
+                                    .padding(start = 12.dp, end = 12.dp )
+                                    .weight(installTypeWidth),
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis
                             )
@@ -1534,7 +1571,9 @@ fun TasksTable() {
                             Text(
                                 text = task.get("install_version")?.asString ?: "",
                                 style = MaterialTheme.typography.bodyMedium,
-                                modifier = Modifier.weight(versionWidth),
+                                modifier = Modifier
+                                    .padding(start = 12.dp, end = 12.dp )
+                                    .weight(versionWidth),
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis
                             )
@@ -1543,7 +1582,9 @@ fun TasksTable() {
                             Text(
                                 text = currentVersion,
                                 style = MaterialTheme.typography.bodyMedium,
-                                modifier = Modifier.weight(installedVersionWidth),
+                                modifier = Modifier
+                                    .padding(start = 12.dp, end = 12.dp )
+                                    .weight(installedVersionWidth),
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis,
                                 color = when {
@@ -1558,7 +1599,9 @@ fun TasksTable() {
                             // Status
                             var enabled by remember { mutableStateOf(task.get("enabled")?.asBoolean ?: false) }
                             Box(
-                                modifier = Modifier.weight(statusWidth),
+                                modifier = Modifier
+                                    .padding(start = 12.dp, end = 12.dp )
+                                    .weight(statusWidth),
                                 contentAlignment = Alignment.Center
                             ) {
                                 Checkbox(
@@ -1571,24 +1614,15 @@ fun TasksTable() {
                                     }
                                 )
                             }
-                            // Install
-                            Row(
-                                modifier = Modifier.weight(installWidth),
-                                horizontalArrangement = Arrangement.Center,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                InstallButton(
-                                    task,
-                                    onInstallComplete = { refreshTasks() }
-                                )
-                            }
+
                             // Actions
                             var showDeleteConfirmation by remember { mutableStateOf(false) }
                             var showEditDialog by remember { mutableStateOf(false) }
 
-
                             Row(
-                                modifier = Modifier.weight(actionsWidth),
+                                modifier = Modifier
+                                    .padding(start = 12.dp, end = 12.dp )
+                                    .weight(actionsWidth),
                                 horizontalArrangement = Arrangement.Center,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
