@@ -29,10 +29,10 @@ class TasksManager {
      * Enum для визначення стратегії завантаження завдань
      */
     enum class LoadStrategy {
-        REPLACE_ALL,      // Замінити всі завдання новими
-        ADD_TO_EXISTING,  // Додати нові завдання до існуючих
-        ADD_MISSING,      // Додати тільки ті завдання, яких немає за назвою
-        UPDATE_AND_ADD    // Оновити існуючі завдання та додати нові
+        REPLACE_ALL,      // Replace all tasks with new ones
+        ADD_TO_EXISTING,  // Add new tasks to existing ones
+        ADD_MISSING,      // Add only those tasks that are missing by name
+        UPDATE_AND_ADD    // Update existing tasks and add new ones
     }
 
     init {
@@ -40,20 +40,19 @@ class TasksManager {
     }
 
     private fun loadTasks() {
-        // Перевіряємо чи існує директорія конфігурації
+        // Checking if the configuration directory exists
         val configDirPath = Paths.get(configDir)
         if (!Files.exists(configDirPath)) {
             Files.createDirectories(configDirPath)
         }
 
-        // Перевіряємо чи існує файл завдань
+        // Checking if the tasks file exists.
         val tasksFilePath = File(tasksFile)
         if (!tasksFilePath.exists()) {
-            // Якщо файл не існує, завантажуємо його з URL, заданого в налаштуваннях
             downloadTasksFromUrl()
         }
 
-        // Завантажуємо завдання з файлу
+        // Loading tasks from file
         try {
             FileReader(tasksFile).use { reader ->
                 tasks = JsonParser.parseReader(reader).asJsonObject
@@ -61,46 +60,36 @@ class TasksManager {
             updateGitHubApiUrls()
 
         } catch (e: Exception) {
-            logger.e("TasksManager", "Помилка завантаження завдань", e)
-            //println("Помилка завантаження завдань: ${e.message}")
-            // Створюємо порожній об'єкт завдань, якщо сталася помилка
+            logger.e("TasksManager", " Error Downloading Task", e)
             createEmptyTasks()
         }
     }
 
-    /**
-     * Завантажує завдання з URL з вказаною стратегією завантаження
-     * @param strategy Стратегія завантаження завдань
-     * @return true якщо завантаження успішне, false у випадку помилки
+/**
+     * Loads a task from a URL with the specified loading strategy
+     * @param strategy The loading strategy for tasks
+     * @return true if the loading is successful, false in case of an error
      */
     fun reloadTasks(strategy: LoadStrategy = LoadStrategy.REPLACE_ALL): Boolean {
         try {
             val tasksUrl = settingsManager.getString("settings.tasks_url")
 
-            // Змінюємо URL GitHub, щоб отримати raw вміст
+            // Changing the GitHub URL to get raw content
             val rawUrl = if (tasksUrl.contains("github.com") && !tasksUrl.contains("raw.githubusercontent.com")) {
                 tasksUrl.replace("github.com", "raw.githubusercontent.com")
                     .replace("/blob/", "/")
             } else {
                 tasksUrl
             }
-            logger.i("TasksManager", "Завантаження завдань з URL: $rawUrl із стратегією: $strategy")
-            //println("Завантаження завдань з URL: $rawUrl із стратегією: $strategy")
-
-            // Завантажуємо вміст файлу з URL
+            logger.i("TasksManager", "Downloading tasks with URL: $rawUrl with a strategy: $strategy")
             val content = URL(rawUrl).readText()
-
-            // Перевіряємо, чи вміст є валідним JSON
             val downloadedTasks = JsonParser.parseString(content).asJsonObject
-
-            // Обробляємо завантажені завдання згідно вибраної стратегії
             when (strategy) {
                 LoadStrategy.REPLACE_ALL -> {
-                    // Повністю замінюємо завдання новими
                     tasks = downloadedTasks
                 }
                 LoadStrategy.ADD_TO_EXISTING -> {
-                    // Додаємо нові завдання до існуючих
+                    // Add new tasks to existing
                     val currentTasksArray = getTasksArray() ?: JsonArray()
                     val downloadedTasksArray = downloadedTasks.getAsJsonArray("tasks") ?: JsonArray()
 
@@ -109,11 +98,11 @@ class TasksManager {
                     }
                 }
                 LoadStrategy.ADD_MISSING -> {
-                    // Додаємо тільки ті завдання, яких немає за назвою
+                    // Only add those tasks that are not by name
                     val currentTasksArray = getTasksArray() ?: JsonArray()
                     val downloadedTasksArray = downloadedTasks.getAsJsonArray("tasks") ?: JsonArray()
 
-                    // Створюємо набір існуючих назв завдань
+                    // Create a set of existing tasks names
                     val existingTaskNames = mutableSetOf<String>()
                     for (i in 0 until currentTasksArray.size()) {
                         val task = currentTasksArray.get(i).asJsonObject
@@ -123,7 +112,7 @@ class TasksManager {
                         }
                     }
 
-                    // Додаємо лише ті завдання, яких немає в існуючих
+                    // Only add those tasks that are not in existing
                     for (i in 0 until downloadedTasksArray.size()) {
                         val task = downloadedTasksArray.get(i).asJsonObject
                         val name = task.get("name")?.asString
@@ -133,11 +122,11 @@ class TasksManager {
                     }
                 }
                 LoadStrategy.UPDATE_AND_ADD -> {
-                    // Оновлюємо існуючі завдання та додаємо нові
+                    // Update existing tasks and add new
                     val currentTasksArray = getTasksArray() ?: JsonArray()
                     val downloadedTasksArray = downloadedTasks.getAsJsonArray("tasks") ?: JsonArray()
 
-                    // Створюємо мапу існуючих завдань за назвою
+                    // Create a map of existing tasks by name
                     val existingTaskMap = mutableMapOf<String, Int>()
                     for (i in 0 until currentTasksArray.size()) {
                         val task = currentTasksArray.get(i).asJsonObject
@@ -147,21 +136,21 @@ class TasksManager {
                         }
                     }
 
-                    // Оновлюємо існуючі або додаємо нові завдання
+                    // Update existing tasks or add new ones
                     for (i in 0 until downloadedTasksArray.size()) {
                         val task = downloadedTasksArray.get(i).asJsonObject
                         val name = task.get("name")?.asString
                         if (name != null) {
-                            // Якщо завдання існує, оновлюємо його
+                            // If the task exists, we update it.
                             if (existingTaskMap.containsKey(name)) {
                                 val index = existingTaskMap[name] ?: continue
-                                // Зберігаємо статус (enabled) з існуючого завдання
+                                // Are saving the status (enabled) from the existing task.
                                 val existingTask = currentTasksArray.get(index).asJsonObject
                                 val enabled = existingTask.get("enabled")?.asBoolean ?: false
                                 task.addProperty("enabled", enabled)
                                 currentTasksArray.set(index, task)
                             } else {
-                                // Інакше додаємо нове завдання
+                                // Otherwise, add a new task.
                                 currentTasksArray.add(task)
                             }
                         }
@@ -169,13 +158,12 @@ class TasksManager {
                 }
             }
 
-            // Зберігаємо оновлені завдання
+            // Are saving updated tasks.
             saveTasks()
             updateGitHubApiUrls()
             return true
         } catch (e: Exception) {
-            logger.e("TasksManager", "Помилка завантаження завдань з URL", e)
-            //println("Помилка завантаження завдань з URL: ${e.message}")
+            logger.e("TasksManager", "Error loading tasks from URL", e)
             e.printStackTrace()
             return false
         }
@@ -733,6 +721,7 @@ class TasksManager {
         // Get patterns object from settings
         val patternsObj = settingsManager.getObject(patternsPath)
 
+        // TODO investigate why log loop
         if (patternsObj != null) {
             // For each type of installation pattern
             patternsObj.keySet().forEach { installType ->

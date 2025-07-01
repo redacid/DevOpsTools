@@ -479,10 +479,10 @@ fun TaskEditDialog(
             githubApiUrl = githubObj.get("api_url")?.asString ?: ""
 
             // Load installation file if already selected
-            if (githubObj.has("asset")) {
-                selectedAsset = githubObj.get("asset")?.asString ?: ""
-                assetInstallType = githubObj.get("asset_type")?.asString ?: ""
-            }
+//            if (githubObj.has("asset")) {
+//                selectedAsset = githubObj.get("asset")?.asString ?: ""
+//                assetInstallType = githubObj.get("asset_type")?.asString ?: ""
+//            }
         }
         // Create scope for coroutines
         val coroutineScope = rememberCoroutineScope()
@@ -556,7 +556,7 @@ fun TaskEditDialog(
             }
         }
 
-        // Function to load available files for selected version
+        // Function to load available files for a selected version
         fun loadAssetsForVersion(version: String) {
             if (installType != "github" || githubApiUrl.isEmpty()) return
 
@@ -703,25 +703,25 @@ fun TaskEditDialog(
         fun installTool() {
             if (isInstalling || selectedAsset.isEmpty() || assetDownloadUrl.isEmpty()) return
 
-            // Show installation dialog
+            // Show an installation dialog
             showInstallationDialog = true
             isInstalling = true
             installationStatus = "Preparing installation..."
             installationProgress = 0.1f
 
             // Для налагодження виведемо додаткову інформацію
-            logger.i("Installing", "Installing: $name")
-            logger.i("Installing", "Selected asset: $selectedAsset")
-            logger.i("Installing", "Asset type: $assetInstallType")
-            logger.i("Installing", "Download URL: $assetDownloadUrl")
+            logger.i("TaskEditDialog.InstallTool", "Installing: $name")
+            logger.i("TaskEditDialog.InstallTool", "Selected asset: $selectedAsset")
+            logger.i("TaskEditDialog.InstallTool", "Asset type: $assetInstallType")
+            logger.i("TaskEditDialog.InstallTool", "Download URL: $assetDownloadUrl")
 
             coroutineScope.launch {
                 try {
-                    // Get temporary directory
+                    // Get a temporary directory
                     val tempDir = settingsManager.getString("settings.temp_path", "/tmp")
                     val toolDir = "$tempDir/${name.replace(" ", "_")}"
 
-                    // Create directory if it doesn't exist
+                    // Create a directory if it doesn't exist
                     installationStatus = "Creating temporary directory..."
                     installationProgress = 0.2f
                     val toolDirFile = File(toolDir)
@@ -729,7 +729,7 @@ fun TaskEditDialog(
                         toolDirFile.mkdirs()
                     }
 
-                    // Створюємо шлях для завантаження файлу
+                    // Creating a path for file upload.
                     val destinationFile = "$toolDir/$selectedAsset"
 
                     // Download the file
@@ -742,23 +742,23 @@ fun TaskEditDialog(
                             if (!destFile.parentFile.exists()) {
                                 destFile.parentFile.mkdirs()
                             }
-                            logger.i("Installing", "Downloading from: $assetDownloadUrl")
-                            logger.i("Installing", "Downloading to: $destinationFile")
+                            logger.i("TaskEditDialog.InstallTool", "Downloading from: $assetDownloadUrl")
+                            logger.i("TaskEditDialog.InstallTool", "Downloading to: $destinationFile")
 
                             URL(assetDownloadUrl).openStream().use { input ->
                                 Files.copy(input, Paths.get(destinationFile), StandardCopyOption.REPLACE_EXISTING)
                             }
 
-                            // Перевіряємо чи файл був успішно завантажений
+                            // Are checking if the file has been successfully uploaded.
                             val downloadedFile = File(destinationFile)
                             if (!downloadedFile.exists()) {
                                 installationStatus = "Download failed: File does not exist after download"
                                 return@withContext false
                             }
-                            logger.i("TasksManager", "File downloaded successfully: ${downloadedFile.absolutePath}, size: ${downloadedFile.length()} bytes")
+                            logger.i("TaskEditDialog.InstallTool", "File downloaded successfully: ${downloadedFile.absolutePath}, size: ${downloadedFile.length()} bytes")
                             true
                         } catch (e: Exception) {
-                            logger.e("TasksManager", "Error downloading file:", e)
+                            logger.e("TaskEditDialog.InstallTool", "Error downloading file:", e)
                             installationStatus = "Download error: ${e.message}"
                             false
                         }
@@ -855,7 +855,7 @@ fun TaskEditDialog(
 
                 } catch (e: Exception) {
                     installationStatus = "Installation error: ${e.message}"
-                    logger.e("Installing", "Installation error", e)
+                    logger.e("TaskEditDialog.InstallTool", "Installation error", e)
                     e.printStackTrace()
                 } finally {
                     installationProgress = 1.0f
