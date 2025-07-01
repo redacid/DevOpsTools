@@ -488,6 +488,7 @@ fun TaskEditDialog(
         val coroutineScope = rememberCoroutineScope()
         val tasksManager = TasksManager.getInstance()
         val settingsManager = SettingsManager.getInstance()
+        val systemInfo = SystemInfo.getInstance()
 
         // Function to check current version
         fun checkCurrentVersion() {
@@ -522,8 +523,10 @@ fun TaskEditDialog(
                             // Store highest score and install type
                             val currentScore = assetScores[asset]?.first ?: 0
                             val score = when (type) {
-                                "deb_based" -> 400
-                                "rpm_based" -> 300
+                                "deb_based" -> if (systemInfo.supportsDeb) 400 else 0
+                                "rpm_based" -> if (systemInfo.supportsRpm) 300 else 0
+                                //"arch_based" -> if (systemInfo.supportsPacman) 400 else 0
+                                //"suse_based" -> if (systemInfo.supportsZypper) 300 else 0
                                 "binary" -> 200
                                 "package" -> 100
                                 else -> 50
