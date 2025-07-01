@@ -108,7 +108,7 @@ class TasksManager {
      * @param strategy The loading strategy for tasks
      * @return true if the loading is successful, false in case of an error
      */
-    fun reloadTasks(strategy: LoadStrategy = LoadStrategy.REPLACE_ALL): Boolean {
+    fun reloadTasks(strategy: LoadStrategy = LoadStrategy.ADD_MISSING): Boolean {
         try {
             val tasksUrl = settingsManager.getString("settings.tasks_url")
 
@@ -326,9 +326,9 @@ class TasksManager {
     }
 
     // Старий метод, залишений для сумісності
-    fun reloadTasks() {
-        reloadTasks(LoadStrategy.REPLACE_ALL)
-    }
+//    fun reloadTasks() {
+//        //reloadTasks(LoadStrategy.REPLACE_ALL)
+//    }
 
     private fun downloadTasksFromUrl() {
         reloadTasks(LoadStrategy.REPLACE_ALL)
