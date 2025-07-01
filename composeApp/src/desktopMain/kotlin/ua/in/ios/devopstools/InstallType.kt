@@ -343,7 +343,7 @@ class DistributivePackageInstallType : BaseInstallType() {
     override val typeName = "distributive_package"
 
     override suspend fun isSupported(): Boolean {
-        // Перевіряємо, чи система підтримує deb або rpm
+        // Checking whether the system supports deb or rpm.
         val (exitCodeDpkg, _) = executeCommand("which dpkg")
         val (exitCodeRpm, _) = executeCommand("which rpm")
         return exitCodeDpkg == 0 || exitCodeRpm == 0
@@ -352,14 +352,14 @@ class DistributivePackageInstallType : BaseInstallType() {
     override suspend fun isInstalled(task: JsonObject): Boolean {
         val packageName = task.get("package_name")?.asString ?: return false
 
-        // Перевіряємо deb-пакети через dpkg
+        // Checking deb packages using dpkg.
         val (exitCodeDpkg, _) = executeCommand("which dpkg")
         if (exitCodeDpkg == 0) {
             val (exitCode, _) = executeCommand("dpkg -s $packageName")
             if (exitCode == 0) return true
         }
 
-        // Перевіряємо rpm-пакети через rpm
+        // Checking rpm packages using rpm.
         val (exitCodeRpm, _) = executeCommand("which rpm")
         if (exitCodeRpm == 0) {
             val (exitCode, _) = executeCommand("rpm -q $packageName")
@@ -370,8 +370,8 @@ class DistributivePackageInstallType : BaseInstallType() {
     }
 
     override suspend fun install(task: JsonObject): Boolean {
-        // Логіка для завантаження та встановлення deb/rpm пакета
-        // Потребує додаткової імплементації
+    // Logic for downloading and installing deb/rpm packages
+    // Requires additional implementation
         return false
     }
 
@@ -382,14 +382,14 @@ class DistributivePackageInstallType : BaseInstallType() {
     override suspend fun uninstall(task: JsonObject): Boolean {
         val packageName = task.get("package_name")?.asString ?: return false
 
-        // Видаляємо deb-пакети через dpkg
+        // Removing deb packages using dpkg
         val (exitCodeDpkg, _) = executeCommand("which dpkg")
         if (exitCodeDpkg == 0) {
             val (exitCode, _) = executeCommand("sudo dpkg -r $packageName")
             if (exitCode == 0) return true
         }
 
-        // Видаляємо rpm-пакети через rpm
+        // Removing rpm packages using rpm.
         val (exitCodeRpm, _) = executeCommand("which rpm")
         if (exitCodeRpm == 0) {
             val (exitCode, _) = executeCommand("sudo rpm -e $packageName")
@@ -402,7 +402,7 @@ class DistributivePackageInstallType : BaseInstallType() {
     override suspend fun getCurrentVersion(task: JsonObject): String {
         val packageName = task.get("package_name")?.asString ?: return ""
 
-        // Отримуємо версію deb-пакета
+        // Getting the version of the deb package
         val (exitCodeDpkg, _) = executeCommand("which dpkg")
         if (exitCodeDpkg == 0) {
             val (exitCode, output) = executeCommand("dpkg -s $packageName | grep Version")
@@ -411,7 +411,7 @@ class DistributivePackageInstallType : BaseInstallType() {
             }
         }
 
-        // Отримуємо версію rpm-пакета
+        // Getting the version of the rpm package.
         val (exitCodeRpm, _) = executeCommand("which rpm")
         if (exitCodeRpm == 0) {
             val (exitCode, output) = executeCommand("rpm -q $packageName --qf '%{VERSION}'")
@@ -424,8 +424,8 @@ class DistributivePackageInstallType : BaseInstallType() {
     }
 
     override suspend fun getAvailableVersion(task: JsonObject): String {
-        // Логіка для отримання доступної версії пакета
-        // Це залежить від джерела пакета
+        // Logic for obtaining the available version of the package
+        // This depends on the package source
         return ""
     }
 }
@@ -442,7 +442,7 @@ class PackageInstallType : BaseInstallType() {
     }
 
     override suspend fun install(task: JsonObject): Boolean {
-        // Логіка для встановлення пакета
+        // Logic for package installation
         return false
     }
 
@@ -451,7 +451,7 @@ class PackageInstallType : BaseInstallType() {
     }
 
     override suspend fun uninstall(task: JsonObject): Boolean {
-        // Логіка для видалення пакета
+        // Logic for package deletion
         return false
     }
 
@@ -468,7 +468,7 @@ class PackageInstallType : BaseInstallType() {
     }
 
     override suspend fun getAvailableVersion(task: JsonObject): String {
-        // Логіка для отримання доступної версії пакета
+        // Logic for obtaining the available version of the package
         return ""
     }
 }
@@ -487,16 +487,14 @@ class RemoteShellScriptInstallType : BaseInstallType() {
     override suspend fun install(task: JsonObject): Boolean {
         val scriptUrl = task.get("script_url")?.asString ?: return false
 
-        // Завантажуємо скрипт у тимчасовий файл
+        // Loading the script into a temporary file.
         val tempScript = "/tmp/install_${System.currentTimeMillis()}.sh"
         if (!downloadFile(scriptUrl, tempScript)) {
             return false
         }
 
-        // Виконуємо скрипт
         val (exitCode, _) = executeCommand("chmod +x $tempScript && $tempScript")
 
-        // Видаляємо тимчасовий файл
         withContext(Dispatchers.IO) {
             File(tempScript).delete()
         }
@@ -528,7 +526,7 @@ class RemoteShellScriptInstallType : BaseInstallType() {
     }
 
     override suspend fun getAvailableVersion(task: JsonObject): String {
-        // Для remote_shell_script складно визначити доступну версію без додаткової інформації
+        // It is difficult to determine the available version for remote_shell_script without additional information.
         return ""
     }
 }
@@ -587,7 +585,7 @@ class PackageManagerInstallType : BaseInstallType() {
     override val typeName = "package_manager"
 
     override suspend fun isSupported(): Boolean {
-        // Перевіряємо наявність хоча б одного пакетного менеджера
+        // Checking for the presence of at least one package manager.
         val (exitCodeApt, _) = executeCommand("which apt")
         val (exitCodeYum, _) = executeCommand("which yum")
         val (exitCodeDnf, _) = executeCommand("which dnf")
@@ -601,7 +599,7 @@ class PackageManagerInstallType : BaseInstallType() {
     override suspend fun isInstalled(task: JsonObject): Boolean {
         val packageName = task.get("package_name")?.asString ?: return false
 
-        // Перевіряємо наявність пакета через доступний пакетний менеджер
+        // Check the availability of the package through the accessible package manager.
         if (isAptAvailable()) {
             val (exitCode, _) = executeCommand("dpkg -s $packageName")
             if (exitCode == 0) return true
@@ -628,7 +626,7 @@ class PackageManagerInstallType : BaseInstallType() {
     override suspend fun install(task: JsonObject): Boolean {
         val packageName = task.get("package_name")?.asString ?: return false
 
-        // Встановлюємо пакет через доступний пакетний менеджер
+        // Install the package through the available package manager.
         if (isAptAvailable()) {
             val (exitCode, _) = executeCommand("sudo apt-get install -y $packageName")
             if (exitCode == 0) return true
@@ -660,7 +658,7 @@ class PackageManagerInstallType : BaseInstallType() {
     override suspend fun update(task: JsonObject): Boolean {
         val packageName = task.get("package_name")?.asString ?: return false
 
-        // Оновлюємо пакет через доступний пакетний менеджер
+        // Are updating the package through the available package manager.
         if (isAptAvailable()) {
             val (exitCode, _) = executeCommand("sudo apt-get upgrade -y $packageName")
             if (exitCode == 0) return true
@@ -692,7 +690,7 @@ class PackageManagerInstallType : BaseInstallType() {
     override suspend fun uninstall(task: JsonObject): Boolean {
         val packageName = task.get("package_name")?.asString ?: return false
 
-        // Видаляємо пакет через доступний пакетний менеджер
+        // Are removing the package using the available package manager.
         if (isAptAvailable()) {
             val (exitCode, _) = executeCommand("sudo apt-get remove -y $packageName")
             if (exitCode == 0) return true
@@ -724,7 +722,7 @@ class PackageManagerInstallType : BaseInstallType() {
     override suspend fun getCurrentVersion(task: JsonObject): String {
         val packageName = task.get("package_name")?.asString ?: return ""
 
-        // Отримуємо версію пакета через доступний пакетний менеджер
+        // Obtain the package version through the available package manager.
         if (isAptAvailable()) {
             val (exitCode, output) = executeCommand("dpkg -s $packageName | grep Version")
             if (exitCode == 0) {
