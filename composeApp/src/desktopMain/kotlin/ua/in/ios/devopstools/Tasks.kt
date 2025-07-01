@@ -871,10 +871,6 @@ class TasksManager {
     }
 }
 
-
-/**
- * Utility class for tasks and applications management
- */
 object TaskUtils {
     private val logger = Logger.getInstance()
 

@@ -85,6 +85,7 @@ class GithubInstaller {
         val options = tasksManager.getAvailableInstallationOptions(task)
         val filtered = mutableListOf<String>()
         val assetScores = mutableMapOf<String, Pair<Int, String>>()
+        val systemInfo = SystemInfo.getInstance()
 
         assets.forEach { assetScores[it] = Pair(0, "") }
 
@@ -97,12 +98,15 @@ class GithubInstaller {
                     if (regex.matches(asset)) {
                         val currentScore = assetScores[asset]?.first ?: 0
                         val score = when (type) {
-                            "deb_based" -> 400
-                            "rpm_based" -> 300
+                            "deb_based" -> if (systemInfo.supportsDeb) 400 else 0
+                            "rpm_based" -> if (systemInfo.supportsRpm) 300 else 0
+                            //"arch_based" -> if (systemInfo.supportsPacman) 400 else 0
+                            //"suse_based" -> if (systemInfo.supportsZypper) 300 else 0
                             "package" -> 200
                             "binary" -> 100
                             else -> 50
                         }
+
 
                         if (score > currentScore) {
                             assetScores[asset] = Pair(score, type)

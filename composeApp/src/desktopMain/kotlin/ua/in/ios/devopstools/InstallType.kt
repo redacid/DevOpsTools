@@ -9,54 +9,24 @@ import java.nio.file.Files
 import java.nio.file.Paths
 import java.nio.file.StandardCopyOption
 
-/**
- * Інтерфейс для різних типів встановлення програм
- */
 interface InstallType {
-    /**
-     * Назва типу встановлення, як вона зберігається в JSON
-     */
     val typeName: String
 
-    /**
-     * Перевіряє, чи підтримується встановлення для поточної системи
-     */
     suspend fun isSupported(): Boolean
 
-    /**
-     * Перевіряє, чи встановлена програма
-     */
     suspend fun isInstalled(task: JsonObject): Boolean
 
-    /**
-     * Встановлює програму
-     */
     suspend fun install(task: JsonObject): Boolean
 
-    /**
-     * Оновлює програму до нової версії
-     */
     suspend fun update(task: JsonObject): Boolean
 
-    /**
-     * Видаляє програму
-     */
     suspend fun uninstall(task: JsonObject): Boolean
 
-    /**
-     * Повертає поточну версію програми
-     */
     suspend fun getCurrentVersion(task: JsonObject): String
 
-    /**
-     * Повертає доступну версію програми
-     */
     suspend fun getAvailableVersion(task: JsonObject): String
 
     companion object {
-        /**
-         * Створює відповідний об'єкт InstallType на основі назви типу
-         */
         fun createFromTypeName(typeName: String): InstallType {
             return when (typeName) {
                 "github" -> GithubInstallType()
@@ -71,13 +41,7 @@ interface InstallType {
     }
 }
 
-/**
- * Базова реалізація InstallType з загальними методами
- */
 abstract class BaseInstallType : InstallType {
-    /**
-     * Виконує команду в системі, використовуючи графічний інтерфейс для введення пароля, якщо потрібно
-     */
     protected suspend fun executeCommand(command: String, workingDir: String = ""): Pair<Int, String> {
         return withContext(Dispatchers.IO) {
             try {
@@ -172,9 +136,6 @@ abstract class BaseInstallType : InstallType {
         }
     }
 
-    /**
-     * Безпосереднє виконання команди без додаткової обробки
-     */
     private suspend fun executeCommandDirect(command: String, workingDir: String = ""): Pair<Int, String> {
         return withContext(Dispatchers.IO) {
             try {
@@ -206,9 +167,6 @@ abstract class BaseInstallType : InstallType {
         }
     }
 
-    /**
-     * Завантажує файл з URL
-     */
     protected suspend fun downloadFile(url: String, destination: String): Boolean {
         return withContext(Dispatchers.IO) {
             try {
@@ -228,24 +186,16 @@ abstract class BaseInstallType : InstallType {
         }
     }
 
-    /**
-     * Отримує шлях для встановлення з налаштувань або використовує типовий
-     */
     protected fun getInstallPath(task: JsonObject): String {
         val settingsManager = SettingsManager.getInstance()
         val installPath = settingsManager.getString("settings.install_path")
 
-        return if (installPath.isNotEmpty()) {
-            installPath
-        } else {
-            "/usr/local/bin" // Типовий шлях
+        return installPath.ifEmpty {
+            "/usr/local/bin"
         }
     }
 }
 
-/**
- * Тип встановлення для GitHub релізів
- */
 class GithubInstallType : BaseInstallType() {
     override val typeName = "github"
 
@@ -362,9 +312,6 @@ class GithubInstallType : BaseInstallType() {
         }
     }
 
-    /**
-     * Конвертує звичайний GitHub URL у відповідний API URL
-     */
     private fun convertGithubUrlToApiUrl(githubUrl: String): String {
         // Перевіряємо, чи це GitHub URL
         if (!githubUrl.contains("github.com")) {
@@ -392,9 +339,6 @@ class GithubInstallType : BaseInstallType() {
     }
 }
 
-/**
- * Тип встановлення для дистрибутивних пакетів (deb, rpm)
- */
 class DistributivePackageInstallType : BaseInstallType() {
     override val typeName = "distributive_package"
 
@@ -486,9 +430,6 @@ class DistributivePackageInstallType : BaseInstallType() {
     }
 }
 
-/**
- * Тип встановлення для звичайних пакетів
- */
 class PackageInstallType : BaseInstallType() {
     override val typeName = "package"
 
@@ -532,9 +473,6 @@ class PackageInstallType : BaseInstallType() {
     }
 }
 
-/**
- * Тип встановлення через віддалений shell-скрипт
- */
 class RemoteShellScriptInstallType : BaseInstallType() {
     override val typeName = "remote_shell_script"
 
@@ -595,9 +533,6 @@ class RemoteShellScriptInstallType : BaseInstallType() {
     }
 }
 
-/**
- * Тип встановлення через команду оболонки
- */
 class ShellCmdInstallType : BaseInstallType() {
     override val typeName = "shell_cmd"
 
@@ -648,9 +583,6 @@ class ShellCmdInstallType : BaseInstallType() {
     }
 }
 
-/**
- * Тип встановлення через системний пакетний менеджер
- */
 class PackageManagerInstallType : BaseInstallType() {
     override val typeName = "package_manager"
 
