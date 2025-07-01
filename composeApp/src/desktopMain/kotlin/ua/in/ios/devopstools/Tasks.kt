@@ -737,14 +737,14 @@ class TasksManager {
             // For each type of installation pattern
             patternsObj.keySet().forEach { installType ->
                 if (patternsObj.has(installType) && patternsObj.get(installType).isJsonArray) {
-                    logger.d("TaskManager.getAvailableInstallationOptions", "$taskName Available $installType patterns: ${patternsObj.get(installType).asJsonArray}")
+                    //logger.d("TaskManager.getAvailableInstallationOptions", "$taskName Available $installType patterns: ${patternsObj.get(installType).asJsonArray}")
 
                     if (installType == "deb_based" && !systemInfo.supportsDeb) {
-                        logger.w("TaskManager.getAvailableInstallationOptions", "deb based install options not supported")
+                        //logger.w("TaskManager.getAvailableInstallationOptions", "deb based install options not supported")
                         return@forEach
                     }
                     if (installType == "rpm_based" && !systemInfo.supportsRpm) {
-                        logger.w("TaskManager.getAvailableInstallationOptions", "rpm based install options not supported")
+                        //logger.w("TaskManager.getAvailableInstallationOptions", "rpm based install options not supported")
                         return@forEach
                     }
 
@@ -889,7 +889,7 @@ object TaskUtils {
                     if (rawVersion.isNotEmpty()) {
                         // Витягуємо версію за допомогою регулярних виразів
                         var extractedVersion = extractVersionNumber(rawVersion, task)
-                        logger.d("TaskUtils.checkCurrentVersion", "Current version for ${task.get("name")}: $rawVersion")
+                        logger.d("TaskUtils.checkCurrentVersion", "RAW Current version for ${task.get("name")}: $rawVersion")
                         return@withContext extractedVersion
                     } else {
                         "Not installed"

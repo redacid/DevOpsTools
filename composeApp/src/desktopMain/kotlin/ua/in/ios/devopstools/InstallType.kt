@@ -89,7 +89,7 @@ abstract class BaseInstallType : InstallType {
                         logger.i("BaseInstallType.ExecuteCommand", "Using zenity+sudo -S for sudo command")
                         try {
                             // Запитуємо пароль через zenity
-                            val passwordCmd = "zenity --password --title=\"Введіть пароль адміністратора\""
+                            val passwordCmd = "zenity --password --title=\"Enter sudo password\""
                             val passwordProcess = Runtime.getRuntime().exec(passwordCmd)
                             val password = passwordProcess.inputStream.bufferedReader().use { it.readText() }
                             val passwordExitCode = passwordProcess.waitFor()
