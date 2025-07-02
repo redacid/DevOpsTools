@@ -54,6 +54,103 @@ fun parseLinksFromReleaseNotes(body: String): Pair<List<String>, Map<String, Str
     return Pair(assets, assetUrlMap)
 }
 
+suspend fun getFilenameFromUrl_courutine(url: String): String {
+    return withContext(Dispatchers.IO) {
+        try {
+            val connection = URL(url).openConnection() as java.net.HttpURLConnection
+            connection.requestMethod = "HEAD"
+
+            // Спроба отримати ім'я з заголовка Content-Disposition
+            val disposition = connection.getHeaderField("Content-Disposition")
+            if (!disposition.isNullOrEmpty()) {
+                val filenamePattern = "filename=[\"]?([^\"]*?)[\"]?$".toRegex()
+                val matchResult = filenamePattern.find(disposition)
+                if (matchResult != null) {
+                    return@withContext matchResult.groupValues[1]
+                }
+            }
+
+            // Якщо заголовок відсутній, отримуємо ім'я з URL
+            val urlPath = URL(url).path
+            val filename = urlPath.substringAfterLast('/')
+
+            if (filename.isNotEmpty()) {
+                return@withContext filename
+            }
+
+            // Якщо не вдалося отримати ім'я ні з заголовка, ні з URL
+            return@withContext "download_${System.currentTimeMillis()}"
+
+        } catch (e: Exception) {
+            logger.e("TaskUtils.getFilenameFromUrl", "Помилка при отриманні імені файлу з URL '$url'", e)
+            // У випадку помилки повертаємо ім'я з URL або генеруємо тимчасове
+            val fallbackName = url.substringAfterLast('/').takeIf { it.isNotEmpty() }
+                ?: "download_${System.currentTimeMillis()}"
+            return@withContext fallbackName
+        }
+    }
+}
+
+fun getFilenameFromUrl(url: String): String {
+    try {
+        val connection = URL(url).openConnection() as java.net.HttpURLConnection
+        connection.requestMethod = "HEAD"
+
+        // Try to get filename from Content-Disposition header
+        val disposition = connection.getHeaderField("Content-Disposition")
+        logger.d("getFilenameFromUrl", "Content-Disposition: $disposition")
+        if (!disposition.isNullOrEmpty()) {
+            // Look for filename* (RFC 5987)
+            val filenameStarPattern = """filename\*=(?:UTF-8|utf-8)?''([^;"\s]+)""".toRegex()
+            val starMatch = filenameStarPattern.find(disposition)
+            if (starMatch != null) {
+                return java.net.URLDecoder.decode(starMatch.groupValues[1], "UTF-8")
+            }
+
+            // Look for regular filename
+            val filenamePattern = """filename=["']?([^"';\s]+)["']?""".toRegex()
+            val matchResult = filenamePattern.find(disposition)
+            if (matchResult != null) {
+                return matchResult.groupValues[1]
+            }
+        }
+
+        // If header is missing, extract name from URL
+        val urlPath = URL(url).path
+        val filename = urlPath.substringAfterLast('/')
+
+        if (filename.isNotEmpty()) {
+            return filename
+        }
+
+        // If failed to get name from both header and URL
+        return "download_${System.currentTimeMillis()}"
+
+    } catch (e: Exception) {
+        logger.e("TaskUtils.getFilenameFromUrl", "Error getting filename from URL '$url'", e)
+        // In case of error, return name from URL or generate temporary one
+        return url.substringAfterLast('/').takeIf { it.isNotEmpty() }
+            ?: "download_${System.currentTimeMillis()}"
+    }
+}
+
+
+
+fun getFileType(filename: String): String {
+    return when {
+        filename.endsWith(".tar.gz") -> "package"
+        filename.endsWith(".deb") -> "deb_based"
+        filename.endsWith(".rpm") -> "rpm_based"
+        filename.endsWith(".tar") -> "package"
+        filename.endsWith(".tgz") -> "package"
+        filename.endsWith(".gz") -> "package"
+        filename.endsWith(".zip") -> "package"
+        filename.endsWith(".sh") -> "shell_script"
+        filename.endsWith("") -> "binary"
+        else -> "unknown"
+    }
+}
+
 
 class TasksManager {
     private val gson: Gson = GsonBuilder().setPrettyPrinting().create()
