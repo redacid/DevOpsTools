@@ -1608,10 +1608,12 @@ fun TasksTable() {
                                 horizontalArrangement = Arrangement.Center,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                InstallButton(
-                                    task,
-                                    onInstallComplete = { refreshTasks() }
-                                )
+                                if (task.get("install_type")?.asString == "github" && task.get("enabled")?.asBoolean == true) {
+                                    InstallButton(
+                                        task,
+                                        onInstallComplete = { refreshTasks() }
+                                    )
+                                }
                             }
                             // Description
                             Text(
