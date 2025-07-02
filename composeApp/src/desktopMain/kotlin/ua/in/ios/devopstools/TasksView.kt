@@ -1,5 +1,6 @@
 package ua.`in`.ios.devopstools
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -14,7 +15,11 @@ import androidx.compose.ui.unit.dp
 import com.google.gson.JsonObject
 import kotlinx.coroutines.launch
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.window.DialogProperties
 import kotlinx.coroutines.Dispatchers
@@ -26,6 +31,7 @@ import java.nio.file.Files
 import java.nio.file.Paths
 import java.nio.file.StandardCopyOption
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.zIndex
 import kotlin.collections.component1
 import kotlin.collections.component2
 import kotlin.text.ifEmpty
@@ -437,6 +443,13 @@ fun TaskEditDialog(
     onDismissRequest: () -> Unit,
     onSaveRequest: (JsonObject) -> Unit
 ) {
+    // Create scope for coroutines
+    val coroutineScope = rememberCoroutineScope()
+    var showLoadingOverlay by remember { mutableStateOf(false) }
+    var isLoadingVersions by remember { mutableStateOf(false) }
+    var availableVersions by remember { mutableStateOf(listOf<String>()) }
+
+
     if (isOpen) {
         val editedTask = JsonObject().apply {
             // Copy all fields from the original task
@@ -455,8 +468,8 @@ fun TaskEditDialog(
         // For version checking
         var currentVersion by remember { mutableStateOf("") }
         var isCheckingCurrentVersion by remember { mutableStateOf(false) }
-        var availableVersions by remember { mutableStateOf(listOf<String>()) }
-        var isLoadingVersions by remember { mutableStateOf(false) }
+        //var availableVersions by remember { mutableStateOf(listOf<String>()) }
+
         var selectedVersion by remember { mutableStateOf("") }
         // For installation file selection
         //var availableAssets by remember { mutableStateOf(listOf<String>()) }
@@ -487,8 +500,7 @@ fun TaskEditDialog(
 //                assetInstallType = githubObj.get("asset_type")?.asString ?: ""
 //            }
         }
-        // Create scope for coroutines
-        val coroutineScope = rememberCoroutineScope()
+
         val tasksManager = TasksManager.getInstance()
         val settingsManager = SettingsManager.getInstance()
         val systemInfo = SystemInfo.getInstance()
@@ -615,25 +627,28 @@ fun TaskEditDialog(
         fun loadAvailableVersions() {
             if (installType != "github") return
 
-            isLoadingVersions = true
-            availableVersions = listOf("Loading...")
+            coroutineScope.launch(Dispatchers.Main) {
+                showLoadingOverlay = true
+                isLoadingVersions = true
+                availableVersions = listOf("Loading...")
+                logger.i("LoadVersions", "Setting showLoadingOverlay to ${showLoadingOverlay}")
+            }
 
-            coroutineScope.launch {
+            coroutineScope.launch(Dispatchers.IO) {
+//                showLoadingOverlay = true
+//                isLoadingVersions = true
+//                availableVersions = listOf("Loading...")
                 try {
                     if (githubApiUrl.isNotEmpty()) {
                         val jsonArray = tasksManager.getGithubReleases(githubApiUrl)
-
                         val versions = mutableListOf<String>()
 
-                        // Безпечно обробляємо nullable JsonArray
                         if (jsonArray != null) {
                             for (i in 0 until jsonArray.size()) {
                                 // Отримуємо JsonObject безпечно
                                 val releaseElement = jsonArray.get(i)
                                 if (releaseElement != null && releaseElement.isJsonObject) {
                                     val release = releaseElement.asJsonObject
-
-                                    // Безпечно отримуємо tag_name
                                     val tagNameElement = release.get("tag_name")
                                     if (tagNameElement != null && tagNameElement.isJsonPrimitive) {
                                         val tagName = tagNameElement.asString
@@ -642,14 +657,11 @@ fun TaskEditDialog(
                                 }
                             }
                         }
-
                         if (versions.isNotEmpty()) {
                             availableVersions = versions
                             selectedVersion = versions[0]
-                            // TODO condition for parse release notes
                             loadAssetsForVersion(selectedVersion)
                         } else {
-                            // Спробуємо отримати останній реліз, якщо список релізів порожній
                             val latestRelease = tasksManager.getLatestGithubRelease(githubApiUrl)
                             if (latestRelease != null) {
                                 val tagNameElement = latestRelease.get("tag_name")
@@ -669,13 +681,17 @@ fun TaskEditDialog(
                         availableVersions = listOf("No API URL specified")
                     }
                 } catch (e: Exception) {
-                    availableVersions = listOf("Loading error")
+                    withContext(Dispatchers.Main) {
+                        availableVersions = listOf("Loading error")
+                    }
                     logger.e("TasksManager", "Error loading versions:", e)
-                    //println("Error loading versions: ${e.message}")
                     e.printStackTrace()
+                } finally {
+                    withContext(Dispatchers.Main) {
+                        isLoadingVersions = false
+                        showLoadingOverlay = false
+                    }
                 }
-
-                isLoadingVersions = false
             }
         }
 
@@ -857,7 +873,8 @@ fun TaskEditDialog(
                         installationStatus = "Installation completed successfully"
                         // Refresh current version after installation
                         delay(1000) // Wait a moment for the installation to settle
-                        currentVersion = getInstallTypeForTask(task)?.getCurrentVersion(task) ?: "Unknown"
+                        //currentVersion = getInstallTypeForTask(task)?.getCurrentVersion(task) ?: "Unknown"
+                        currentVersion = TaskUtils.checkCurrentVersion(task)
                     } else {
                         installationStatus = "Installation failed"
                     }
@@ -922,6 +939,59 @@ fun TaskEditDialog(
             title = { Text(text = "Edit Task") },
             modifier = Modifier.fillMaxWidth(0.9f).fillMaxHeight(0.9f),
             text = {
+                if (isLoadingVersions) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .zIndex(Float.POSITIVE_INFINITY)
+                            .clip(RoundedCornerShape(16.dp))
+                            .background(Color(0x80000000)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.Center
+                        ) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(48.dp),
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Text(
+                                "Loading versions...",
+                                color = Color.White,
+                                style = MaterialTheme.typography.bodyLarge
+                            )
+                        }
+                    }
+                }
+
+//                Box(modifier = Modifier.fillMaxSize()) {
+//                    Text(text = "showLoadingOverlay: ${showLoadingOverlay}")
+//                    if (showLoadingOverlay) {
+//                        Surface(
+//                            modifier = Modifier
+//                                .fillMaxSize()
+//                                .alpha(0.7f),
+//                            color = MaterialTheme.colorScheme.surface
+//                        ) {
+//                            Column(
+//                                modifier = Modifier.fillMaxSize(),
+//                                horizontalAlignment = Alignment.CenterHorizontally,
+//                                verticalArrangement = Arrangement.Center
+//                            ) {
+//                                CircularProgressIndicator(
+//                                    modifier = Modifier.size(48.dp)
+//                                )
+//                                Spacer(modifier = Modifier.height(16.dp))
+//                                Text(
+//                                    "Loading versions...",
+//                                    style = MaterialTheme.typography.bodyLarge
+//                                )
+//                            }
+//                        }
+//                    }
+//                }
                 Box(
                     modifier = Modifier.fillMaxSize()
                 ) {
@@ -939,7 +1009,6 @@ fun TaskEditDialog(
                             modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
                             singleLine = true
                         )
-
                         OutlinedTextField(
                             value = description,
                             onValueChange = { description = it },
@@ -1113,16 +1182,6 @@ fun TaskEditDialog(
                                 style = MaterialTheme.typography.titleMedium,
                                 modifier = Modifier.padding(vertical = 8.dp)
                             )
-                            Row(
-                                modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Checkbox(
-                                    checked = parseReleaseNotes,
-                                    onCheckedChange = { parseReleaseNotes = it }
-                                )
-                                Text("Parse Release Notes", modifier = Modifier.padding(start = 8.dp))
-                            }
 
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
@@ -1143,7 +1202,7 @@ fun TaskEditDialog(
                                                 val url = java.net.URI(githubUrl).toURL()
                                                 java.awt.Desktop.getDesktop().browse(url.toURI())
                                             } catch (e: Exception) {
-                                                logger.e("TasksManager", "Error opening URL:", e)
+                                                logger.e("TasksEditDialog", "Error opening URL:", e)
                                             }
                                         }
                                     },
@@ -1161,7 +1220,16 @@ fun TaskEditDialog(
                                     readOnly = true
                                 )
                             }
-
+                            Row(
+                                modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Checkbox(
+                                    checked = parseReleaseNotes,
+                                    onCheckedChange = { parseReleaseNotes = it }
+                                )
+                                Text("Parse Release Notes for download links", modifier = Modifier.padding(start = 8.dp))
+                            }
                             // Installation file selection section
                                 if (filteredAssets.isNotEmpty()) {
                                     Text(
@@ -1302,7 +1370,7 @@ fun TaskEditDialog(
             properties = DialogProperties(
                 dismissOnBackPress = true,
                 dismissOnClickOutside = true,
-                usePlatformDefaultWidth = false
+                usePlatformDefaultWidth = false,
             )
         )
     }
