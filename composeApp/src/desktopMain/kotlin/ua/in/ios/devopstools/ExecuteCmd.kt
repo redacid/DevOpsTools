@@ -77,7 +77,7 @@ suspend fun executeCommandSudo(command: String, workingDir: String = ""): Boolea
                     logger.i("executeCommandSudo.hasZenity", "Using zenity for sudo password")
                     try {
                         // Ask the password via Zenity
-                        val passwordCmd = arrayOf("zenity", "--password", "--title=Введіть пароль адміністратора")
+                        val passwordCmd = arrayOf("zenity", "--password", "--title=Enter sudo password")
                         val passwordProcess = Runtime.getRuntime().exec(passwordCmd)
                         val password = passwordProcess.inputStream.bufferedReader().use { it.readText() }
                         val passwordExitCode = passwordProcess.waitFor()

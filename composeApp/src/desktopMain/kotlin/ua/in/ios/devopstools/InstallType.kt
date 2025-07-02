@@ -124,7 +124,7 @@ abstract class BaseInstallType : InstallType {
 
                     // Якщо всі методи не вдалися, повертаємо помилку
                     logger.e("BaseInstallType.ExecuteCommand", "Failed to execute sudo command - no graphical sudo utility available")
-                    return@withContext Pair(-1, "Не вдалося виконати команду sudo. Встановіть pkexec, gksudo або kdesu.")
+                    return@withContext Pair(-1, "Unable to execute the sudo command. Install pkexec, gksudo, or kdesu.")
                 } else {
                     // Якщо команда не потребує sudo, виконуємо її звичайним способом
                     return@withContext executeCommandDirect(command, workingDir)
