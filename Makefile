@@ -24,6 +24,10 @@ TARGET_MAX_CHAR_NUM = 30
 
 all: help
 
+copy_my_tasks:
+	cp ~/.devopstools/tasks.json ./
+
+
 ## Build and Publish
 git-publish:
 	make clean-workspace

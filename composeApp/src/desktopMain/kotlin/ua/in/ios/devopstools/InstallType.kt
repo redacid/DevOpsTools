@@ -139,13 +139,27 @@ abstract class BaseInstallType : InstallType {
     private suspend fun executeCommandDirect(command: String, workingDir: String = ""): Pair<Int, String> {
         return withContext(Dispatchers.IO) {
             try {
+
+                val args = command.split("\\s+".toRegex())
+                val mainCommand = args[0]
+                val paths = System.getenv("PATH").split(":")
+                val commandExists = paths.any { path ->
+                    File("$path/$mainCommand").exists()
+                }
+
+
+                if (!commandExists) {
+                    logger.i("BaseInstallType.executeCommandDirect", "Command '$mainCommand' not found")
+                    return@withContext Pair(-1, "Command '$mainCommand' not found")
+                }
+
                 val processBuilder = ProcessBuilder()
                 if (workingDir.isNotEmpty()) {
                     processBuilder.directory(File(workingDir))
                 }
 
-                // Розділяємо команду на аргументи
-                val args = command.split("\\s+".toRegex())
+                // Split command to arguments
+                //val args = command.split("\\s+".toRegex())
                 processBuilder.command(args)
 
                 val process = processBuilder.start()
@@ -161,7 +175,7 @@ abstract class BaseInstallType : InstallType {
 
                 Pair(exitCode, combinedOutput.trim())
             } catch (e: Exception) {
-                logger.e("TasksManager", "Error when executing direct command '$command'", e)
+                logger.e("BaseInstallType.executeCommandDirect", "Error when executing direct command '$command'", e)
                 Pair(-1, e.message ?: "Unknown error")
             }
         }

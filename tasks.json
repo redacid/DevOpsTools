@@ -12,6 +12,7 @@
       "github": {
         "url": "https://github.com/mikefarah/yq",
         "api_url": "https://api.github.com/repos/mikefarah/yq",
+        "parse_release_notes": false,
         "asset": "yq_linux_amd64",
         "asset_type": "binary"
       }
@@ -249,6 +250,20 @@
         "parse_release_notes": false,
         "asset": "lazydocker_0.24.1_Linux_x86_64.tar.gz",
         "asset_type": "package"
+      }
+    },
+    {
+      "name": "anchore-cli",
+      "description": "",
+      "binary_name": "anchore-cli",
+      "install_type": "github",
+      "version_cmd": "--version",
+      "installed_as": "",
+      "enabled": false,
+      "install_version": "latest",
+      "github": {
+        "url": "https://github.com/anchore/anchore-cli",
+        "api_url": "https://api.github.com/repos/anchore/anchore-cli"
       }
     }
   ]
