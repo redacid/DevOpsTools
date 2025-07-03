@@ -1053,8 +1053,9 @@ fun TaskEditDialog(
                                 if (foundBinary.isNotEmpty()) {
                                     val copyCommand = "sudo cp $foundBinary $installPath/$binaryFile"
                                     val chmodCommand = "sudo chmod +x $installPath/$binaryFile"
-                                    //executeCommandSudo(copyCommand) && executeCommandSudo(chmodCommand)
-                                    true
+                                    //TODO Temporary comment executing and add true return
+                                    executeCommandSudo(copyCommand) && executeCommandSudo(chmodCommand)
+                                    //true
 
                                 } else {
                                     installationStatus = "Binary not found in the package"
