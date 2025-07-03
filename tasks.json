@@ -293,7 +293,38 @@
       "enabled": true,
       "install_version": "latest",
       "package": {
-        "link": "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip"
+        "need_post_unpack_cmd": true,
+        "link": "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip",
+        "post_unpack_cmd": "install",
+        "post_unpack_cmd_list": {
+          "install": {
+            "need_sudo": true,
+            "command": "install",
+            "arguments": "--install"
+          },
+          "update": {
+            "need_sudo": true,
+            "command": "install",
+            "arguments": "--update"
+          }
+        }
+      }
+    },
+    {
+      "name": "devopstools",
+      "description": "",
+      "binary_name": "devopstools",
+      "install_type": "github",
+      "version_cmd": "--version",
+      "installed_as": "",
+      "enabled": true,
+      "install_version": "1.0.0",
+      "github": {
+        "url": "https://github.com/redacid/DevOpsTools",
+        "api_url": "https://api.github.com/repos/redacid/DevOpsTools",
+        "parse_release_notes": false,
+        "asset": "devopstools_1.0.0-1_amd64.deb",
+        "asset_type": "rpm_based"
       }
     }
   ]

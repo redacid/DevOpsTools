@@ -470,7 +470,6 @@ fun TaskEditDialog(
     var isLoadingVersions by remember { mutableStateOf(false) }
     var availableVersions by remember { mutableStateOf(listOf<String>()) }
 
-
     if (isOpen) {
         val editedTask = JsonObject().apply {
             // Copy all fields from the original task
@@ -573,6 +572,7 @@ fun TaskEditDialog(
                                 assetScores[asset] = Pair(score, type)
                             }
                         }
+                        logger.d("TaskAddDialog.filterAssetsByPatterns", "Regex: $regex, asset: $asset, score: ${assetScores[asset]?.first}")
                     }
                 }
             }
@@ -1111,6 +1111,9 @@ fun TaskEditDialog(
             if (installType == "github") {
                 githubLoadAvailableVersions()
             }
+        }
+        LaunchedEffect(selectedAsset) {
+            assetInstallType = getFileType(selectedAsset)
         }
 
         // Installation progress dialog
