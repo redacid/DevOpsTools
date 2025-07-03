@@ -285,7 +285,7 @@
     },
     {
       "name": "aws",
-      "description": "AWS CLI",
+      "description": "AWS CLI https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html",
       "binary_name": "aws",
       "install_type": "package",
       "version_cmd": "--version",
@@ -293,21 +293,7 @@
       "enabled": true,
       "install_version": "latest",
       "package": {
-        "need_post_unpack_cmd": true,
-        "link": "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip",
-        "post_unpack_cmd": "install",
-        "post_unpack_cmd_list": {
-          "install": {
-            "need_sudo": true,
-            "command": "install",
-            "arguments": "--install"
-          },
-          "update": {
-            "need_sudo": true,
-            "command": "install",
-            "arguments": "--update"
-          }
-        }
+        "link": "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip"
       }
     },
     {
@@ -359,6 +345,19 @@
         "parse_release_notes": false,
         "asset": "kustomize_v5.7.0_linux_amd64.tar.gz",
         "asset_type": "package"
+      }
+    },
+    {
+      "name": "terraform",
+      "description": "https://developer.hashicorp.com/terraform/install#linux",
+      "binary_name": "terraform",
+      "install_type": "package",
+      "version_cmd": "--version",
+      "installed_as": "",
+      "enabled": true,
+      "install_version": "latest",
+      "package": {
+        "link": "https://releases.hashicorp.com/terraform/1.12.2/terraform_1.12.2_linux_amd64.zip"
       }
     }
   ]
