@@ -490,7 +490,8 @@ fun TaskEditDialog(
         var isCheckingCurrentVersion by remember { mutableStateOf(false) }
         //var availableVersions by remember { mutableStateOf(listOf<String>()) }
 
-        var selectedVersion by remember { mutableStateOf("") }
+        //var selectedVersion by remember { mutableStateOf("") }
+        var selectedVersion by remember { mutableStateOf(task.get("install_version")?.asString ?: "") }
         // For installation file selection
         //var availableAssets by remember { mutableStateOf(listOf<String>()) }
         var isLoadingAssets by remember { mutableStateOf(false) }
@@ -657,7 +658,7 @@ fun TaskEditDialog(
         // Function to load available versions from GitHub
         fun githubLoadAvailableVersions() {
             if (installType != "github") return
-
+            var CurrentSelectedVersion = selectedVersion
             coroutineScope.launch(Dispatchers.Main) {
                 showLoadingOverlay = true
                 isLoadingVersions = true
@@ -690,7 +691,8 @@ fun TaskEditDialog(
                         }
                         if (versions.isNotEmpty()) {
                             availableVersions = versions
-                            selectedVersion = versions[0]
+                            //selectedVersion = versions[0]
+                            selectedVersion = CurrentSelectedVersion
                             githubLoadAssetsForVersion(selectedVersion)
                         } else {
                             val latestRelease = tasksManager.getLatestGithubRelease(githubApiUrl)
