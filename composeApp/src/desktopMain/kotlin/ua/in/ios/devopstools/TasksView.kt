@@ -117,8 +117,9 @@ fun TaskAddDialog(
         // GitHub-specific fields
         var githubUrl by remember { mutableStateOf("") }
         var githubApiUrl by remember { mutableStateOf("") }
+        var packageLink by remember { mutableStateOf("") }
 
-        // Form validation
+            // Form validation
         var isNameValid by remember { mutableStateOf(true) }
         var isUrlValid by remember { mutableStateOf(true) }
 
@@ -386,6 +387,20 @@ fun TaskAddDialog(
                                 Text("Open Repository")
                             }
                         }
+                        if (installType == "package") {
+                            Text(
+                                "Package Parameters",
+                                style = MaterialTheme.typography.titleMedium,
+                                modifier = Modifier.padding(vertical = 8.dp)
+                            )
+                            OutlinedTextField(
+                                value = packageLink,
+                                onValueChange = { packageLink = it },
+                                label = { Text("Package Link") },
+                                modifier = Modifier.fillMaxWidth(),
+                                singleLine = true
+                            )
+                        }
                     }
                 }
             },
@@ -414,7 +429,11 @@ fun TaskAddDialog(
                                 githubObj.addProperty("api_url", githubApiUrl)
                                 newTask.add("github", githubObj)
                             }
-
+                            if (installType == "package") {
+                                val packageObj = JsonObject()
+                                packageObj.addProperty("link", packageLink)
+                                newTask.add("package", packageObj)
+                            }
                             onAddRequest(newTask)
                             onDismissRequest()
                         }
@@ -989,36 +1008,62 @@ fun TaskEditDialog(
                             executeCommandSudo(command)
                         }
                         "package" -> {
+                            var extractResult: Boolean = false
                             // Extract and copy binary from package
                             // Extract the archive
-                            if (downloadFilename.endsWith(".tar.gz")) {
+                            if (downloadFilename.endsWith(".tar.gz") || downloadFilename.endsWith(".tgz")) {
                                 val extractCommand = "tar -xzf $destinationFile -C $toolDir"
-                                val extractResult = executeCommandSudo(extractCommand)
-
-                                if (extractResult) {
-                                    // Find the binary and copy it to the installation path
-                                    val installPath = settingsManager.getString("settings.install_path", "/usr/bin")
-                                    val binaryFile = binaryName.ifEmpty { name }
-                                    // Search for the binary in the extracted files
-                                    val foundBinary = findBinary(toolDir, binaryFile)
-
-                                    if (foundBinary.isNotEmpty()) {
-                                        val copyCommand = "sudo cp $foundBinary $installPath/$binaryFile"
-                                        val chmodCommand = "sudo chmod +x $installPath/$binaryFile"
-
-                                        executeCommandSudo(copyCommand) && executeCommandSudo(chmodCommand)
-
-                                    } else {
-                                        installationStatus = "Binary not found in the package"
-                                        false
-                                    }
+                                extractResult = executeCommandSudo(extractCommand)
+                            } else if (downloadFilename.endsWith(".tar")) {
+                                val extractCommand = "tar -xf $destinationFile -C $toolDir"
+                                extractResult = executeCommandSudo(extractCommand)
+                            } else if (downloadFilename.endsWith(".gz")) {
+                                val extractCommand = "gunzip -c $destinationFile > $toolDir/${downloadFilename.removeSuffix(".gz")}"
+                                extractResult = executeCommandSudo(extractCommand)
+                            } else if (downloadFilename.endsWith(".zip")) {
+                                val extractCommand = "unzip $destinationFile -d $toolDir"
+                                extractResult = executeCommandSudo(extractCommand)
+                            } else if (downloadFilename.endsWith(".xz")) {
+                                val extractCommand = "tar -xJf $destinationFile -C $toolDir"
+                                extractResult = executeCommandSudo(extractCommand)
+                            } else if (downloadFilename.endsWith(".tar.xz")) {
+                                val extractCommand = "tar -xJf $destinationFile -C $toolDir"
+                                extractResult = executeCommandSudo(extractCommand)
+                            } else if (downloadFilename.endsWith(".bz2")) {
+                                if (downloadFilename.endsWith(".tar.bz2")) {
+                                    val extractCommand = "tar -xjf $destinationFile -C $toolDir"
+                                    extractResult = executeCommandSudo(extractCommand)
                                 } else {
-                                    false
+                                    val extractCommand = "bunzip2 -c $destinationFile > $toolDir/${downloadFilename.removeSuffix(".bz2")}"
+                                    extractResult = executeCommandSudo(extractCommand)
                                 }
                             } else {
                                 installationStatus = "Unsupported package format"
+                                //extractResult = false
                                 false
                             }
+
+                            if (extractResult) {
+                                // Find the binary and copy it to the installation path
+                                val installPath = settingsManager.getString("settings.install_path", "/usr/bin")
+                                val binaryFile = binaryName.ifEmpty { name }
+                                // Search for the binary in the extracted files
+                                val foundBinary = findBinary(toolDir, binaryFile)
+
+                                if (foundBinary.isNotEmpty()) {
+                                    val copyCommand = "sudo cp $foundBinary $installPath/$binaryFile"
+                                    val chmodCommand = "sudo chmod +x $installPath/$binaryFile"
+                                    //executeCommandSudo(copyCommand) && executeCommandSudo(chmodCommand)
+                                    true
+
+                                } else {
+                                    installationStatus = "Binary not found in the package"
+                                    false
+                                }
+                            } else {
+                                false
+                            }
+
                         }
                         "binary" -> {
                             // Copy binary file directly
@@ -1468,6 +1513,7 @@ fun TaskEditDialog(
                                 modifier = Modifier.fillMaxWidth(),
                                 singleLine = true
                             )
+                            Spacer(modifier = Modifier.height(16.dp))
                             Button(
                                 onClick = { packageInstallTool() },
                                 enabled = packageLink.isNotEmpty(),
