@@ -282,6 +282,19 @@
       "package": {
         "link": "https://gitlab.com/gitlab-org/cli/-/package_files/204332295/download"
       }
+    },
+    {
+      "name": "aws",
+      "description": "AWS CLI",
+      "binary_name": "aws",
+      "install_type": "package",
+      "version_cmd": "--version",
+      "installed_as": "",
+      "enabled": true,
+      "install_version": "latest",
+      "package": {
+        "link": "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip"
+      }
     }
   ]
 }
