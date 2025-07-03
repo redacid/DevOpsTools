@@ -578,13 +578,20 @@ fun TaskEditDialog(
             }
 
             // Select only those that scored more than 0
+            logger.d("TaskAddDialog.filterAssetsByPatterns", "assetScores before filter: $assetScores")
             filtered.addAll(assetScores.filter { it.value.first > 0 }.keys.sorted())
-
+            logger.d("TaskAddDialog.filterAssetsByPatterns", "assetScores after filter: $assetScores")
             filteredAssets = filtered
+            logger.d("TaskAddDialog.filterAssetsByPatterns", "filteredAssets: $filteredAssets")
 
             // Select first item if available
             if (filtered.isNotEmpty() && (selectedAsset.isEmpty() || !filtered.contains(selectedAsset))) {
-                selectedAsset = filtered[0]
+                selectedAsset = assetScores.entries
+                    .filter { filtered.contains(it.key) }
+                    .maxByOrNull { it.value.first }
+                    ?.key ?: filtered[0]
+                //filtered[0]
+                logger.d("TaskAddDialog.filterAssetsByPatterns", "selectedAsset: $selectedAsset")
                 // Save install type
                 assetInstallType = assetScores[selectedAsset]?.second ?: ""
                 // Save download URL
@@ -592,6 +599,7 @@ fun TaskEditDialog(
             } else if (selectedAsset.isNotEmpty() && assetUrlMap.containsKey(selectedAsset)) {
                 assetDownloadUrl = assetUrlMap[selectedAsset] ?: ""
             }
+            logger.d("TaskAddDialog.filterAssetsByPatterns", "Selected asset: $selectedAsset, install type: $assetInstallType, download URL: $assetDownloadUrl")
         }
 
         // Function to load available files for a selected version
