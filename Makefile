@@ -11,6 +11,7 @@ PRJ_REPO := git@github.com:redacid/DevOpsTools.git
 PRJ_REPO_HTTP := https://github.com/redacid/DevOpsTools.git
 RELEASE_VERSION ?= 0.0.0
 CLOBBER := --clobber
+CURRENT_DATE := $(shell date '+%Y_%m_%d_%H_%M_%S')
 
 # colors
 GREEN = $(shell tput -Txterm setaf 2)
@@ -26,6 +27,9 @@ all: help
 
 copy_my_tasks:
 	cp ~/.devopstools/tasks.json ./
+
+backup_settings:
+	cp ~/.devopstools/settings.json ~/.devopstools/settings_$(CURRENT_DATE).json
 
 
 ## Build and Publish

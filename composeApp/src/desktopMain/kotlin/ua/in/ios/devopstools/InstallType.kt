@@ -29,12 +29,12 @@ interface InstallType {
     companion object {
         fun createFromTypeName(typeName: String): InstallType {
             return when (typeName) {
-                "github" -> GithubInstallType()
-                "distributive_package" -> DistributivePackageInstallType()
-                "package" -> PackageInstallType()
-                "remote_shell_script" -> RemoteShellScriptInstallType()
-                "shell_cmd" -> ShellCmdInstallType()
-                "package_manager" -> PackageManagerInstallType()
+                StaticSettings.InstallTypes.GITHUB -> GithubInstallType()
+                StaticSettings.InstallTypes.DISTRIBUTIVE_PACKAGE -> DistributivePackageInstallType()
+                StaticSettings.InstallTypes.PACKAGE -> PackageInstallType()
+                StaticSettings.InstallTypes.REMOTE_SHELL_SCRIPT -> RemoteShellScriptInstallType()
+                StaticSettings.InstallTypes.SHELL_CMD -> ShellCmdInstallType()
+                StaticSettings.InstallTypes.PACKAGE_MANAGER -> PackageManagerInstallType()
                 else -> throw IllegalArgumentException("Невідомий тип встановлення: $typeName")
             }
         }
@@ -211,7 +211,7 @@ abstract class BaseInstallType : InstallType {
 }
 
 class GithubInstallType : BaseInstallType() {
-    override val typeName = "github"
+    override val typeName = StaticSettings.InstallTypes.GITHUB
 
     override suspend fun isSupported(): Boolean = true
 
@@ -222,8 +222,8 @@ class GithubInstallType : BaseInstallType() {
     }
     override suspend fun install(task: JsonObject): Boolean {
         // Перевіряємо, чи є об'єкт github
-        if (!task.has("github")) return false
-        val githubObj = task.getAsJsonObject("github")
+        if (!task.has(StaticSettings.InstallTypes.GITHUB)) return false
+        val githubObj = task.getAsJsonObject(StaticSettings.InstallTypes.GITHUB)
 
         // Отримуємо URL API
         val apiUrl = if (githubObj.has("api_url")) {
@@ -294,8 +294,8 @@ class GithubInstallType : BaseInstallType() {
 
     override suspend fun getAvailableVersion(task: JsonObject): String {
         // Перевіряємо, чи є об'єкт github
-        if (!task.has("github")) return ""
-        val githubObj = task.getAsJsonObject("github")
+        if (!task.has(StaticSettings.InstallTypes.GITHUB)) return ""
+        val githubObj = task.getAsJsonObject(StaticSettings.InstallTypes.GITHUB)
 
         // Отримуємо URL API
         val apiUrl = if (githubObj.has("api_url")) {
@@ -445,7 +445,7 @@ class DistributivePackageInstallType : BaseInstallType() {
 }
 
 class PackageInstallType : BaseInstallType() {
-    override val typeName = "package"
+    override val typeName = StaticSettings.InstallTypes.PACKAGE
 
     override suspend fun isSupported(): Boolean = true
 

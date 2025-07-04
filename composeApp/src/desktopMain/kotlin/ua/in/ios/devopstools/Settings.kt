@@ -10,6 +10,119 @@ import java.io.FileWriter
 import java.nio.file.Files
 import java.nio.file.Paths
 
+/**
+ * Static settings and constants used across the application
+ */
+object StaticSettings {
+    /**
+     * Available installation types
+     */
+    object InstallTypes {
+        const val GITHUB = "github"
+        const val DISTRIBUTIVE_PACKAGE = "distributive_package"
+        const val PACKAGE = "package"
+        const val REMOTE_SHELL_SCRIPT = "remote_shell_script"
+        const val SHELL_CMD = "shell_cmd"
+        const val PACKAGE_MANAGER = "package_manager"
+
+        val ALL = listOf(
+            GITHUB,
+            DISTRIBUTIVE_PACKAGE,
+            PACKAGE,
+            REMOTE_SHELL_SCRIPT,
+            SHELL_CMD,
+            PACKAGE_MANAGER
+        )
+
+        val ENABLED = listOf(
+            GITHUB,
+            PACKAGE
+        )
+    }
+
+    /**
+     * Package types and their patterns
+     */
+    object PackagePatterns {
+        object Linux {
+            object AMD64 {
+                val DEB_BASED = listOf(
+                    "*amd64.deb",
+                    "*x86_64.deb"
+                )
+
+                val RPM_BASED = listOf(
+                    "*amd64.rpm",
+                    "*x86_64.rpm"
+                )
+
+                val PACKAGE = listOf(
+                    "*linux*amd64.tar.gz",
+                    "*linux*x86_64.tar.gz"
+                )
+
+                val BINARY = listOf(
+                    "*linux*amd64",
+                    "*linux*x86_64"
+                )
+            }
+
+            object I386 {
+                val DEB_BASED = listOf("*386.deb")
+                val RPM_BASED = listOf("*386.rpm")
+                val PACKAGE = listOf("*linux*386.tar.gz")
+                val BINARY = listOf("*linux*386")
+            }
+        }
+    }
+
+    /**
+     * Package manager commands
+     */
+    object PackageManagers {
+        object Apt {
+            const val UPDATE = "update"
+            const val INSTALL = "install"
+            const val REMOVE = "remove"
+        }
+
+        object Yum {
+            const val INSTALL = "install"
+            const val REMOVE = "remove"
+        }
+
+        object Dnf {
+            const val INSTALL = "install"
+            const val REMOVE = "remove"
+        }
+    }
+
+    /**
+     * Package installer commands
+     */
+    object PackageInstallers {
+        object Dpkg {
+            const val INSTALL = "--install"
+            const val REMOVE = "--remove"
+        }
+
+        object Rpm {
+            const val INSTALL = "--install"
+            const val REMOVE = "--erase"
+        }
+    }
+
+    /**
+     * Default paths and URLs
+     */
+    object Defaults {
+        const val INSTALL_PATH = "/usr/bin"
+        const val TEMP_PATH = "/tmp/devopstools"
+        const val TASKS_URL = "https://github.com/redacid/DevOpsTools/blob/init/tasks.json"
+    }
+}
+
+
 class SettingsManager {
     private val gson: Gson = GsonBuilder().setPrettyPrinting().create()
     private val homeDir: String = System.getProperty("user.home")
@@ -42,7 +155,6 @@ class SettingsManager {
             }
         } catch (e: Exception) {
             logger.e("SettingsManager.loadSettings", "Error loading settings", e)
-            //println("Помилка завантаження налаштувань: ${e.message}")
             createDefaultSettings()
         }
     }
@@ -54,17 +166,6 @@ class SettingsManager {
                 addProperty("install_path", "/usr/bin")
                 addProperty("temp_path", "/tmp/devopstools")
                 addProperty("tasks_url", "https://github.com/redacid/DevOpsTools/blob/init/tasks.json")
-
-                // install_types масив
-                val installTypesArray = gson.toJsonTree(arrayOf(
-                    "github",
-//                    "distributive_package",
-//                    "package",
-//                    "remote_shell_script",
-//                    "shell_cmd",
-//                    "package_manager"
-                )).asJsonArray
-                add("install_types", installTypesArray)
 
                 // application_patterns
                 val applicationPatternsObj = JsonObject().apply {
@@ -185,7 +286,6 @@ class SettingsManager {
             }
         } catch (e: Exception) {
             logger.e("SettingsManager.saveSettings", "Error saving settings", e)
-            //println("Помилка збереження налаштувань: ${e.message}")
         }
     }
 

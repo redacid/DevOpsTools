@@ -567,10 +567,10 @@ class TasksManager {
 
             // Check if it's a GitHub task
             if (task.has("install_type") &&
-                task.get("install_type").asString == "github" &&
-                task.has("github")) {
+                task.get("install_type").asString == StaticSettings.InstallTypes.GITHUB &&
+                task.has(StaticSettings.InstallTypes.GITHUB)) {
 
-                val githubObj = task.getAsJsonObject("github")
+                val githubObj = task.getAsJsonObject(StaticSettings.InstallTypes.GITHUB)
 
                 // Check if there's a url but no api_url
                 if (githubObj.has("url") &&

@@ -193,8 +193,8 @@ class GithubInstaller {
             state.installType = task.get("install_type")?.asString ?: ""
             state.installVersion = task.get("install_version")?.asString ?: ""
 
-            if (task.has("github")) {
-                val githubObj = task.getAsJsonObject("github")
+            if (task.has(StaticSettings.InstallTypes.GITHUB)) {
+                val githubObj = task.getAsJsonObject(StaticSettings.InstallTypes.GITHUB)
                 state.githubUrl = githubObj.get("url")?.asString ?: ""
                 state.githubApiUrl = githubObj.get("api_url")?.asString ?: ""
                 state.parseReleaseNotes = githubObj.get("parse_release_notes")?.asBoolean ?: false

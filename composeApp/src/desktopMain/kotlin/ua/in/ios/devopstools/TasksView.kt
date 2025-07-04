@@ -108,7 +108,7 @@ fun TaskAddDialog(
         var name by remember { mutableStateOf("") }
         var description by remember { mutableStateOf("") }
         var binaryName by remember { mutableStateOf("") }
-        var installType by remember { mutableStateOf("github") } // github as default
+        var installType by remember { mutableStateOf(StaticSettings.InstallTypes.GITHUB) } // github as default
         var versionCmd by remember { mutableStateOf("--version") }
         var installedAs by remember { mutableStateOf("") }
         var enabled by remember { mutableStateOf(true) }
@@ -128,7 +128,8 @@ fun TaskAddDialog(
         var urlErrorText by remember { mutableStateOf("") }
 
         // List of available installation types
-        val installTypes = settingsManager.getStringArray("settings.install_types")
+        //val installTypes = settingsManager.getStringArray("settings.install_types")
+        val installTypes = StaticSettings.InstallTypes.ENABLED
 
         // Coroutines
         val coroutineScope = rememberCoroutineScope()
@@ -159,7 +160,7 @@ fun TaskAddDialog(
             }
 
             // URL validation for GitHub
-            if (installType == "github" && githubUrl.isBlank()) {
+            if (installType == StaticSettings.InstallTypes.GITHUB && githubUrl.isBlank()) {
                 isUrlValid = false
                 urlErrorText = "Repository URL cannot be empty for GitHub type"
                 isValid = false
@@ -169,7 +170,7 @@ fun TaskAddDialog(
             }
 
             // Ensure API URL is generated for GitHub
-            if (installType == "github" && githubUrl.isNotEmpty() && githubApiUrl.isEmpty()) {
+            if (installType == StaticSettings.InstallTypes.GITHUB && githubUrl.isNotEmpty() && githubApiUrl.isEmpty()) {
                 // Try one more time to generate API URL
                 val apiUrl = tasksManager.convertGithubUrlToApiUrl(githubUrl)
                 if (apiUrl.isNotEmpty()) {
@@ -328,7 +329,7 @@ fun TaskAddDialog(
                         }
 
                         // GitHub-specific fields
-                        if (installType == "github") {
+                        if (installType == StaticSettings.InstallTypes.GITHUB) {
                             Text(
                                 "GitHub Settings",
                                 style = MaterialTheme.typography.titleMedium,
@@ -387,7 +388,7 @@ fun TaskAddDialog(
                                 Text("Open Repository")
                             }
                         }
-                        if (installType == "package") {
+                        if (installType == StaticSettings.InstallTypes.PACKAGE) {
                             Text(
                                 "Package Parameters",
                                 style = MaterialTheme.typography.titleMedium,
@@ -423,16 +424,16 @@ fun TaskAddDialog(
                             newTask.addProperty("install_version", installVersion)
 
                             // GitHub-specific fields
-                            if (installType == "github") {
+                            if (installType == StaticSettings.InstallTypes.GITHUB) {
                                 val githubObj = JsonObject()
                                 githubObj.addProperty("url", githubUrl)
                                 githubObj.addProperty("api_url", githubApiUrl)
-                                newTask.add("github", githubObj)
+                                newTask.add(StaticSettings.InstallTypes.GITHUB, githubObj)
                             }
-                            if (installType == "package") {
+                            if (installType == StaticSettings.InstallTypes.PACKAGE) {
                                 val packageObj = JsonObject()
                                 packageObj.addProperty("link", packageLink)
-                                newTask.add("package", packageObj)
+                                newTask.add(StaticSettings.InstallTypes.PACKAGE, packageObj)
                             }
                             onAddRequest(newTask)
                             onDismissRequest()
@@ -512,15 +513,15 @@ fun TaskEditDialog(
         var packageLink by remember { mutableStateOf("") }
 
 
-        if (task.has("github")) {
-            val githubObj = task.getAsJsonObject("github")
+        if (task.has(StaticSettings.InstallTypes.GITHUB)) {
+            val githubObj = task.getAsJsonObject(StaticSettings.InstallTypes.GITHUB)
             githubUrl = githubObj.get("url")?.asString ?: ""
             githubApiUrl = githubObj.get("api_url")?.asString ?: ""
             parseReleaseNotes = githubObj.get("parse_release_notes")?.asBoolean ?: false
         }
 
-        if (task.has("package")) {
-            val githubObj = task.getAsJsonObject("package")
+        if (task.has(StaticSettings.InstallTypes.PACKAGE)) {
+            val githubObj = task.getAsJsonObject(StaticSettings.InstallTypes.PACKAGE)
             packageLink = githubObj.get("link")?.asString ?: ""
         }
 
@@ -605,7 +606,7 @@ fun TaskEditDialog(
 
         // Function to load available files for a selected version
         fun githubLoadAssetsForVersion(version: String) {
-            if (installType != "github" || githubApiUrl.isEmpty()) return
+            if (installType != StaticSettings.InstallTypes.GITHUB || githubApiUrl.isEmpty()) return
 
             isLoadingAssets = true
             //availableAssets = listOf("Loading...")
@@ -657,7 +658,7 @@ fun TaskEditDialog(
 
         // Function to load available versions from GitHub
         fun githubLoadAvailableVersions() {
-            if (installType != "github") return
+            if (installType != StaticSettings.InstallTypes.GITHUB) return
             var CurrentSelectedVersion = selectedVersion
             coroutineScope.launch(Dispatchers.Main) {
                 showLoadingOverlay = true
@@ -1123,7 +1124,7 @@ fun TaskEditDialog(
         // Check current version when dialog opens
         LaunchedEffect(Unit) {
             checkCurrentVersion()
-            if (installType == "github") {
+            if (installType == StaticSettings.InstallTypes.GITHUB) {
                 githubLoadAvailableVersions()
             }
         }
@@ -1301,7 +1302,7 @@ fun TaskEditDialog(
                                     modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
                                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                                 ) {
-                                    if (installType == "github" && availableVersions.isNotEmpty()) {
+                                    if (installType == StaticSettings.InstallTypes.GITHUB && availableVersions.isNotEmpty()) {
                                         // Versions dropdown
                                         var expanded by remember { mutableStateOf(false) }
 
@@ -1381,7 +1382,7 @@ fun TaskEditDialog(
                         }
 
                         // GitHub fields if installation type is github
-                        if (installType == "github") {
+                        if (installType == StaticSettings.InstallTypes.GITHUB) {
                             Text(
                                 "GitHub Parameters",
                                 style = MaterialTheme.typography.titleMedium,
@@ -1519,7 +1520,7 @@ fun TaskEditDialog(
                                 }
                         }
 
-                        if (installType == "package") {
+                        if (installType == StaticSettings.InstallTypes.PACKAGE) {
                             Text(
                                 "Package Parameters",
                                 style = MaterialTheme.typography.titleMedium,
@@ -1573,10 +1574,10 @@ fun TaskEditDialog(
                         editedTask.addProperty("version_cmd", versionCmd)
                         editedTask.addProperty("installed_as", installedAs)
                         editedTask.addProperty("enabled", enabled)
-                        editedTask.addProperty("install_version", if (installType == "github") selectedVersion else installVersion)
+                        editedTask.addProperty("install_version", if (installType == StaticSettings.InstallTypes.GITHUB) selectedVersion else installVersion)
 
                         // Update GitHub fields if installation type is github
-                        if (installType == "github") {
+                        if (installType == StaticSettings.InstallTypes.GITHUB) {
                             val githubObj = JsonObject()
                             githubObj.addProperty("url", githubUrl)
                             githubObj.addProperty("api_url", githubApiUrl)
@@ -1588,12 +1589,12 @@ fun TaskEditDialog(
                                 githubObj.addProperty("asset_type", assetInstallType)
                             }
 
-                            editedTask.add("github", githubObj)
+                            editedTask.add(StaticSettings.InstallTypes.GITHUB, githubObj)
                         }
-                        if (installType == "package") {
+                        if (installType == StaticSettings.InstallTypes.PACKAGE) {
                             val packageObj = JsonObject()
                             packageObj.addProperty("link", packageLink)
-                            editedTask.add("package", packageObj)
+                            editedTask.add(StaticSettings.InstallTypes.PACKAGE, packageObj)
                         }
 
                         onSaveRequest(editedTask)
@@ -1850,7 +1851,7 @@ fun TasksTable() {
                                 horizontalArrangement = Arrangement.Center,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                if (task.get("install_type")?.asString == "github" && task.get("enabled")?.asBoolean == true) {
+                                if (task.get("install_type")?.asString == StaticSettings.InstallTypes.GITHUB && task.get("enabled")?.asBoolean == true) {
                                     InstallButton(
                                         task,
                                         onInstallComplete = { refreshTasks() }
