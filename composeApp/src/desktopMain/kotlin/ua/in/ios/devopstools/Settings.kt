@@ -166,7 +166,8 @@ class SettingsManager {
                 addProperty("install_path", "/usr/bin")
                 addProperty("temp_path", "/tmp/devopstools")
                 addProperty("tasks_url", "https://github.com/redacid/DevOpsTools/blob/init/tasks.json")
-
+                addProperty("github_token", "")
+                addProperty("log_level", "INFO")
                 // application_patterns
                 val applicationPatternsObj = JsonObject().apply {
                     val osObj = JsonObject().apply {

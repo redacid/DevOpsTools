@@ -12,6 +12,17 @@ fun App() {
     val settingsManager = SettingsManager.getInstance()
     val tasksManager = TasksManager.getInstance()
     val systemInfo = SystemInfo.getInstance()
+    val loglevel = settingsManager.getString("settings.log_level")
+
+    when (loglevel) {
+        "DEBUG" -> logger.setMinimumLogLevel(LogLevel.DEBUG)
+        "INFO" -> logger.setMinimumLogLevel(LogLevel.INFO)
+        "WARNING" -> logger.setMinimumLogLevel(LogLevel.WARNING)
+        "ERROR" -> logger.setMinimumLogLevel(LogLevel.ERROR)
+        else -> logger.setMinimumLogLevel(LogLevel.INFO)
+    }
+
+
 
 //    // Отримання значення налаштування
 //    val installPath = settingsManager.getString("settings.install_path")
