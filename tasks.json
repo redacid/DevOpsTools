@@ -66,7 +66,7 @@
       }
     },
     {
-      "name": "glab",
+      "name": "glab-DEPRECATED",
       "description": "GLab is an open source GitLab CLI tool bringing GitLab to your terminal next to where you are already working with git and your code without switching between windows and browser tabs",
       "binary_name": "glab",
       "install_type": "github",
@@ -77,6 +77,7 @@
       "github": {
         "url": "https://github.com/profclems/glab",
         "api_url": "https://api.github.com/repos/profclems/glab",
+        "parse_release_notes": false,
         "asset": "glab_1.22.0_Linux_x86_64.deb",
         "asset_type": "deb_based"
       }
@@ -211,34 +212,6 @@
       }
     },
     {
-      "name": "studio-3t",
-      "description": "Mongo manager https://download-ce.studio3t.com/studio-3t/linux/2025.1.0/studio-3t-community-edition-linux-x64.tar.gz",
-      "binary_name": "studio-3t",
-      "install_type": "package",
-      "version_cmd": "--version",
-      "installed_as": "",
-      "enabled": false,
-      "install_version": "latest",
-      "package": {
-        "link": "https://download-ce.studio3t.com/studio-3t/linux/2025.1.0/studio-3t-community-edition-linux-x64.tar.gz"
-      }
-    },
-    {
-      "name": "ansible",
-      "description": "Ansible is a radically simple IT automation system https://docs.ansible.com/ansible/latest/installation_guide/installation_distros.html#installing-ansible-on-ubuntu",
-      "binary_name": "ansible",
-      "install_type": "github",
-      "version_cmd": "--version",
-      "installed_as": "",
-      "enabled": false,
-      "install_version": "v2.19.0rc1",
-      "github": {
-        "url": "https://github.com/ansible/ansible",
-        "api_url": "https://api.github.com/repos/ansible/ansible",
-        "parse_release_notes": true
-      }
-    },
-    {
       "name": "lazydocker",
       "description": "A simple terminal UI for both docker and docker-compose, written in Go with the gocui library.",
       "binary_name": "lazydocker",
@@ -256,23 +229,8 @@
       }
     },
     {
-      "name": "anchore-cli",
-      "description": "Bookmark",
-      "binary_name": "anchore-cli",
-      "install_type": "github",
-      "version_cmd": "--version",
-      "installed_as": "",
-      "enabled": false,
-      "install_version": "",
-      "github": {
-        "url": "https://github.com/anchore/anchore-cli",
-        "api_url": "https://api.github.com/repos/anchore/anchore-cli",
-        "parse_release_notes": false
-      }
-    },
-    {
-      "name": "glab_v1.61.0_amd64_tgz",
-      "description": "https://gitlab.com/gitlab-org/cli/-/packages/",
+      "name": "glab",
+      "description": "v1.61.0_amd64_tgz https://gitlab.com/gitlab-org/cli/-/packages/",
       "binary_name": "glab",
       "install_type": "package",
       "version_cmd": "--version",
@@ -290,7 +248,7 @@
       "install_type": "package",
       "version_cmd": "--version",
       "installed_as": "",
-      "enabled": true,
+      "enabled": false,
       "install_version": "latest",
       "package": {
         "link": "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip"
@@ -321,7 +279,7 @@
       "version_cmd": "version",
       "installed_as": "",
       "enabled": true,
-      "install_version": "v4.4.0",
+      "install_version": "v4.6.0",
       "github": {
         "url": "https://github.com/kubernetes-sigs/kubebuilder",
         "api_url": "https://api.github.com/repos/kubernetes-sigs/kubebuilder",
