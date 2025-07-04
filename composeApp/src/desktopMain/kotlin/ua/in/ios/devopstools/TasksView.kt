@@ -691,9 +691,14 @@ fun TaskEditDialog(
                         }
                         if (versions.isNotEmpty()) {
                             availableVersions = versions
-                            //selectedVersion = versions[0]
-                            selectedVersion = CurrentSelectedVersion
+
+                            selectedVersion = if (selectedVersion.isNotEmpty()) {
+                                CurrentSelectedVersion
+                            } else {
+                                versions[0]
+                            }
                             githubLoadAssetsForVersion(selectedVersion)
+
                         } else {
                             val latestRelease = tasksManager.getLatestGithubRelease(githubApiUrl)
                             if (latestRelease != null) {
@@ -1823,8 +1828,8 @@ fun TasksTable() {
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(horizontal = 12.dp, vertical = 12.dp)
-                                .clickable { },
+                                //.padding(horizontal = 5.dp, vertical = 5.dp)
+                                .clickable {},
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             // Name
