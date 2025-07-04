@@ -46,8 +46,8 @@ data class InstallationState(
  */
 class GithubInstaller {
     private val logger = Logger.getInstance()
-    private val settingsManager = SettingsManager.getInstance()
-    private val tasksManager = TasksManager.getInstance()
+    //private val settingsManager = SettingsManager.getInstance()
+    //private val tasksManager = TasksManager.getInstance()
 
     val state = InstallationState()
 
@@ -86,7 +86,7 @@ class GithubInstaller {
         val options = tasksManager.getAvailableInstallationOptions(task)
         val filtered = mutableListOf<String>()
         val assetScores = mutableMapOf<String, Pair<Int, String>>()
-        val systemInfo = SystemInfo.getInstance()
+        //val systemInfo = SystemInfo.getInstance()
 
         assets.forEach { assetScores[it] = Pair(0, "") }
 

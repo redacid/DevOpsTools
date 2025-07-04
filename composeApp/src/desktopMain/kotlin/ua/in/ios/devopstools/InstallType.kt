@@ -201,7 +201,7 @@ abstract class BaseInstallType : InstallType {
     }
 
     protected fun getInstallPath(task: JsonObject): String {
-        val settingsManager = SettingsManager.getInstance()
+        //val settingsManager = SettingsManager.getInstance()
         val installPath = settingsManager.getString("settings.install_path")
 
         return installPath.ifEmpty {

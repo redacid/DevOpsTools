@@ -54,7 +54,7 @@ fun getInstallTypeForTask(task: JsonObject): InstallType? {
  */
 @Composable
 fun InstallationPatternsSection(task: JsonObject) {
-    val tasksManager = TasksManager.getInstance()
+    //val tasksManager = TasksManager.getInstance()
     val options = tasksManager.getAvailableInstallationOptions(task)
 
     if (options.isEmpty()) {
@@ -100,8 +100,8 @@ fun TaskAddDialog(
     onAddRequest: (JsonObject) -> Unit
 ) {
     if (isOpen) {
-        val settingsManager = SettingsManager.getInstance()
-        val tasksManager = TasksManager.getInstance()
+        //val settingsManager = SettingsManager.getInstance()
+        //val tasksManager = TasksManager.getInstance()
         // Create a new task with default values
         val newTask = JsonObject()
         // Form field states
@@ -525,9 +525,9 @@ fun TaskEditDialog(
             packageLink = githubObj.get("link")?.asString ?: ""
         }
 
-        val tasksManager = TasksManager.getInstance()
-        val settingsManager = SettingsManager.getInstance()
-        val systemInfo = SystemInfo.getInstance()
+        //val tasksManager = TasksManager.getInstance()
+        //val settingsManager = SettingsManager.getInstance()
+        //val systemInfo = SystemInfo.getInstance()
 
         // Function to check current version
         fun checkCurrentVersion() {
@@ -1624,7 +1624,7 @@ fun TaskEditDialog(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TasksTable() {
-    val tasksManager = TasksManager.getInstance()
+    //val tasksManager = TasksManager.getInstance()
     val tasksArray = tasksManager.getTasksArray()
     var tasks by remember { mutableStateOf(emptyList<JsonObject>()) }
     var showLoadStrategyDialog by remember { mutableStateOf(false) }

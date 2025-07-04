@@ -78,7 +78,7 @@ fun DetailedDrawer(
 ) {
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
-    val tasksManager = TasksManager.getInstance()
+    //val tasksManager = TasksManager.getInstance()
     var tasks by remember { mutableStateOf(emptyList<JsonObject>()) }
     var selectedItem by remember { mutableStateOf("Home") }
 

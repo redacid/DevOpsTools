@@ -20,7 +20,7 @@ import androidx.compose.ui.unit.dp
 
 @Composable
 fun SystemInfoView() {
-    val systemInfo = SystemInfo.getInstance()
+    //val systemInfo = SystemInfo.getInstance()
 
     Column(
         modifier = Modifier

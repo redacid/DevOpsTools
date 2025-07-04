@@ -158,7 +158,7 @@ class TasksManager {
     private val configDir: String = "$homeDir/.devopstools"
     private val tasksFile: String = "$configDir/tasks.json"
     private var tasks: JsonObject = JsonObject()
-    private val settingsManager = SettingsManager.getInstance()
+    //private val settingsManager = SettingsManager.getInstance()
 
     /**
      * Enum для визначення стратегії завантаження завдань
@@ -827,8 +827,8 @@ class TasksManager {
      * @return Map of installation type to list of available patterns
      */
     fun getAvailableInstallationOptions(task: JsonObject): Map<String, List<String>> {
-        val systemInfo = SystemInfo.getInstance()
-        val settingsManager = SettingsManager.getInstance()
+        //val systemInfo = SystemInfo.getInstance()
+        //val settingsManager = SettingsManager.getInstance()
         val result = mutableMapOf<String, List<String>>()
 
         // Get task name to include in patterns
@@ -915,8 +915,8 @@ class TasksManager {
      * @return The best matching asset name or null if no match found
      */
     fun findBestInstallationAsset(taskName: String, assetNames: List<String>): String? {
-        val systemInfo = SystemInfo.getInstance()
-        val settingsManager = SettingsManager.getInstance()
+        //val systemInfo = SystemInfo.getInstance()
+        //val settingsManager = SettingsManager.getInstance()
 
         // Create a dummy task object to get installation options
         val dummyTask = JsonObject().apply {
