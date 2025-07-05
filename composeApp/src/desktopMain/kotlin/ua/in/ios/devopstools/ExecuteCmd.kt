@@ -27,6 +27,72 @@ object SudoPasswordCache {
     }
 }
 
+fun deleteDirectoryRecursivelySync(directory: File): Boolean {
+    try {
+        if (!directory.exists()) {
+            return true
+        }
+
+        // Checking if this is a directory
+        if (!directory.isDirectory) {
+            return directory.delete()
+        }
+
+        // Recursively deleting the contents of the directory
+        directory.listFiles()?.forEach { file ->
+            if (file.isDirectory) {
+                if (!deleteDirectoryRecursivelySync(file)) {
+                    return false
+                }
+            } else {
+                if (!file.delete()) {
+                    return false
+                }
+            }
+        }
+
+        // Removing the directory itself.
+        return directory.delete()
+    } catch (e: Exception) {
+        logger.e("recursivelyDeleteDirectorySync", "Error deleting directory ${directory.absolutePath}: ${e.message}")
+        return false
+    }
+}
+
+suspend fun deleteDirectoryRecursively(directory: File): Boolean {
+    return withContext(Dispatchers.IO) {
+        try {
+            if (!directory.exists()) {
+                return@withContext true
+            }
+
+            // Checking if this is a directory
+            if (!directory.isDirectory) {
+                return@withContext directory.delete()
+            }
+
+            // Recursively deleting the contents of the directory
+            directory.listFiles()?.forEach { file ->
+                if (file.isDirectory) {
+                    if (!deleteDirectoryRecursively(file)) {
+                        return@withContext false
+                    }
+                } else {
+                    if (!file.delete()) {
+                        return@withContext false
+                    }
+                }
+            }
+
+            // Removing the directory itself.
+            return@withContext directory.delete()
+        } catch (e: Exception) {
+            logger.e("recursivelyDeleteDirectory", "Error deleting directory ${directory.absolutePath}: ${e.message}")
+            return@withContext false
+        }
+    }
+}
+
 suspend fun executeCommandSudo(command: String, workingDir: String = ""): Boolean {
     return withContext(Dispatchers.IO) {
         try {

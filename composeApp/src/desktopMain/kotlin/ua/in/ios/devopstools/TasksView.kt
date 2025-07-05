@@ -511,7 +511,9 @@ fun TaskEditDialog(
         var parseReleaseNotes by remember { mutableStateOf(false) }
         // Package fields
         var packageLink by remember { mutableStateOf("") }
-
+        var afterUnpackInstallFlag by remember { mutableStateOf(false) }
+        var afterUnpackInstallCmd by remember { mutableStateOf("") }
+        var afterUnpackInstallSudo by remember { mutableStateOf(false) }
 
         if (task.has(StaticSettings.InstallTypes.GITHUB)) {
             val githubObj = task.getAsJsonObject(StaticSettings.InstallTypes.GITHUB)
@@ -521,8 +523,12 @@ fun TaskEditDialog(
         }
 
         if (task.has(StaticSettings.InstallTypes.PACKAGE)) {
-            val githubObj = task.getAsJsonObject(StaticSettings.InstallTypes.PACKAGE)
-            packageLink = githubObj.get("link")?.asString ?: ""
+            val packageObj = task.getAsJsonObject(StaticSettings.InstallTypes.PACKAGE)
+            packageLink = packageObj.get("link")?.asString ?: ""
+            val afterunpackObj = packageObj.getAsJsonObject("after_unpack_install_cmd")
+            afterUnpackInstallFlag = afterunpackObj.get("flag")?.asBoolean ?: false
+            afterUnpackInstallCmd = afterunpackObj.get("cmd")?.asString ?: ""
+            afterUnpackInstallSudo = afterunpackObj.get("sudo")?.asBoolean ?: false
         }
 
         //val tasksManager = TasksManager.getInstance()
@@ -788,6 +794,14 @@ fun TaskEditDialog(
                     // Create a directory if it doesn't exist
                     installationStatus = "Creating temporary directory..."
                     installationProgress = 0.2f
+
+                    val resultDelete = deleteDirectoryRecursivelySync(File(toolDir))
+                    if (resultDelete) {
+                        logger.i("TaskEditDialog.githubInstallTool", "Temporary directory deleted $toolDir")
+                    } else {
+                        logger.i("TaskEditDialog.githubInstallTool", "Error delete temporary directory $toolDir")
+                    }
+
                     val toolDirFile = File(toolDir)
                     if (!toolDirFile.exists()) {
                         toolDirFile.mkdirs()
@@ -952,6 +966,14 @@ fun TaskEditDialog(
                     // Create a directory if it doesn't exist
                     installationStatus = "Creating temporary directory..."
                     installationProgress = 0.2f
+
+                    val resultDelete = deleteDirectoryRecursivelySync(File(toolDir))
+                    if (resultDelete) {
+                        logger.i("TaskEditDialog.githubInstallTool", "Temporary directory deleted $toolDir")
+                    } else {
+                        logger.e("TaskEditDialog.githubInstallTool", "Error delete temporary directory $toolDir")
+                    }
+
                     val toolDirFile = File(toolDir)
                     if (!toolDirFile.exists()) {
                         toolDirFile.mkdirs()
@@ -1061,21 +1083,24 @@ fun TaskEditDialog(
 
                             if (extractResult) {
                                 // Find the binary and copy it to the installation path
-                                val installPath = settingsManager.getString("settings.install_path", "/usr/bin")
-                                val binaryFile = binaryName.ifEmpty { name }
-                                // Search for the binary in the extracted files
-                                val foundBinary = findBinary(toolDir, binaryFile)
-
-                                if (foundBinary.isNotEmpty()) {
-                                    val copyCommand = "sudo cp $foundBinary $installPath/$binaryFile"
-                                    val chmodCommand = "sudo chmod +x $installPath/$binaryFile"
-                                    //TODO Temporary comment executing and add true return
-                                    executeCommandSudo(copyCommand) && executeCommandSudo(chmodCommand)
-                                    //true
-
+                                if (afterUnpackInstallFlag) {
+                                    val execCmd = "${if (afterUnpackInstallSudo) {"sudo "} else {""} }$toolDir/$afterUnpackInstallCmd"
+                                    executeCommandSudo(execCmd)
                                 } else {
-                                    installationStatus = "Binary not found in the package"
-                                    false
+                                    val installPath = settingsManager.getString("settings.install_path", "/usr/bin")
+                                    val binaryFile = binaryName.ifEmpty { name }
+                                    // Search for the binary in the extracted files
+                                    val foundBinary = findBinary(toolDir, binaryFile)
+                                    if (foundBinary.isNotEmpty()) {
+                                        val copyCommand = "sudo cp $foundBinary $installPath/$binaryFile"
+                                        val chmodCommand = "sudo chmod +x $installPath/$binaryFile"
+                                        //TODO Temporary comment executing and add true return
+                                        //true
+                                        executeCommandSudo(copyCommand) && executeCommandSudo(chmodCommand)
+                                    } else {
+                                        installationStatus = "Binary not found in the package"
+                                        false
+                                    }
                                 }
                             } else {
                                 false
@@ -1506,17 +1531,6 @@ fun TaskEditDialog(
                                         Spacer(Modifier.width(4.dp))
                                         Text("Install")
                                     }
-
-//                                    ExtendedFloatingActionButton(
-//                                        onClick = { githubInstallTool() },
-//                                        //enabled = selectedAsset.isNotEmpty() && !isInstalling && assetDownloadUrl.isNotEmpty(),
-//                                        icon = { Icon(ICON_PLAY,  "Install") },
-//                                        text = { Text("Install") },
-//                                        containerColor = MaterialTheme.colorScheme.primary,
-//                                        contentColor = MaterialTheme.colorScheme.onPrimary,
-//                                        elevation = FloatingActionButtonDefaults.elevation(0.dp),
-//                                        modifier = Modifier.padding(top = 8.dp)
-//                                    )
                                 }
                         }
 
@@ -1533,7 +1547,41 @@ fun TaskEditDialog(
                                 modifier = Modifier.fillMaxWidth(),
                                 singleLine = true
                             )
-                            Spacer(modifier = Modifier.height(16.dp))
+                            //Spacer(modifier = Modifier.height(16.dp))
+                            // After Unpack
+                            Row(
+                                modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Checkbox(
+                                    checked = afterUnpackInstallFlag,
+                                    onCheckedChange = { afterUnpackInstallFlag = it }
+                                )
+                                Text("Execute after unpack command", modifier = Modifier.padding(start = 8.dp))
+                            }
+                                if (afterUnpackInstallFlag) {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                    Checkbox(
+                                        checked = afterUnpackInstallSudo,
+                                        onCheckedChange = { afterUnpackInstallSudo = it }
+                                    )
+                                    Text("Execute with sudo", modifier = Modifier.padding(start = 8.dp))
+                                    Spacer(Modifier.width(16.dp))
+                                    OutlinedTextField(
+                                        value = afterUnpackInstallCmd,
+                                        onValueChange = { afterUnpackInstallCmd = it },
+                                        label = { Text("After unpack command") },
+                                        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                                        singleLine = true,
+                                        readOnly = false,
+                                        enabled = true
+                                    )
+                                }
+                            }
+                            // End After unpack
                             Button(
                                 onClick = { packageInstallTool() },
                                 enabled = packageLink.isNotEmpty(),
@@ -1594,6 +1642,13 @@ fun TaskEditDialog(
                         if (installType == StaticSettings.InstallTypes.PACKAGE) {
                             val packageObj = JsonObject()
                             packageObj.addProperty("link", packageLink)
+                            val afterunpackObj = JsonObject().apply {
+                                addProperty("flag", afterUnpackInstallFlag)
+                                addProperty("sudo", afterUnpackInstallSudo)
+                                addProperty("cmd", afterUnpackInstallCmd)
+                            }
+                            packageObj.add("after_unpack_install_cmd", afterunpackObj)
+
                             editedTask.add(StaticSettings.InstallTypes.PACKAGE, packageObj)
                         }
 

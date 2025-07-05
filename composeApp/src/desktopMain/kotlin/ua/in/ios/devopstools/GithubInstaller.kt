@@ -220,6 +220,13 @@ class GithubInstaller {
             state.installationProgress = 0.2f
             onStateChange(state)
 
+            val resultDelete = deleteDirectoryRecursivelySync(File(toolDir))
+            if (resultDelete) {
+                logger.i("TaskEditDialog.githubInstallTool", "Temporary directory deleted $toolDir")
+            } else {
+                logger.e("TaskEditDialog.githubInstallTool", "Error delete temporary directory $toolDir")
+            }
+
             val toolDirFile = File(toolDir)
             if (!toolDirFile.exists()) {
                 toolDirFile.mkdirs()
