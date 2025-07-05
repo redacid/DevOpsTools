@@ -39,6 +39,7 @@ kotlin {
             implementation(compose.foundation)
             implementation(compose.material3)
             implementation(compose.material)
+            implementation(compose.preview)
             implementation("br.com.devsrsouza.compose.icons:feather:1.1.1") // https://feathericons.com/
             implementation(compose.ui)
             implementation(compose.components.resources)

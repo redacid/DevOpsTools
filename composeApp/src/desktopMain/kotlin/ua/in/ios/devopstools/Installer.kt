@@ -1,6 +1,8 @@
 package ua.`in`.ios.devopstools
 
+import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.runtime.*
@@ -19,6 +21,8 @@ import java.nio.file.StandardCopyOption
 import kotlin.collections.component1
 import kotlin.collections.component2
 import kotlin.text.ifEmpty
+
+
 /**
  * Model class representing the installation process state
  */
@@ -605,7 +609,7 @@ class PackageInstaller {
     }
     }
 }
-
+@Preview()
 @Composable
 fun InstallButton(task: JsonObject, onInstallComplete: () -> Unit) {
     var isInstalling by remember { mutableStateOf(false) }
@@ -622,15 +626,14 @@ fun InstallButton(task: JsonObject, onInstallComplete: () -> Unit) {
     }
 
     Button(
-        modifier =  Modifier
-            .size(width = 130.dp, height = 40.dp)
-        ,
+        modifier =  Modifier.size(width = 130.dp, height = 40.dp),
         colors = ButtonColors(
             containerColor = MaterialTheme.colorScheme.secondary,
             contentColor = MaterialTheme.colorScheme.onSecondary,
             disabledContainerColor = MaterialTheme.colorScheme.surfaceContainer,
             disabledContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
         ),
+        shape = RoundedCornerShape(4.dp),
         onClick = {
             coroutineScope.launch {
                 when (installer) {
