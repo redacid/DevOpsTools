@@ -301,7 +301,10 @@ class GithubInstaller {
                     executeCommandSudo("sudo dpkg -i $destinationFile")
                 }
                 "rpm_based" -> {
-                    executeCommandSudo("sudo rpm -i $destinationFile")
+                    // -U --replacepkgs
+                    //executeCommandSudo("sudo rpm -i $destinationFile")
+                    executeCommandSudo("sudo rpm -U --replacepkgs $destinationFile")
+
                 }
                 "package" -> {
                     if (state.selectedAsset.endsWith(".tar.gz")) {
@@ -506,7 +509,8 @@ class PackageInstaller {
                 }
                 "rpm_based" -> {
                     // Install RPM package
-                    val command = "sudo rpm -i $destinationFile"
+                    val command = "sudo rpm -U --replacepkgs $destinationFile"
+                    //val command = "sudo rpm -i $destinationFile"
                     executeCommandSudo(command)
                 }
                 "package" -> {
