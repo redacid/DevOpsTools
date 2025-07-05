@@ -28,6 +28,9 @@ all: help
 copy_my_tasks:
 	cp ~/.devopstools/tasks.json ./
 
+backup_tasks:
+	cp ~/.devopstools/tasks.json ~/.devopstools/tasks_$(CURRENT_DATE).json
+
 backup_settings:
 	cp ~/.devopstools/settings.json ~/.devopstools/settings_$(CURRENT_DATE).json
 

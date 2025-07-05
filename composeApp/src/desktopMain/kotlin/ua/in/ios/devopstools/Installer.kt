@@ -38,17 +38,17 @@ data class InstallationState(
     var installType: String = "",
     var installVersion: String = "",
     var isLoadingAssets: Boolean = false,
-    var parseReleaseNotes: Boolean = false
+    var parseReleaseNotes: Boolean = false,
+    var packageLink: String = "",
+    var afterUnpackInstallFlag: Boolean = false,
+    var afterUnpackInstallSudo: Boolean = false,
+    var afterUnpackInstallCmd: String = ""
 )
 
 /**
  * Helper class to manage installation process
  */
 class GithubInstaller {
-    private val logger = Logger.getInstance()
-    //private val settingsManager = SettingsManager.getInstance()
-    //private val tasksManager = TasksManager.getInstance()
-
     val state = InstallationState()
 
     private suspend fun findBinary(directory: String, binaryName: String): String {
@@ -182,7 +182,7 @@ class GithubInstaller {
         }
     }
 
-    suspend fun installGithubTask(
+    suspend fun installTask(
         task: JsonObject,
         onStateChange: (InstallationState) -> Unit
     ) {
@@ -359,26 +359,301 @@ class GithubInstaller {
     }
 }
 
+class PackageInstaller {
+    val state = InstallationState()
+
+    private suspend fun findBinary(directory: String, binaryName: String): String {
+        return withContext(Dispatchers.IO) {
+            try {
+                val dir = File(directory)
+
+                fun searchRecursively(dir: File): File? {
+                    dir.listFiles()?.forEach { file ->
+                        if (file.isFile && file.name == binaryName && file.canExecute()) {
+                            return file
+                        } else if (file.isDirectory) {
+                            val found = searchRecursively(file)
+                            if (found != null) return found
+                        }
+                    }
+                    return null
+                }
+
+                val binaryFile = searchRecursively(dir)
+                binaryFile?.absolutePath ?: ""
+            } catch (e: Exception) {
+                logger.e("TasksManager", "Error finding binary file:", e)
+                ""
+            }
+        }
+    }
+
+    suspend fun installTask(
+        task: JsonObject,
+        onStateChange: (InstallationState) -> Unit
+    ) {
+        try {
+            // Initialize state from task
+            state.name = task.get("name")?.asString ?: ""
+            state.binaryName = task.get("binary_name")?.asString ?: ""
+            state.installType = task.get("install_type")?.asString ?: ""
+            state.installVersion = task.get("install_version")?.asString ?: ""
+
+            if (task.has(StaticSettings.InstallTypes.PACKAGE)) {
+                val packageObj = task.getAsJsonObject(StaticSettings.InstallTypes.PACKAGE)
+                state.packageLink = packageObj.get("link")?.asString ?: ""
+
+                if (packageObj.has("after_unpack_install_cmd")) {
+                    state.afterUnpackInstallFlag = packageObj.get("flag")?.asBoolean ?: false
+                    state.afterUnpackInstallSudo = packageObj.get("sudo")?.asBoolean ?: false
+                    state.afterUnpackInstallCmd = packageObj.get("cmd")?.asString ?: ""
+                }
+            }
+
+            // Start installation process
+            state.isInstalling = true
+            state.installationStatus = "Preparing..."
+            state.installationProgress = 0.1f
+            onStateChange(state)
+
+            // Get temporary directory
+            val tempDir = settingsManager.getString("settings.temp_path", "/tmp")
+            val toolDir = "$tempDir/${state.name.replace(" ", "_")}"
+            var downloadFilename = getFilenameFromUrl(state.packageLink)
+
+            // Create directory
+            state.installationStatus = "Make temp dir..."
+            state.installationProgress = 0.2f
+            onStateChange(state)
+
+            val resultDelete = deleteDirectoryRecursivelySync(File(toolDir))
+            if (resultDelete) {
+                logger.i("PackageInstaller.packageInstallTool", "Temporary directory deleted $toolDir")
+            } else {
+                logger.e("PackageInstaller.packageInstallTool", "Error delete temporary directory $toolDir")
+            }
+
+            val toolDirFile = File(toolDir)
+            if (!toolDirFile.exists()) {
+                toolDirFile.mkdirs()
+            }
+            // Download file
+            val destinationFile = "$toolDir/${downloadFilename}"
+            state.installationStatus = "Downloading file: ${downloadFilename}"
+            state.installationProgress = 0.3f
+            onStateChange(state)
+
+            val downloadSuccess = withContext(Dispatchers.IO) {
+                try {
+                    val destFile = File(destinationFile)
+                    if (!destFile.parentFile.exists()) {
+                        destFile.parentFile.mkdirs()
+                    }
+
+                    logger.i("installPackageTask", "Downloading from: ${state.packageLink}")
+                    logger.i("installPackageTask", "Downloading to: $destinationFile")
+
+                    URL(state.packageLink).openStream().use { input ->
+                        Files.copy(input, Paths.get(destinationFile), StandardCopyOption.REPLACE_EXISTING)
+                    }
+
+                    val downloadedFile = File(destinationFile)
+                    if (!downloadedFile.exists()) {
+                        state.installationStatus = "Download failed: File does not exist after download"
+                        onStateChange(state)
+                        return@withContext false
+                    }
+
+                    logger.i("installPackageTask", "File downloaded successfully: ${downloadedFile.absolutePath}, size: ${downloadedFile.length()} bytes")
+                    true
+                } catch (e: Exception) {
+                    logger.e("installPackageTask", "Error downloading file:", e)
+                    state.installationStatus = "Download error: ${e.message}"
+                    onStateChange(state)
+                    false
+                }
+            }
+            if (!downloadSuccess) {
+                state.installationProgress = 1.0f
+                state.isInstalling = false
+                onStateChange(state)
+                return
+            }
+
+            // Install process
+            state.installationStatus = "Installing..."
+            state.installationProgress = 0.7f
+            onStateChange(state)
+
+            val fileToInstall = File(destinationFile)
+            if (!fileToInstall.exists()) {
+                state.installationStatus = "Installation failed: File not found at $destinationFile"
+                state.installationProgress = 1.0f
+                state.isInstalling = false
+                onStateChange(state)
+                return
+            }
+            state.assetInstallType = getFileType(downloadFilename)
+            logger.i("TaskEditDialog.packageInstallTool", "File type: $state.assetInstallType")
+            val installResult = when (state.assetInstallType) {
+                "deb_based" -> {
+                    // Install DEB package
+                    val command = "sudo dpkg -i $destinationFile"
+                    executeCommandSudo(command)
+                }
+                "rpm_based" -> {
+                    // Install RPM package
+                    val command = "sudo rpm -i $destinationFile"
+                    executeCommandSudo(command)
+                }
+                "package" -> {
+                    var extractResult: Boolean = false
+                    // Extract and copy binary from package
+                    // Extract the archive
+                    if (downloadFilename.endsWith(".tar.gz") || downloadFilename.endsWith(".tgz")) {
+                        val extractCommand = "tar -xzf $destinationFile -C $toolDir"
+                        extractResult = executeCommandSudo(extractCommand)
+                    } else if (downloadFilename.endsWith(".tar")) {
+                        val extractCommand = "tar -xf $destinationFile -C $toolDir"
+                        extractResult = executeCommandSudo(extractCommand)
+                    } else if (downloadFilename.endsWith(".gz")) {
+                        val extractCommand = "gunzip -c $destinationFile > $toolDir/${downloadFilename.removeSuffix(".gz")}"
+                        extractResult = executeCommandSudo(extractCommand)
+                    } else if (downloadFilename.endsWith(".zip")) {
+                        val extractCommand = "unzip $destinationFile -d $toolDir"
+                        extractResult = executeCommandSudo(extractCommand)
+                    } else if (downloadFilename.endsWith(".xz")) {
+                        val extractCommand = "tar -xJf $destinationFile -C $toolDir"
+                        extractResult = executeCommandSudo(extractCommand)
+                    } else if (downloadFilename.endsWith(".tar.xz")) {
+                        val extractCommand = "tar -xJf $destinationFile -C $toolDir"
+                        extractResult = executeCommandSudo(extractCommand)
+                    } else if (downloadFilename.endsWith(".bz2")) {
+                        if (downloadFilename.endsWith(".tar.bz2")) {
+                            val extractCommand = "tar -xjf $destinationFile -C $toolDir"
+                            extractResult = executeCommandSudo(extractCommand)
+                        } else {
+                            val extractCommand = "bunzip2 -c $destinationFile > $toolDir/${downloadFilename.removeSuffix(".bz2")}"
+                            extractResult = executeCommandSudo(extractCommand)
+                        }
+                    } else {
+                        state.installationStatus = "Unsupported package format"
+                        //extractResult = false
+                        false
+                    }
+
+                    if (extractResult) {
+                        // Find the binary and copy it to the installation path
+                        if (state.afterUnpackInstallFlag) {
+                            val execCmd = "${if (state.afterUnpackInstallSudo) {"sudo "} else {""} }$toolDir/$state.afterUnpackInstallCmd"
+                            executeCommandSudo(execCmd)
+                        } else {
+                            val installPath = settingsManager.getString("settings.install_path", "/usr/bin")
+                            val binaryFile = state.binaryName.ifEmpty { state.name }
+                            // Search for the binary in the extracted files
+                            val foundBinary = findBinary(toolDir, binaryFile)
+                            if (foundBinary.isNotEmpty()) {
+                                val copyCommand = "sudo cp $foundBinary $installPath/$binaryFile"
+                                val chmodCommand = "sudo chmod +x $installPath/$binaryFile"
+                                //TODO Temporary comment executing and add true return
+                                //true
+                                executeCommandSudo(copyCommand) && executeCommandSudo(chmodCommand)
+                            } else {
+                                state.installationStatus = "Binary not found in the package"
+                                false
+                            }
+                        }
+                    } else {
+                        false
+                    }
+
+                }
+                "binary" -> {
+                    // Copy binary file directly
+                    val installPath = settingsManager.getString("settings.install_path", "/usr/bin")
+                    val binaryFile = state.binaryName.ifEmpty { state.name }
+                    // Make the binary executable
+                    val chmodCommand = "chmod +x $destinationFile"
+                    val copyCommand = "sudo cp $destinationFile $installPath/$binaryFile"
+                    val finalChmodCommand = "sudo chmod +x $installPath/$binaryFile"
+                    executeCommandSudo(chmodCommand) && executeCommandSudo(copyCommand) && executeCommandSudo(finalChmodCommand)
+                }
+                else -> {
+                    state.installationStatus = "Unsupported installation type: $state.assetInstallType"
+                    false
+                }
+            }
+
+            state.installationProgress = 0.9f
+            onStateChange(state)
+
+            if (installResult) {
+                state.installationStatus = "Success"
+                delay(1000)
+                state.currentVersion = getInstallTypeForTask(task)?.getCurrentVersion(task) ?: "Unknown"
+            } else {
+                state.installationStatus = "Failed"
+            }
+
+        } catch (e: Exception) {
+            state.installationStatus = "Error: ${e.message}"
+            logger.e("installPackageTask", "Installation error", e)
+        } finally {
+            state.installationProgress = 1.0f
+            state.isInstalling = false
+            onStateChange(state)
+    }
+    }
+}
+
 @Composable
 fun InstallButton(task: JsonObject, onInstallComplete: () -> Unit) {
     var isInstalling by remember { mutableStateOf(false) }
     var installationStatus by remember { mutableStateOf("") }
     var installationProgress by remember { mutableStateOf(0f) }
     val coroutineScope = rememberCoroutineScope()
-    val installer = remember { GithubInstaller() }
+    val installType = task.get("install_type")?.asString ?: ""
+    val installer = remember {
+        when (installType) {
+            StaticSettings.InstallTypes.GITHUB -> { GithubInstaller() }
+            StaticSettings.InstallTypes.PACKAGE -> { PackageInstaller() }
+            else -> { null }
+        }
+    }
 
-    IconButton(
+    Button(
+        modifier =  Modifier
+            .size(width = 130.dp, height = 40.dp)
+        ,
+        colors = ButtonColors(
+            containerColor = MaterialTheme.colorScheme.secondary,
+            contentColor = MaterialTheme.colorScheme.onSecondary,
+            disabledContainerColor = MaterialTheme.colorScheme.surfaceContainer,
+            disabledContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+        ),
         onClick = {
             coroutineScope.launch {
-                installer.installGithubTask(task) { state ->
-                    isInstalling = state.isInstalling
-                    installationStatus = state.installationStatus
-                    installationProgress = state.installationProgress
+                when (installer) {
+                    is GithubInstaller -> {
+                        installer.installTask(task) { state ->
+                            isInstalling = state.isInstalling
+                            installationStatus = state.installationStatus
+                            installationProgress = state.installationProgress
+                        }
+                    }
+                    is PackageInstaller -> {
+                        installer.installTask(task) { state ->
+                            isInstalling = state.isInstalling
+                            installationStatus = state.installationStatus
+                            installationProgress = state.installationProgress
+                        }
+                    }
                 }
                 onInstallComplete()
             }
         },
         enabled = !isInstalling
+
     ) {
         if (isInstalling) {
             CircularProgressIndicator(
@@ -386,11 +661,17 @@ fun InstallButton(task: JsonObject, onInstallComplete: () -> Unit) {
             )
         } else {
             Icon(ICON_PLAY, contentDescription = "Install")
+            Spacer(Modifier.width(4.dp))
+            //if (installationStatus.isEmpty()) {
+                Text("Install")
+            //}
+
         }
     }
 
     // Optional status display
     if (installationStatus.isNotEmpty()) {
+        Spacer(Modifier.width(8.dp))
         Column(
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
