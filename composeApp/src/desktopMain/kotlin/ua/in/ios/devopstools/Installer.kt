@@ -1,6 +1,5 @@
 package ua.`in`.ios.devopstools
 
-import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
@@ -609,7 +608,7 @@ class PackageInstaller {
     }
     }
 }
-@Preview()
+
 @Composable
 fun InstallButton(task: JsonObject, onInstallComplete: () -> Unit) {
     var isInstalling by remember { mutableStateOf(false) }
