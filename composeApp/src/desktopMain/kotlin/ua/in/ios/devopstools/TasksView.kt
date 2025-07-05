@@ -525,7 +525,7 @@ fun TaskEditDialog(
         if (task.has(StaticSettings.InstallTypes.PACKAGE)) {
             val packageObj = task.getAsJsonObject(StaticSettings.InstallTypes.PACKAGE)
             packageLink = packageObj.get("link")?.asString ?: ""
-            val afterunpackObj = packageObj.getAsJsonObject("after_unpack_install_cmd")
+            val afterunpackObj = packageObj.getAsJsonObject("after_unpack_install_cmd") ?: JsonObject()
             afterUnpackInstallFlag = afterunpackObj.get("flag")?.asBoolean ?: false
             afterUnpackInstallCmd = afterunpackObj.get("cmd")?.asString ?: ""
             afterUnpackInstallSudo = afterunpackObj.get("sudo")?.asBoolean ?: false
