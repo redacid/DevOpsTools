@@ -22,13 +22,14 @@
       "binary_name": "jq",
       "description": "A lightweight and flexible command-line JSON processor",
       "install_type": "github",
-      "install_version": "jq-1.8.0",
+      "install_version": "jq-1.8.1",
       "version_cmd": "--version",
       "installed_as": "binary",
       "enabled": true,
       "github": {
         "url": "https://github.com/jqlang/jq",
         "api_url": "https://api.github.com/repos/jqlang/jq",
+        "parse_release_notes": false,
         "asset": "jq-linux-amd64",
         "asset_type": "binary"
       }
@@ -248,26 +249,31 @@
       "install_type": "package",
       "version_cmd": "--version",
       "installed_as": "",
-      "enabled": false,
+      "enabled": true,
       "install_version": "latest",
       "package": {
-        "link": "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip"
+        "link": "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip",
+        "after_unpack_install_cmd": {
+          "flag": true,
+          "sudo": true,
+          "cmd": "aws/install --update"
+        }
       }
     },
     {
       "name": "devopstools",
-      "description": "",
+      "description": "DevOps Tools Installer",
       "binary_name": "devopstools",
       "install_type": "github",
       "version_cmd": "--version",
       "installed_as": "",
       "enabled": true,
-      "install_version": "1.0.0",
+      "install_version": "0.1.0",
       "github": {
         "url": "https://github.com/redacid/DevOpsTools",
         "api_url": "https://api.github.com/repos/redacid/DevOpsTools",
         "parse_release_notes": false,
-        "asset": "devopstools_1.0.0-1_amd64.deb",
+        "asset": "devopstools_0.1.0-1_amd64.deb",
         "asset_type": "deb_based"
       }
     },
@@ -315,7 +321,48 @@
       "enabled": true,
       "install_version": "latest",
       "package": {
-        "link": "https://releases.hashicorp.com/terraform/1.12.2/terraform_1.12.2_linux_amd64.zip"
+        "link": "https://releases.hashicorp.com/terraform/1.12.2/terraform_1.12.2_linux_amd64.zip",
+        "after_unpack_install_cmd": {
+          "flag": false,
+          "sudo": false,
+          "cmd": ""
+        }
+      }
+    },
+    {
+      "name": "studio-3t",
+      "description": "Mongo DB manager https://studio3t.com/",
+      "binary_name": "studio-3t",
+      "install_type": "package",
+      "version_cmd": "--version",
+      "installed_as": "",
+      "enabled": false,
+      "install_version": "latest",
+      "package": {
+        "link": "https://download-ce.studio3t.com/studio-3t/linux/2025.1.0/studio-3t-community-edition-linux-x64.tar.gz",
+        "after_unpack_install_cmd": {
+          "flag": true,
+          "sudo": false,
+          "cmd": "studio-3t-community-edition-linux-x64.sh"
+        }
+      }
+    },
+    {
+      "name": "postman",
+      "description": "",
+      "binary_name": "postman2",
+      "install_type": "package",
+      "version_cmd": "--version",
+      "installed_as": "",
+      "enabled": false,
+      "install_version": "latest",
+      "package": {
+        "link": "https://dl.pstmn.io/download/latest/linux_64",
+        "after_unpack_install_cmd": {
+          "flag": false,
+          "sudo": false,
+          "cmd": ""
+        }
       }
     }
   ]
