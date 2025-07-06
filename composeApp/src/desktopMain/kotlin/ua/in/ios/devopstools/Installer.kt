@@ -302,24 +302,29 @@ class GithubInstaller {
                 }
                 "rpm_based" -> {
                     // Obtain the package name from the RPM file.
-                    val queryCommand = "rpm -qp --queryformat '%{NAME}' $destinationFile"
+                    val queryCommand = "rpm -qp --queryformat %{NAME} $destinationFile"
                     val (queryExitCode, packageName) = executeCommandDirect(queryCommand)
+                    logger.d("GithubInstaller.InstallTask.rpm_based", "Query Exit Code: $queryExitCode, Package name: $packageName")
 
                     if (queryExitCode == 0 && packageName.isNotEmpty()) {
                         // Checking if the package is installed.
                         val checkCommand = "rpm -q $packageName"
-                        val (checkExitCode, _) = executeCommandDirect(checkCommand)
+                        val (checkExitCode, cmdOutput) = executeCommandDirect(checkCommand)
+                        logger.d("GithubInstaller.InstallTask.rpm_based", "Check Exit Code: $checkExitCode, Command output: $cmdOutput")
 
                         // If the package is installed - remove it.
                         if (checkExitCode == 0) {
                             val removeCommand = "sudo rpm -e $packageName"
-                            executeCommandSudo(removeCommand)
+                            val removeResult = executeCommandSudo(removeCommand)
+                            logger.d("GithubInstaller.InstallTask.rpm_based", "Remove $packageName result: $removeResult")
                         }
                     }
 
                     // Installing a new package.
                     val installCommand = "sudo rpm -i $destinationFile"
-                    executeCommandSudo(installCommand)
+                    val installRPMResult = executeCommandSudo(installCommand)
+                    logger.d("GithubInstaller.InstallTask.rpm_based", "Install $packageName result: $installRPMResult")
+                    installRPMResult
                 }
                 "package" -> {
                     if (state.selectedAsset.endsWith(".tar.gz")) {
@@ -371,7 +376,7 @@ class GithubInstaller {
 
         } catch (e: Exception) {
             state.installationStatus = "Error: ${e.message}"
-            logger.e("installGithubTask", "Installation error", e)
+            logger.e("GithubInstaller.InstallTask", "Installation error", e)
         } finally {
             state.installationProgress = 1.0f
             state.isInstalling = false
@@ -449,9 +454,9 @@ class PackageInstaller {
 
             val resultDelete = deleteDirectoryRecursivelySync(File(toolDir))
             if (resultDelete) {
-                logger.i("PackageInstaller.packageInstallTool", "Temporary directory deleted $toolDir")
+                logger.i("PackageInstaller.installTask", "Temporary directory deleted $toolDir")
             } else {
-                logger.e("PackageInstaller.packageInstallTool", "Error delete temporary directory $toolDir")
+                logger.e("PackageInstaller.installTask", "Error delete temporary directory $toolDir")
             }
 
             val toolDirFile = File(toolDir)
@@ -471,8 +476,8 @@ class PackageInstaller {
                         destFile.parentFile.mkdirs()
                     }
 
-                    logger.i("installPackageTask", "Downloading from: ${state.packageLink}")
-                    logger.i("installPackageTask", "Downloading to: $destinationFile")
+                    logger.i("PackageInstaller.installTask", "Downloading from: ${state.packageLink}")
+                    logger.i("PackageInstaller.installTask", "Downloading to: $destinationFile")
 
                     URL(state.packageLink).openStream().use { input ->
                         Files.copy(input, Paths.get(destinationFile), StandardCopyOption.REPLACE_EXISTING)
@@ -485,10 +490,10 @@ class PackageInstaller {
                         return@withContext false
                     }
 
-                    logger.i("installPackageTask", "File downloaded successfully: ${downloadedFile.absolutePath}, size: ${downloadedFile.length()} bytes")
+                    logger.i("PackageInstaller.installTask", "File downloaded successfully: ${downloadedFile.absolutePath}, size: ${downloadedFile.length()} bytes")
                     true
                 } catch (e: Exception) {
-                    logger.e("installPackageTask", "Error downloading file:", e)
+                    logger.e("PackageInstaller.installTask", "Error downloading file:", e)
                     state.installationStatus = "Download error: ${e.message}"
                     onStateChange(state)
                     false
@@ -515,7 +520,7 @@ class PackageInstaller {
                 return
             }
             state.assetInstallType = getFileType(downloadFilename)
-            logger.i("TaskEditDialog.packageInstallTool", "File type: $state.assetInstallType")
+            logger.i("PackageInstaller.installTask", "File type: $state.assetInstallType")
             val installResult = when (state.assetInstallType) {
                 "deb_based" -> {
                     // Install DEB package
@@ -524,24 +529,29 @@ class PackageInstaller {
                 }
                 "rpm_based" -> {
                     // Obtain the package name from the RPM file.
-                    val queryCommand = "rpm -qp --queryformat '%{NAME}' $destinationFile"
+                    val queryCommand = "rpm -qp --queryformat %{NAME} $destinationFile"
                     val (queryExitCode, packageName) = executeCommandDirect(queryCommand)
+                    logger.d("PackageInstaller.installTask.rpm_based", "Query Exit Code: $queryExitCode, Package name: $packageName")
 
                     if (queryExitCode == 0 && packageName.isNotEmpty()) {
                         // Checking if the package is installed.
                         val checkCommand = "rpm -q $packageName"
-                        val (checkExitCode, _) = executeCommandDirect(checkCommand)
+                        val (checkExitCode, cmdOutput) = executeCommandDirect(checkCommand)
+                        logger.d("PackageInstaller.installTask.rpm_based", "Check Exit Code: $checkExitCode, Command output: $cmdOutput")
 
                         // If the package is installed - remove it.
                         if (checkExitCode == 0) {
                             val removeCommand = "sudo rpm -e $packageName"
-                            executeCommandSudo(removeCommand)
+                            val removeResult = executeCommandSudo(removeCommand)
+                            logger.d("PackageInstaller.installTask.rpm_based", "Remove $packageName result: $removeResult")
                         }
                     }
 
                     // Installing a new package.
                     val installCommand = "sudo rpm -i $destinationFile"
-                    executeCommandSudo(installCommand)
+                    val installRPMResult = executeCommandSudo(installCommand)
+                    logger.d("PackageInstaller.installTask.rpm_based", "Install $packageName result: $installRPMResult")
+                    installRPMResult
                 }
 
                 "package" -> {
@@ -635,7 +645,7 @@ class PackageInstaller {
 
         } catch (e: Exception) {
             state.installationStatus = "Error: ${e.message}"
-            logger.e("installPackageTask", "Installation error", e)
+            logger.e("PackageInstaller.installTask", "Installation error", e)
         } finally {
             state.installationProgress = 1.0f
             state.isInstalling = false
