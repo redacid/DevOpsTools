@@ -303,7 +303,7 @@ class GithubInstaller {
                 "rpm_based" -> {
                     // -U --replacepkgs
                     //executeCommandSudo("sudo rpm -i $destinationFile")
-                    executeCommandSudo("sudo rpm -U --replacepkgs $destinationFile")
+                    executeCommandSudo("sudo rpm --reinstall $destinationFile")
 
                 }
                 "package" -> {
@@ -509,7 +509,7 @@ class PackageInstaller {
                 }
                 "rpm_based" -> {
                     // Install RPM package
-                    val command = "sudo rpm -U --replacepkgs $destinationFile"
+                    val command = "sudo rpm --reinstall $destinationFile"
                     //val command = "sudo rpm -i $destinationFile"
                     executeCommandSudo(command)
                 }

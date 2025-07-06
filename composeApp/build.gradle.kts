@@ -105,6 +105,7 @@ compose.desktop {
                 appRelease = "1"
                 debPackageVersion = packageVersion
                 rpmPackageVersion = packageVersion
+                rpmLicenseType = "APACHE 2.0"
                 appCategory = "Development/Tools"
             }
         }

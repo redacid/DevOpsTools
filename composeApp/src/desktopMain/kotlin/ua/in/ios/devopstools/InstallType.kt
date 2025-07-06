@@ -35,7 +35,7 @@ interface InstallType {
                 StaticSettings.InstallTypes.REMOTE_SHELL_SCRIPT -> RemoteShellScriptInstallType()
                 StaticSettings.InstallTypes.SHELL_CMD -> ShellCmdInstallType()
                 StaticSettings.InstallTypes.PACKAGE_MANAGER -> PackageManagerInstallType()
-                else -> throw IllegalArgumentException("Невідомий тип встановлення: $typeName")
+                else -> throw IllegalArgumentException("Unknown installation type: $typeName")
             }
         }
     }
@@ -149,7 +149,7 @@ abstract class BaseInstallType : InstallType {
 
 
                 if (!commandExists) {
-                    logger.i("BaseInstallType.executeCommandDirect", "Command '$mainCommand' not found")
+                    logger.d("BaseInstallType.executeCommandDirect", "Command '$mainCommand' not found")
                     return@withContext Pair(-1, "Command '$mainCommand' not found")
                 }
 
