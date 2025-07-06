@@ -97,15 +97,17 @@ compose.desktop {
             packageVersion = version.toString()
             description = "DevOps Tools Installer"
             linux {
-                //iconFile.set(project.file("kubernetes_manager_icon.png"))
+                iconFile.set(project.file("devopstools.png"))
                 menuGroup = "Development;System"
                 shortcut = true
-                debMaintainer = "Serhii Rudenko <sr@ios.in.ua>"
-                appCategory = "System"
+                debMaintainer = "Serhii Rudenko <sr@ios.in.ua> (https://github.com/redacid/devopstools)"
+                copyright = "Copyright (c) 2025 Serhii Rudenko (https://github.com/redacid/devopstools)"
+                //appCategory = "System"
+                //appRelease = buildNumber
                 appRelease = "1"
                 debPackageVersion = packageVersion
                 rpmPackageVersion = packageVersion
-                rpmLicenseType = "APACHE 2.0"
+                rpmLicenseType = "Apache-2.0"
                 appCategory = "Development/Tools"
             }
         }
