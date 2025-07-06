@@ -301,10 +301,25 @@ class GithubInstaller {
                     executeCommandSudo("sudo dpkg -i $destinationFile")
                 }
                 "rpm_based" -> {
-                    // -U --replacepkgs
-                    //executeCommandSudo("sudo rpm -i $destinationFile")
-                    executeCommandSudo("sudo rpm --reinstall $destinationFile")
+                    // Obtain the package name from the RPM file.
+                    val queryCommand = "rpm -qp --queryformat '%{NAME}' $destinationFile"
+                    val (queryExitCode, packageName) = executeCommandDirect(queryCommand)
 
+                    if (queryExitCode == 0 && packageName.isNotEmpty()) {
+                        // Checking if the package is installed.
+                        val checkCommand = "rpm -q $packageName"
+                        val (checkExitCode, _) = executeCommandDirect(checkCommand)
+
+                        // If the package is installed - remove it.
+                        if (checkExitCode == 0) {
+                            val removeCommand = "sudo rpm -e $packageName"
+                            executeCommandSudo(removeCommand)
+                        }
+                    }
+
+                    // Installing a new package.
+                    val installCommand = "sudo rpm -i $destinationFile"
+                    executeCommandSudo(installCommand)
                 }
                 "package" -> {
                     if (state.selectedAsset.endsWith(".tar.gz")) {
@@ -425,7 +440,7 @@ class PackageInstaller {
             // Get temporary directory
             val tempDir = settingsManager.getString("settings.temp_path", "/tmp")
             val toolDir = "$tempDir/${state.name.replace(" ", "_")}"
-            var downloadFilename = getFilenameFromUrl(state.packageLink)
+            val downloadFilename = getFilenameFromUrl(state.packageLink)
 
             // Create directory
             state.installationStatus = "Make temp dir..."
@@ -508,13 +523,29 @@ class PackageInstaller {
                     executeCommandSudo(command)
                 }
                 "rpm_based" -> {
-                    // Install RPM package
-                    val command = "sudo rpm --reinstall $destinationFile"
-                    //val command = "sudo rpm -i $destinationFile"
-                    executeCommandSudo(command)
+                    // Obtain the package name from the RPM file.
+                    val queryCommand = "rpm -qp --queryformat '%{NAME}' $destinationFile"
+                    val (queryExitCode, packageName) = executeCommandDirect(queryCommand)
+
+                    if (queryExitCode == 0 && packageName.isNotEmpty()) {
+                        // Checking if the package is installed.
+                        val checkCommand = "rpm -q $packageName"
+                        val (checkExitCode, _) = executeCommandDirect(checkCommand)
+
+                        // If the package is installed - remove it.
+                        if (checkExitCode == 0) {
+                            val removeCommand = "sudo rpm -e $packageName"
+                            executeCommandSudo(removeCommand)
+                        }
+                    }
+
+                    // Installing a new package.
+                    val installCommand = "sudo rpm -i $destinationFile"
+                    executeCommandSudo(installCommand)
                 }
+
                 "package" -> {
-                    var extractResult: Boolean = false
+                    var extractResult = false
                     // Extract and copy binary from package
                     // Extract the archive
                     if (downloadFilename.endsWith(".tar.gz") || downloadFilename.endsWith(".tgz")) {
