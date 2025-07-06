@@ -1,4 +1,5 @@
 package com.icongenerator
+
 import java.awt.*
 import java.awt.image.BufferedImage
 import java.io.ByteArrayOutputStream
@@ -13,24 +14,26 @@ var outputImageFilePrefix = "../devopstools_"
 var outputClassFileName = "../IconsBase64.kt"
 var addPackageString = "package ua.`in`.ios.devopstools"
 
+val imageSizes = listOf(16, 32, 64)
+
 fun resizeImage(sourceImagePath: String, outputPath: String, targetSize: Int) {
     try {
-        // Завантажуємо оригінальне зображення
+        // Load the original image
         val sourceFile = File(sourceImagePath)
         val sourceImage = ImageIO.read(sourceFile)
 
-        // Створюємо новий BufferedImage потрібного розміру
+        // Create a new Buffiredimage of the right size
         val resizedImage = BufferedImage(targetSize, targetSize, BufferedImage.TYPE_INT_ARGB)
 
-        // Отримуємо графічний контекст
+        // Get a graphic context
         val g2d = resizedImage.createGraphics()
 
-        // Встановлюємо налаштування для найвищої якості масштабування
+        // Set the settings for the highest scaling quality
         g2d.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BICUBIC)
         g2d.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY)
         g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON)
 
-        // Масштабуємо зображення
+        // We scale the image
         g2d.drawImage(sourceImage, 0, 0, targetSize, targetSize, null)
         g2d.dispose()
 
@@ -38,10 +41,10 @@ fun resizeImage(sourceImagePath: String, outputPath: String, targetSize: Int) {
         File(outputPath).parentFile?.mkdirs()
         ImageIO.write(resizedImage, "PNG", File(outputPath))
 
-        println("Створено зменшену версію ${targetSize}x${targetSize}: $outputPath")
+        println("Reduce version ${targetSize}x${targetSize}: $outputPath")
     } catch (e: Exception) {
-        println("Помилка при масштабуванні зображення: ${e.message}")
-        //e.printStackTrace()
+        println("Error when scalating the image: ${e.message}")
+        e.printStackTrace()
     }
 }
 fun generateAllIcons() {
@@ -49,21 +52,16 @@ fun generateAllIcons() {
     val mainIconPath = inputImageFileName
     val mainIconSize = 64
 
-    // Додаткові розміри
-    val sizes = listOf(16, 32, 64)
-
-    // Тепер створюємо масштабовані версії з основної іконки
-    for (size in sizes) {
+    for (size in imageSizes) {
         val outputPath = "${outputImageFilePrefix}${size}x${size}.png"
         resizeImage(mainIconPath, outputPath, size)
     }
 
-    println("Всі іконки успішно згенеровано!")
+    println("All icons are successfully generated!")
 }
 fun generatePlatformIcons() {
-    // Генеруємо основну іконку
     generateAllIcons()
-    println("Згенеровано іконки для всіх платформ")
+    println("Icons generated")
 }
 fun imageToBase64(imagePath: String): String {
     try {
@@ -74,14 +72,12 @@ fun imageToBase64(imagePath: String): String {
         val imageBytes = outputStream.toByteArray()
         return Base64.getEncoder().encodeToString(imageBytes)
     } catch (e: Exception) {
-        //logger.d("","Помилка при конвертації зображення в Base64",e)
-        println("Помилка при конвертації зображення в Base64: ${e.message}")
-        //e.printStackTrace()
+        println("Error when converting an image to Base64: ${e.message}")
+        e.printStackTrace()
         return ""
     }
 }
 fun generateIconsBase64Code(generateToFile: Boolean = false, outputFilePath: String = outputClassFileName) {
-    // Шлях до основної іконки
     val mainIconPath = inputImageFileName
     val mainIconSize = 64
 
@@ -91,25 +87,21 @@ fun generateIconsBase64Code(generateToFile: Boolean = false, outputFilePath: Str
     sb.appendLine("")
     sb.appendLine("object IconsBase64 {")
 
-    // Генеруємо Base64 для основної іконки
     val mainIconBase64 = imageToBase64(mainIconPath)
-    sb.appendLine("    /** Base64 основної іконки FULLSIZE. */")
+    sb.appendLine("    /** Base64 FULLSIZE icon */")
     sb.appendLine("    const val ICON_FULLSIZE = \"$mainIconBase64\"")
     sb.appendLine("")
 
-    // Генеруємо Base64 для різних розмірів
-    val sizes = listOf(16, 32, 64)
-    for (size in sizes) {
+    for (size in imageSizes) {
         val iconPath = "${outputImageFilePrefix}${size}x${size}.png"
         if (File(iconPath).exists()) {
             val iconBase64 = imageToBase64(iconPath)
-            sb.appendLine("    /** Base64 іконки ${size}x${size}. */")
+            sb.appendLine("    /** Base64 icon ${size}x${size}. */")
             sb.appendLine("    const val ICON_$size = \"$iconBase64\"")
             sb.appendLine("")
         }
     }
 
-    // Додаємо допоміжні методи для декодування
     sb.appendLine("    fun decodeToImage(base64: String): java.awt.image.BufferedImage? {")
     sb.appendLine("        return try {")
     sb.appendLine("            val imageBytes = java.util.Base64.getDecoder().decode(base64)")
@@ -156,27 +148,23 @@ fun generateIconsBase64Code(generateToFile: Boolean = false, outputFilePath: Str
 
     val generatedCode = sb.toString()
 
-    // Виводимо результат у консоль
-    println("\n--- Початок згенерованого коду ---")
+    println("\n--- Start of the generated code ---")
     println(generatedCode)
-    println("--- Кінець згенерованого коду ---\n")
+    println("--- End of generated code ---\n")
 
-    // Зберігаємо у файл, якщо потрібно
     if (generateToFile) {
         try {
             File(outputFilePath).writeText(generatedCode)
-            println("Код успішно збережено у файл: $outputFilePath")
+            println("The code has been successfully saved to the file.: $outputFilePath")
         } catch (e: Exception) {
-            println("Помилка при збереженні коду у файл: ${e.message}")
+            println("Error saving the code to the file.: ${e.message}")
         }
     }
 }
 fun generateAllIconsWithBase64() {
-    // Генеруємо всі іконки
     generateAllIcons()
-    // Генеруємо Base64-код
     generateIconsBase64Code(true)
-    println("Всі іконки і Base64-код успішно згенеровано!")
+    println("All icons and Base64-code is successfully generated!")
 }
 fun main() {
     generateAllIconsWithBase64()
