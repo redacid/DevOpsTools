@@ -58,6 +58,13 @@ kotlin {
     }
 }
 
+tasks.register("desktopRun2") {
+    group = "application"
+    description = "Runs the desktop application"
+    dependsOn("run")
+}
+
+
 
 compose.desktop {
     application {
@@ -92,6 +99,7 @@ compose.desktop {
                 "java.net.http",
                 "jdk.management"
             )
+            //targetFormats(TargetFormat.Deb)
             targetFormats(TargetFormat.Deb, TargetFormat.Rpm)
             packageName = "devopstools"
             packageVersion = version.toString()
