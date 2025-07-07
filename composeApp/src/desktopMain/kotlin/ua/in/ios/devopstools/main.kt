@@ -17,7 +17,7 @@ fun main() = application {
         )
     }
 
-    val iconPainter = IconsBase64.getIcon(32)?.let {
+    val iconPainter = IconsBase64.getIcon(64)?.let {
         BitmapPainter(it.toComposeImageBitmap())
     }
 

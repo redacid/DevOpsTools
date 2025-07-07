@@ -97,7 +97,7 @@ compose.desktop {
             packageVersion = version.toString()
             description = "DevOps Tools Installer"
             linux {
-                iconFile.set(project.file("devopstools.png"))
+                iconFile.set(project.file("../devopstools.png"))
                 menuGroup = "Development;System"
                 shortcut = true
                 debMaintainer = "Serhii Rudenko <sr@ios.in.ua> (https://github.com/redacid/devopstools)"
