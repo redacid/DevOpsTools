@@ -6,7 +6,7 @@ plugins {
     alias(libs.plugins.kotlinMultiplatform)
     alias(libs.plugins.composeMultiplatform)
     alias(libs.plugins.composeCompiler)
-    alias(libs.plugins.composeHotReload)
+   // alias(libs.plugins.composeHotReload)
 }
 
 abstract class GitCommitHash : ValueSource<String, ValueSourceParameters.None> {
@@ -58,12 +58,11 @@ kotlin {
     }
 }
 
-tasks.register("desktopRun2") {
-    group = "application"
-    description = "Runs the desktop application"
-    dependsOn("run")
-}
-
+//tasks.register("desktopRun2") {
+//    group = "application"
+//    description = "Runs the desktop application"
+//    dependsOn("run")
+//}
 
 
 compose.desktop {
