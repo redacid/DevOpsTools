@@ -12,8 +12,18 @@ fun main() = application {
 
     val windowState = remember {
         WindowState(
-            width = 1024.dp,
-            height = 868.dp
+            width = 1280.dp,
+            height = 864.dp,
+            position = androidx.compose.ui.window.WindowPosition(
+                x = 100.dp,
+                y = 100.dp,
+            ),
+//            isMinimized = false,
+
+//            placement = androidx.compose.ui.window.WindowPlacement.Floating,
+//            resizable = true,
+//            enabled = true,
+//            focusable = true,
         )
     }
 
