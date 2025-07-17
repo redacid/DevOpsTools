@@ -67,23 +67,6 @@
       }
     },
     {
-      "name": "glab-DEPRECATED",
-      "description": "GLab is an open source GitLab CLI tool bringing GitLab to your terminal next to where you are already working with git and your code without switching between windows and browser tabs",
-      "binary_name": "glab",
-      "install_type": "github",
-      "version_cmd": "--version",
-      "installed_as": "",
-      "enabled": false,
-      "install_version": "v1.22.0",
-      "github": {
-        "url": "https://github.com/profclems/glab",
-        "api_url": "https://api.github.com/repos/profclems/glab",
-        "parse_release_notes": false,
-        "asset": "glab_1.22.0_Linux_x86_64.deb",
-        "asset_type": "deb_based"
-      }
-    },
-    {
       "name": "regsync",
       "description": "regclient is a client interface to OCI conformant registries and content shipped with the OCI Image Layout. It includes a Go library and several CLI commands",
       "binary_name": "regsync",
@@ -322,60 +305,6 @@
       "install_version": "latest",
       "package": {
         "link": "https://releases.hashicorp.com/terraform/1.12.2/terraform_1.12.2_linux_amd64.zip",
-        "after_unpack_install_cmd": {
-          "flag": false,
-          "sudo": false,
-          "cmd": ""
-        }
-      }
-    },
-    {
-      "name": "studio-3t",
-      "description": "Mongo DB manager https://studio3t.com/",
-      "binary_name": "studio-3t",
-      "install_type": "package",
-      "version_cmd": "--version",
-      "installed_as": "",
-      "enabled": false,
-      "install_version": "latest",
-      "package": {
-        "link": "https://download-ce.studio3t.com/studio-3t/linux/2025.1.0/studio-3t-community-edition-linux-x64.tar.gz",
-        "after_unpack_install_cmd": {
-          "flag": true,
-          "sudo": false,
-          "cmd": "studio-3t-community-edition-linux-x64.sh"
-        }
-      }
-    },
-    {
-      "name": "postman",
-      "description": "",
-      "binary_name": "postman2",
-      "install_type": "package",
-      "version_cmd": "--version",
-      "installed_as": "",
-      "enabled": false,
-      "install_version": "latest",
-      "package": {
-        "link": "https://dl.pstmn.io/download/latest/linux_64",
-        "after_unpack_install_cmd": {
-          "flag": false,
-          "sudo": false,
-          "cmd": ""
-        }
-      }
-    },
-    {
-      "name": "keystore-explorer",
-      "description": "https://keystore-explorer.org/",
-      "binary_name": "keystore-explorer",
-      "install_type": "package",
-      "version_cmd": "--version",
-      "installed_as": "",
-      "enabled": false,
-      "install_version": "latest",
-      "package": {
-        "link": "https://github.com/kaikramer/keystore-explorer/releases/download/v5.6.0/kse_5.6.0_all.deb",
         "after_unpack_install_cmd": {
           "flag": false,
           "sudo": false,
