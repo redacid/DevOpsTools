@@ -1,4 +1,4 @@
-# DevOps Tools GUI Installer
+# ![devopstools.png](devopstools.png) DevOps Tools GUI Installer
 
 ![window-main.png](screenshots/window-main.png)
 ![dialog-edit-github.png](screenshots/dialog-edit-github.png)
