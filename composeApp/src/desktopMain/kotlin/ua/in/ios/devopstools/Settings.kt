@@ -118,7 +118,7 @@ object StaticSettings {
     object Defaults {
         const val INSTALL_PATH = "/usr/bin"
         const val TEMP_PATH = "/tmp/devopstools"
-        const val TASKS_URL = "https://github.com/redacid/DevOpsTools/tasks.json"
+        const val TASKS_URL = "https://github.com/redacid/DevOpsTools/blob/main/tasks.json"
     }
 }
 
@@ -165,7 +165,7 @@ class SettingsManager {
             val settingsObj = JsonObject().apply {
                 addProperty("install_path", "/usr/bin")
                 addProperty("temp_path", "/tmp/devopstools")
-                addProperty("tasks_url", "https://github.com/redacid/DevOpsTools/tasks.json")
+                addProperty("tasks_url", "https://github.com/redacid/DevOpsTools/blob/main/tasks.json")
                 addProperty("github_token", "")
                 addProperty("log_level", "INFO")
                 // application_patterns
