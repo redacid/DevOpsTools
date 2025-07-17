@@ -364,6 +364,41 @@
           "cmd": ""
         }
       }
+    },
+    {
+      "name": "keystore-explorer",
+      "description": "https://keystore-explorer.org/",
+      "binary_name": "keystore-explorer",
+      "install_type": "package",
+      "version_cmd": "--version",
+      "installed_as": "",
+      "enabled": false,
+      "install_version": "latest",
+      "package": {
+        "link": "https://github.com/kaikramer/keystore-explorer/releases/download/v5.6.0/kse_5.6.0_all.deb",
+        "after_unpack_install_cmd": {
+          "flag": false,
+          "sudo": false,
+          "cmd": ""
+        }
+      }
+    },
+    {
+      "name": "kind",
+      "description": "kind is a tool for running local Kubernetes clusters using Docker container “nodes”.\nkind was primarily designed for testing Kubernetes itself, but may be used for local development or CI",
+      "binary_name": "kind",
+      "install_type": "github",
+      "version_cmd": "--version",
+      "installed_as": "",
+      "enabled": true,
+      "install_version": "v0.29.0",
+      "github": {
+        "url": "https://github.com/kubernetes-sigs/kind/",
+        "api_url": "https://api.github.com/repos/kubernetes-sigs/kind",
+        "parse_release_notes": false,
+        "asset": "kind-linux-amd64",
+        "asset_type": "binary"
+      }
     }
   ]
 }
