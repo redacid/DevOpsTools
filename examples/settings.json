@@ -1,0 +1,81 @@
+{
+  "settings": {
+    "install_path": "/usr/bin",
+    "temp_path": "/tmp",
+    "tasks_url": "https://github.com/redacid/DevOpsTools/blob/init/tasks.json",
+    "install_types": [
+      "github",
+      "distributive_package",
+      "package",
+      "remote_shell_script",
+      "shell_cmd",
+      "package_manager"
+    ],
+    "application_patterns": {
+      "os": {
+        "linux": {
+          "arch": {
+            "amd64": {
+              "deb_based": [
+                "*amd64.deb",
+                "*x86_64.deb"
+              ],
+              "rpm_based": [
+                "*amd64.rpm",
+                "*x86_64.rpm"
+              ],
+              "package": [
+                "*linux*amd64.tar.gz",
+                "*linux*x86_64.tar.gz"
+              ],
+              "binary": [
+                "*linux*amd64",
+                "*linux*x86_64",
+                "*linux*64"
+              ]
+            },
+            "386": {
+              "deb_based": [
+                "*386.deb"
+              ],
+              "rpm_based": [
+                "*386.rpm"
+              ],
+              "package": [
+                "*linux*386.tar.gz"
+              ],
+              "binary": [
+                "*linux*386"
+              ]
+            }
+          }
+        }
+      }
+    },
+    "package_managers": {
+      "apt": {
+        "update_cmd": "update",
+        "install_cmd": "install",
+        "remove_cmd": "remove"
+      },
+      "yum": {
+        "install_cmd": "install",
+        "remove_cmd": "remove"
+      },
+      "dnf": {
+        "install_cmd": "install",
+        "remove_cmd": "remove"
+      }
+    },
+    "package_installers": {
+      "dpkg": {
+        "install_cmd": "--install",
+        "remove_cmd": "--remove"
+      },
+      "rpm": {
+        "install_cmd": "--install",
+        "remove_cmd": "--erase"
+      }
+    }
+  }
+}
