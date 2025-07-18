@@ -1852,7 +1852,7 @@ fun TasksTable() {
                 modifier = Modifier.fillMaxWidth().height(200.dp),
                 contentAlignment = Alignment.Center
             ) {
-                Text("Tasks are missing or loaded...")
+                Text("Tasks list are missing, pls download it")
             }
         } else {
             Card(

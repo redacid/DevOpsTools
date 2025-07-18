@@ -1,5 +1,8 @@
 # ![devopstools.png](devopstools.png) DevOps Tools GUI Installer
 
+## First run
+![window-first-run.png](screenshots/window-first-run.png)
+
 ## Download tasklist
 ![window-download-tasks.png](screenshots/window-download-tasks.png)
 
