@@ -328,6 +328,57 @@
         "asset": "kind-linux-amd64",
         "asset_type": "binary"
       }
+    },
+    {
+      "name": "helm-docs",
+      "description": "The helm-docs tool auto-generates documentation from helm charts into markdown files. The resulting files contain metadata about their respective chart and a table with each of the chart\u0027s values, their defaults, and an optional description parsed from comments.",
+      "binary_name": "helm-docs",
+      "install_type": "github",
+      "version_cmd": "--version",
+      "installed_as": "",
+      "enabled": true,
+      "install_version": "v1.14.2",
+      "github": {
+        "url": "https://github.com/norwoodj/helm-docs",
+        "api_url": "https://api.github.com/repos/norwoodj/helm-docs",
+        "parse_release_notes": false,
+        "asset": "helm-docs_1.14.2_Linux_x86_64.tar.gz",
+        "asset_type": "package"
+      }
+    },
+    {
+      "name": "chart-releaser",
+      "description": "Helps Turn GitHub Repositories into Helm Chart Repositories",
+      "binary_name": "cr",
+      "install_type": "github",
+      "version_cmd": "version",
+      "installed_as": "",
+      "enabled": true,
+      "install_version": "v1.8.1",
+      "github": {
+        "url": "https://github.com/helm/chart-releaser",
+        "api_url": "https://api.github.com/repos/helm/chart-releaser",
+        "parse_release_notes": false,
+        "asset": "chart-releaser_1.8.1_linux_amd64.tar.gz",
+        "asset_type": "package"
+      }
+    },
+    {
+      "name": "pike",
+      "description": "Pike is a tool to determine the minimum permissions required to run a TF/IAC run",
+      "binary_name": "pike",
+      "install_type": "github",
+      "version_cmd": "--version",
+      "installed_as": "",
+      "enabled": true,
+      "install_version": "v0.3.72",
+      "github": {
+        "url": "https://github.com/jameswoolfenden/pike",
+        "api_url": "https://api.github.com/repos/jameswoolfenden/pike",
+        "parse_release_notes": false,
+        "asset": "pike_0.3.72_linux_amd64.tar.gz",
+        "asset_type": "package"
+      }
     }
   ]
 }
