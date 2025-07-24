@@ -379,6 +379,40 @@
         "asset": "pike_0.3.72_linux_amd64.tar.gz",
         "asset_type": "package"
       }
+    },
+    {
+      "name": "kubectx",
+      "description": "kubectx is a tool to switch between contexts (clusters) on kubectl faster.",
+      "binary_name": "kubectx",
+      "install_type": "github",
+      "version_cmd": "--version",
+      "installed_as": "",
+      "enabled": true,
+      "install_version": "v0.9.5",
+      "github": {
+        "url": "https://github.com/ahmetb/kubectx",
+        "api_url": "https://api.github.com/repos/ahmetb/kubectx",
+        "parse_release_notes": false,
+        "asset": "kubectx_v0.9.5_linux_x86_64.tar.gz",
+        "asset_type": "package"
+      }
+    },
+    {
+      "name": "kubens",
+      "description": "kubens is a tool to switch between Kubernetes namespaces (and configure them for kubectl) easily",
+      "binary_name": "kubens",
+      "install_type": "github",
+      "version_cmd": "--version",
+      "installed_as": "",
+      "enabled": true,
+      "install_version": "v0.9.5",
+      "github": {
+        "url": "https://github.com/ahmetb/kubectx",
+        "api_url": "https://api.github.com/repos/ahmetb/kubectx",
+        "parse_release_notes": false,
+        "asset": "kubens_v0.9.5_linux_x86_64.tar.gz",
+        "asset_type": "package"
+      }
     }
   ]
 }

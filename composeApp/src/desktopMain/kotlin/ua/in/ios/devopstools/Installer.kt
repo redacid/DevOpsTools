@@ -61,7 +61,9 @@ class GithubInstaller {
 
                 fun searchRecursively(dir: File): File? {
                     dir.listFiles()?.forEach { file ->
-                        if (file.isFile && file.name == binaryName && file.canExecute()) {
+                        if (file.isFile
+                            && file.name.contains(binaryName, ignoreCase = true)
+                            && file.canExecute()) {
                             return file
                         } else if (file.isDirectory) {
                             val found = searchRecursively(file)
