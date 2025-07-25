@@ -422,11 +422,6 @@ class TasksManager {
         }
     }
 
-    // Старий метод, залишений для сумісності
-//    fun reloadTasks() {
-//        //reloadTasks(LoadStrategy.REPLACE_ALL)
-//    }
-
     private fun downloadTasksFromUrl() {
         reloadTasks(LoadStrategy.REPLACE_ALL)
     }
@@ -489,10 +484,6 @@ class TasksManager {
             //println("Помилка збереження завдань: ${e.message}")
         }
     }
-
-//    fun getTasks(): JsonObject {
-//        return tasks
-//    }
 
     fun getTaskByName(name: String): JsonObject? {
         val tasksArray = getTasksArray() ?: return null
@@ -1006,6 +997,9 @@ object TaskUtils {
      */
     suspend fun checkCurrentVersion(task: JsonObject): String {
         return withContext(Dispatchers.IO) {
+            if (task.get("disable_version_check")?.asBoolean == true) {
+                return@withContext "Check disabled"
+            }
             try {
                 val installType = getInstallTypeForTask(task)
                 if (installType != null) {

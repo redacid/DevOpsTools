@@ -2,6 +2,8 @@ package ua.`in`.ios.devopstools
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsHoveredAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -17,26 +19,18 @@ import kotlinx.coroutines.launch
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.window.DialogProperties
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
-import java.io.File
-import java.net.URL
-import java.nio.file.Files
-import java.nio.file.Paths
-import java.nio.file.StandardCopyOption
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.zIndex
 import java.awt.Desktop
 import java.net.URI
 import kotlin.collections.component1
 import kotlin.collections.component2
-import kotlin.text.ifEmpty
 
 fun getInstallTypeForTask(task: JsonObject): InstallType? {
     val installType = task.get("install_type")?.asString ?: return null
@@ -98,8 +92,6 @@ fun TaskAddDialog(
     onAddRequest: (JsonObject) -> Unit
 ) {
     if (isOpen) {
-        //val settingsManager = SettingsManager.getInstance()
-        //val tasksManager = TasksManager.getInstance()
         // Create a new task with default values
         val newTask = JsonObject()
         // Form field states
@@ -108,16 +100,17 @@ fun TaskAddDialog(
         var binaryName by remember { mutableStateOf("") }
         var installType by remember { mutableStateOf(StaticSettings.InstallTypes.GITHUB) } // github as default
         var versionCmd by remember { mutableStateOf("--version") }
-        var installedAs by remember { mutableStateOf("") }
+        //var installedAs by remember { mutableStateOf("") }
         var enabled by remember { mutableStateOf(true) }
         var installVersion by remember { mutableStateOf("latest") }
+        var disableVersionCheck by remember { mutableStateOf(false) }
 
         // GitHub-specific fields
         var githubUrl by remember { mutableStateOf("") }
         var githubApiUrl by remember { mutableStateOf("") }
         var packageLink by remember { mutableStateOf("") }
 
-            // Form validation
+        // Form validation
         var isNameValid by remember { mutableStateOf(true) }
         var isUrlValid by remember { mutableStateOf(true) }
 
@@ -126,11 +119,10 @@ fun TaskAddDialog(
         var urlErrorText by remember { mutableStateOf("") }
 
         // List of available installation types
-        //val installTypes = settingsManager.getStringArray("settings.install_types")
         val installTypes = StaticSettings.InstallTypes.ENABLED
 
         // Coroutines
-        val coroutineScope = rememberCoroutineScope()
+        //val coroutineScope = rememberCoroutineScope()
 
         // Effect to update API URL when GitHub URL changes
         LaunchedEffect(githubUrl) {
@@ -288,20 +280,30 @@ fun TaskAddDialog(
                                     singleLine = true,
                                     placeholder = { Text("--version") }
                                 )
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
+                                ) {
+                                    Checkbox(
+                                        checked = disableVersionCheck,
+                                        onCheckedChange = { disableVersionCheck = it }
+                                    )
+                                    Text("Disable version check", modifier = Modifier.padding(start = 8.dp))
+                                }
                             }
 
                             // Second column
                             Column(
                                 modifier = Modifier.weight(1f)
                             ) {
-                                OutlinedTextField(
-                                    value = installedAs,
-                                    onValueChange = { installedAs = it },
-                                    label = { Text("Installed as") },
-                                    modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
-                                    singleLine = true,
-                                    placeholder = { Text("Leave empty to use binary name") }
-                                )
+//                                OutlinedTextField(
+//                                    value = installedAs,
+//                                    onValueChange = { installedAs = it },
+//                                    label = { Text("Installed as") },
+//                                    modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+//                                    singleLine = true,
+//                                    placeholder = { Text("Leave empty to use binary name") }
+//                                )
 
                                 OutlinedTextField(
                                     value = installVersion,
@@ -333,7 +335,6 @@ fun TaskAddDialog(
                                 style = MaterialTheme.typography.titleMedium,
                                 modifier = Modifier.padding(vertical = 8.dp)
                             )
-
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -345,7 +346,7 @@ fun TaskAddDialog(
                                         isUrlValid = true
                                     },
                                     label = { Text("Repository URL") },
-                                    modifier = Modifier.weight(1f).padding(vertical = 4.dp),
+                                    modifier = Modifier.weight(0.5f).padding(vertical = 4.dp),
                                     singleLine = true,
                                     isError = !isUrlValid,
                                     supportingText = {
@@ -355,36 +356,54 @@ fun TaskAddDialog(
                                     },
                                     placeholder = { Text("https://github.com/owner/repo") }
                                 )
+                                IconButton(
+                                    onClick = {
+                                        if (githubUrl.isNotEmpty()) {
+                                            // Open GitHub repository in browser
+                                            try {
+                                                val url = URI(githubUrl).toURL()
+                                                Desktop.getDesktop().browse(url.toURI())
+                                            } catch (e: Exception) {
+                                                logger.e("TasksEditDialog", "Error opening URL:", e)
+                                            }
+                                        }
+                                    },
+                                    enabled = githubUrl.isNotEmpty()
+                                ) {
+                                    Icon(ICON_LINK, contentDescription = "Open")
+                                    Spacer(Modifier.width(4.dp))
+                                }
+                                OutlinedTextField(
+                                    value = githubApiUrl,
+                                    onValueChange = { githubApiUrl = it },
+                                    label = { Text("GitHub API URL") },
+                                    modifier = Modifier.fillMaxWidth(0.5f).padding(vertical = 4.dp),
+                                    singleLine = true,
+                                    readOnly = true,
+                                    placeholder = { Text("https://api.github.com/repos/owner/repo") }
+                                )
                             }
 
-                            OutlinedTextField(
-                                value = githubApiUrl,
-                                onValueChange = { githubApiUrl = it },
-                                label = { Text("GitHub API URL") },
-                                modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
-                                singleLine = true,
-                                readOnly = true,
-                                placeholder = { Text("https://api.github.com/repos/owner/repo") }
-                            )
+
 
                             // Button to open repository
-                            OutlinedButton(
-                                onClick = {
-                                    if (githubUrl.isNotEmpty()) {
-                                        // Open GitHub repository in browser
-                                        try {
-                                            val url = URI(githubUrl).toURL()
-                                            Desktop.getDesktop().browse(url.toURI())
-                                        } catch (e: Exception) {
-                                            logger.e("TaskAddDialog", "Error opening URL:", e)
-                                        }
-                                    }
-                                },
-                                modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
-                                enabled = githubUrl.isNotEmpty()
-                            ) {
-                                Text("Open Repository")
-                            }
+//                            OutlinedButton(
+//                                onClick = {
+//                                    if (githubUrl.isNotEmpty()) {
+//                                        // Open GitHub repository in browser
+//                                        try {
+//                                            val url = URI(githubUrl).toURL()
+//                                            Desktop.getDesktop().browse(url.toURI())
+//                                        } catch (e: Exception) {
+//                                            logger.e("TaskAddDialog", "Error opening URL:", e)
+//                                        }
+//                                    }
+//                                },
+//                                modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+//                                enabled = githubUrl.isNotEmpty()
+//                            ) {
+//                                Text("Open Repository")
+//                            }
                         }
                         if (installType == StaticSettings.InstallTypes.PACKAGE) {
                             Text(
@@ -417,7 +436,8 @@ fun TaskAddDialog(
                             }
                             newTask.addProperty("install_type", installType)
                             newTask.addProperty("version_cmd", versionCmd)
-                            newTask.addProperty("installed_as", installedAs)
+                            newTask.addProperty("disable_version_check", disableVersionCheck)
+                            //newTask.addProperty("installed_as", installedAs)
                             newTask.addProperty("enabled", enabled)
                             newTask.addProperty("install_version", installVersion)
 
@@ -481,7 +501,8 @@ fun TaskEditDialog(
         var binaryName by remember { mutableStateOf(task.get("binary_name")?.asString ?: "") }
         var installType by remember { mutableStateOf(task.get("install_type")?.asString ?: "") }
         var versionCmd by remember { mutableStateOf(task.get("version_cmd")?.asString ?: "") }
-        var installedAs by remember { mutableStateOf(task.get("installed_as")?.asString ?: "") }
+        var disableVersionCheck by remember { mutableStateOf(task.get("disable_version_check")?.asBoolean ?: false) }
+        //var installedAs by remember { mutableStateOf(task.get("installed_as")?.asString ?: "") }
         var enabled by remember { mutableStateOf(task.get("enabled")?.asBoolean ?: false) }
         var installVersion by remember { mutableStateOf(task.get("install_version")?.asString ?: "") }
         // For version checking
@@ -497,6 +518,7 @@ fun TaskEditDialog(
         var selectedAsset by remember { mutableStateOf("") }
         var filteredAssets by remember { mutableStateOf(listOf<String>()) }
         var assetInstallType by remember { mutableStateOf("") }
+        var savedAssetType by remember { mutableStateOf("") }
         // For installation process
         var isInstalling by remember { mutableStateOf(false) }
         var installationStatus by remember { mutableStateOf("") }
@@ -517,6 +539,7 @@ fun TaskEditDialog(
             val githubObj = task.getAsJsonObject(StaticSettings.InstallTypes.GITHUB)
             githubUrl = githubObj.get("url")?.asString ?: ""
             githubApiUrl = githubObj.get("api_url")?.asString ?: ""
+            savedAssetType = githubObj.get("asset_type")?.asString ?: ""
             parseReleaseNotes = githubObj.get("parse_release_notes")?.asBoolean ?: false
         }
 
@@ -566,8 +589,8 @@ fun TaskEditDialog(
                                 "rpm_based" -> if (systemInfo.supportsRpm) 300 else 0
                                 //"arch_based" -> if (systemInfo.supportsPacman) 400 else 0
                                 //"suse_based" -> if (systemInfo.supportsZypper) 300 else 0
-                                "binary" -> 200
-                                "package" -> 100
+                                "binary" -> if (type == savedAssetType) 1000 else 200
+                                "package" -> if (type == savedAssetType) 1000 else 100
                                 else -> 50
                             }
                             if (score > currentScore) {
@@ -592,7 +615,6 @@ fun TaskEditDialog(
                     .filter { filtered.contains(it.key) }
                     .maxByOrNull { it.value.first }
                     ?.key ?: filtered[0]
-                //filtered[0]
                 logger.d("TaskAddDialog.filterAssetsByPatterns", "selectedAsset: $selectedAsset")
                 // Save install type
                 assetInstallType = assetScores[selectedAsset]?.second ?: ""
@@ -609,7 +631,6 @@ fun TaskEditDialog(
             if (installType != StaticSettings.InstallTypes.GITHUB || githubApiUrl.isEmpty()) return
 
             isLoadingAssets = true
-            //availableAssets = listOf("Loading...")
             selectedAsset = "" // Reset selected asset when version changes
             assetDownloadUrl = "" // Reset download URL
 
@@ -668,9 +689,6 @@ fun TaskEditDialog(
             }
 
             coroutineScope.launch(Dispatchers.IO) {
-//                showLoadingOverlay = true
-//                isLoadingVersions = true
-//                availableVersions = listOf("Loading...")
                 try {
                     if (githubApiUrl.isNotEmpty()) {
                         val jsonArray = tasksManager.getGithubReleases(githubApiUrl)
@@ -735,32 +753,32 @@ fun TaskEditDialog(
         }
 
         // Helper function to find a binary file in a directory
-        suspend fun findBinary(directory: String, binaryName: String): String {
-            return withContext(Dispatchers.IO) {
-                try {
-                    val dir = File(directory)
-
-                    // Find the binary file recursively
-                    fun searchRecursively(dir: File): File? {
-                        dir.listFiles()?.forEach { file ->
-                            if (file.isFile && file.name == binaryName && file.canExecute()) {
-                                return file
-                            } else if (file.isDirectory) {
-                                val found = searchRecursively(file)
-                                if (found != null) return found
-                            }
-                        }
-                        return null
-                    }
-
-                    val binaryFile = searchRecursively(dir)
-                    binaryFile?.absolutePath ?: ""
-                } catch (e: Exception) {
-                    logger.e("TasksManager", "Error finding binary file:", e)
-                    ""
-                }
-            }
-        }
+//        suspend fun findBinary(directory: String, binaryName: String): String {
+//            return withContext(Dispatchers.IO) {
+//                try {
+//                    val dir = File(directory)
+//
+//                    // Find the binary file recursively
+//                    fun searchRecursively(dir: File): File? {
+//                        dir.listFiles()?.forEach { file ->
+//                            if (file.isFile && file.name == binaryName && file.canExecute()) {
+//                                return file
+//                            } else if (file.isDirectory) {
+//                                val found = searchRecursively(file)
+//                                if (found != null) return found
+//                            }
+//                        }
+//                        return null
+//                    }
+//
+//                    val binaryFile = searchRecursively(dir)
+//                    binaryFile?.absolutePath ?: ""
+//                } catch (e: Exception) {
+//                    logger.e("TasksManager", "Error finding binary file:", e)
+//                    ""
+//                }
+//            }
+//        }
 
         fun makeEditedTask(): JsonObject {
             editedTask.addProperty("name", name)
@@ -768,7 +786,8 @@ fun TaskEditDialog(
             editedTask.addProperty("binary_name", binaryName)
             editedTask.addProperty("install_type", installType)
             editedTask.addProperty("version_cmd", versionCmd)
-            editedTask.addProperty("installed_as", installedAs)
+            editedTask.addProperty("disable_version_check", disableVersionCheck)
+            //editedTask.addProperty("installed_as", installedAs)
             editedTask.addProperty("enabled", enabled)
             editedTask.addProperty("install_version", if (installType == StaticSettings.InstallTypes.GITHUB) selectedVersion else installVersion)
 
@@ -801,384 +820,6 @@ fun TaskEditDialog(
             }
             return editedTask
         }
-
-        // Function to install the selected tool
-//        fun githubInstallTool() {
-//            if (isInstalling || selectedAsset.isEmpty() || assetDownloadUrl.isEmpty()) return
-//
-//            // Show an installation dialog
-//            showInstallationDialog = true
-//            isInstalling = true
-//            installationStatus = "Preparing installation..."
-//            installationProgress = 0.1f
-//
-//            // Для налагодження виведемо додаткову інформацію
-//            logger.i("TaskEditDialog.githubInstallTool", "Installing: $name")
-//            logger.i("TaskEditDialog.githubInstallTool", "Parse Release Notes: $parseReleaseNotes")
-//            logger.i("TaskEditDialog.githubInstallTool", "Selected asset: $selectedAsset")
-//            logger.i("TaskEditDialog.githubInstallTool", "Asset type: $assetInstallType")
-//            logger.i("TaskEditDialog.githubInstallTool", "Download URL: $assetDownloadUrl")
-//
-//            coroutineScope.launch {
-//                try {
-//                    // Get a temporary directory
-//                    val tempDir = settingsManager.getString("settings.temp_path", "/tmp")
-//                    val toolDir = "$tempDir/${name.replace(" ", "_")}"
-//
-//                    // Create a directory if it doesn't exist
-//                    installationStatus = "Creating temporary directory..."
-//                    installationProgress = 0.2f
-//
-//                    val resultDelete = deleteDirectoryRecursivelySync(File(toolDir))
-//                    if (resultDelete) {
-//                        logger.i("TaskEditDialog.githubInstallTool", "Temporary directory deleted $toolDir")
-//                    } else {
-//                        logger.i("TaskEditDialog.githubInstallTool", "Error delete temporary directory $toolDir")
-//                    }
-//
-//                    val toolDirFile = File(toolDir)
-//                    if (!toolDirFile.exists()) {
-//                        toolDirFile.mkdirs()
-//                    }
-//
-//                    // Creating a path for file upload.
-//                    val destinationFile = "$toolDir/$selectedAsset"
-//
-//                    // Download the file
-//                    installationStatus = "Downloading file: $selectedAsset"
-//                    installationProgress = 0.3f
-//
-//                    val success = withContext(Dispatchers.IO) {
-//                        try {
-//                            val destFile = File(destinationFile)
-//                            if (!destFile.parentFile.exists()) {
-//                                destFile.parentFile.mkdirs()
-//                            }
-//                            logger.i("TaskEditDialog.githubInstallTool", "Downloading from: $assetDownloadUrl")
-//                            logger.i("TaskEditDialog.githubInstallTool", "Downloading to: $destinationFile")
-//
-//                            URL(assetDownloadUrl).openStream().use { input ->
-//                                Files.copy(input, Paths.get(destinationFile), StandardCopyOption.REPLACE_EXISTING)
-//                            }
-//
-//                            // Are checking if the file has been successfully uploaded.
-//                            val downloadedFile = File(destinationFile)
-//                            if (!downloadedFile.exists()) {
-//                                installationStatus = "Download failed: File does not exist after download"
-//                                return@withContext false
-//                            }
-//                            logger.i("TaskEditDialog.githubInstallTool", "File downloaded successfully: ${downloadedFile.absolutePath}, size: ${downloadedFile.length()} bytes")
-//                            true
-//                        } catch (e: Exception) {
-//                            logger.e("TaskEditDialog.githubInstallTool", "Error downloading file:", e)
-//                            installationStatus = "Download error: ${e.message}"
-//                            false
-//                        }
-//                    }
-//
-//                    if (!success) {
-//                        installationProgress = 1.0f
-//                        isInstalling = false
-//                        return@launch
-//                    }
-//
-//                    // Process the file based on its type
-//                    installationStatus = "Installing..."
-//                    installationProgress = 0.7f
-//
-//                    // Для перевірки файлу перед встановленням
-//                    val fileToInstall = File(destinationFile)
-//                    if (!fileToInstall.exists()) {
-//                        installationStatus = "Installation failed: File not found at $destinationFile"
-//                        installationProgress = 1.0f
-//                        isInstalling = false
-//                        return@launch
-//                    }
-//
-//                    val installResult = when (assetInstallType) {
-//                        "deb_based" -> {
-//                            // Install DEB package
-//                            val command = "sudo dpkg -i $destinationFile"
-//                            executeCommandSudo(command)
-//                        }
-//                        "rpm_based" -> {
-//                            // Install RPM package
-//                            val command = "sudo rpm -i $destinationFile"
-//                            executeCommandSudo(command)
-//                        }
-//                        "package" -> {
-//                            // Extract and copy binary from package
-//                            // Extract the archive
-//                            if (selectedAsset.endsWith(".tar.gz")) {
-//                                val extractCommand = "tar -xzf $destinationFile -C $toolDir"
-//                                val extractResult = executeCommandSudo(extractCommand)
-//
-//                                if (extractResult) {
-//                                    // Find the binary and copy it to the installation path
-//                                    val installPath = settingsManager.getString("settings.install_path", "/usr/bin")
-//                                    val binaryFile = binaryName.ifEmpty { name }
-//                                    // Search for the binary in the extracted files
-//                                    val foundBinary = findBinary(toolDir, binaryFile)
-//
-//                                    if (foundBinary.isNotEmpty()) {
-//                                        val copyCommand = "sudo cp $foundBinary $installPath/$binaryFile"
-//                                        val chmodCommand = "sudo chmod +x $installPath/$binaryFile"
-//
-//                                        executeCommandSudo(copyCommand) && executeCommandSudo(chmodCommand)
-//
-//                                    } else {
-//                                        installationStatus = "Binary not found in the package"
-//                                        false
-//                                    }
-//                                } else {
-//                                    false
-//                                }
-//                            } else {
-//                                installationStatus = "Unsupported package format"
-//                                false
-//                            }
-//                        }
-//                        "binary" -> {
-//                            // Copy binary file directly
-//                            val installPath = settingsManager.getString("settings.install_path", "/usr/bin")
-//                            val binaryFile = binaryName.ifEmpty { name }
-//                            // Make the binary executable
-//                            val chmodCommand = "chmod +x $destinationFile"
-//                            val copyCommand = "sudo cp $destinationFile $installPath/$binaryFile"
-//                            val finalChmodCommand = "sudo chmod +x $installPath/$binaryFile"
-//                            executeCommandSudo(chmodCommand) && executeCommandSudo(copyCommand) && executeCommandSudo(finalChmodCommand)
-//                        }
-//                        else -> {
-//                            installationStatus = "Unsupported installation type: $assetInstallType"
-//                            false
-//                        }
-//                    }
-//
-//                    installationProgress = 0.9f
-//
-//                    if (installResult) {
-//                        installationStatus = "Installation completed successfully"
-//                        // Refresh current version after installation
-//                        delay(1000) // Wait a moment for the installation to settle
-//                        //currentVersion = getInstallTypeForTask(task)?.getCurrentVersion(task) ?: "Unknown"
-//                        currentVersion = TaskUtils.checkCurrentVersion(task)
-//                    } else {
-//                        installationStatus = "Installation failed"
-//                    }
-//
-//                } catch (e: Exception) {
-//                    installationStatus = "Installation error: ${e.message}"
-//                    logger.e("TaskEditDialog.githubInstallTool", "Installation error", e)
-//                    e.printStackTrace()
-//                } finally {
-//                    installationProgress = 1.0f
-//                    isInstalling = false
-//                }
-//            }
-//        }
-
-//        fun packageInstallTool() {
-//            if (isInstalling || packageLink.isEmpty()) return
-//
-//            // Show an installation dialog
-//            showInstallationDialog = true
-//            isInstalling = true
-//            installationStatus = "Preparing installation..."
-//            installationProgress = 0.1f
-//
-//            // Для налагодження виведемо додаткову інформацію
-//            logger.i("TaskEditDialog.packageInstallTool", "Installing: $name")
-//            logger.i("TaskEditDialog.packageInstallTool", "Download URL: $packageLink")
-//
-//            coroutineScope.launch {
-//                try {
-//                    // Get a temporary directory
-//                    val tempDir = settingsManager.getString("settings.temp_path", "/tmp")
-//                    val toolDir = "$tempDir/${name.replace(" ", "_")}"
-//                    var downloadFilename = getFilenameFromUrl(packageLink)
-//
-//                    // Create a directory if it doesn't exist
-//                    installationStatus = "Creating temporary directory..."
-//                    installationProgress = 0.2f
-//
-//                    val resultDelete = deleteDirectoryRecursivelySync(File(toolDir))
-//                    if (resultDelete) {
-//                        logger.i("TaskEditDialog.githubInstallTool", "Temporary directory deleted $toolDir")
-//                    } else {
-//                        logger.e("TaskEditDialog.githubInstallTool", "Error delete temporary directory $toolDir")
-//                    }
-//
-//                    val toolDirFile = File(toolDir)
-//                    if (!toolDirFile.exists()) {
-//                        toolDirFile.mkdirs()
-//                    }
-//
-//                    // Creating a path for file upload.
-//                    val destinationFile = "$toolDir/$downloadFilename"
-//
-//                    // Download the file
-//                    installationStatus = "Downloading file: $downloadFilename"
-//                    installationProgress = 0.3f
-//
-//                    val success = withContext(Dispatchers.IO) {
-//                        try {
-//                            val destFile = File(destinationFile)
-//                            if (!destFile.parentFile.exists()) {
-//                                destFile.parentFile.mkdirs()
-//                            }
-//                            logger.i("TaskEditDialog.packageInstallTool", "Downloading from: $packageLink")
-//                            logger.i("TaskEditDialog.packageInstallTool", "Downloading to: $destinationFile")
-//
-//                            URL(packageLink).openStream().use { input ->
-//                                Files.copy(input, Paths.get(destinationFile), StandardCopyOption.REPLACE_EXISTING)
-//                            }
-//
-//                            // Are checking if the file has been successfully uploaded.
-//                            val downloadedFile = File(destinationFile)
-//                            if (!downloadedFile.exists()) {
-//                                installationStatus = "Download failed: File does not exist after download"
-//                                return@withContext false
-//                            }
-//                            logger.i("TaskEditDialog.packageInstallTool", "File downloaded successfully: ${downloadedFile.absolutePath}, size: ${downloadedFile.length()} bytes")
-//                            true
-//                        } catch (e: Exception) {
-//                            logger.e("TaskEditDialog.packageInstallTool", "Error downloading file:", e)
-//                            installationStatus = "Download error: ${e.message}"
-//                            false
-//                        }
-//                    }
-//
-//                    if (!success) {
-//                        installationProgress = 1.0f
-//                        isInstalling = false
-//                        return@launch
-//                    }
-//
-//                    // Process the file based on its type
-//                    installationStatus = "Installing..."
-//                    installationProgress = 0.7f
-//
-//                    // Для перевірки файлу перед встановленням
-//                    val fileToInstall = File(destinationFile)
-//                    if (!fileToInstall.exists()) {
-//                        installationStatus = "Installation failed: File not found at $destinationFile"
-//                        installationProgress = 1.0f
-//                        isInstalling = false
-//                        return@launch
-//                    }
-//                    assetInstallType = getFileType(downloadFilename)
-//                    logger.i("TaskEditDialog.packageInstallTool", "File type: $assetInstallType")
-//                    val installResult = when (assetInstallType) {
-//                        "deb_based" -> {
-//                            // Install DEB package
-//                            val command = "sudo dpkg -i $destinationFile"
-//                            executeCommandSudo(command)
-//                        }
-//                        "rpm_based" -> {
-//                            // Install RPM package
-//                            val command = "sudo rpm -i $destinationFile"
-//                            executeCommandSudo(command)
-//                        }
-//                        "package" -> {
-//                            var extractResult: Boolean = false
-//                            // Extract and copy binary from package
-//                            // Extract the archive
-//                            if (downloadFilename.endsWith(".tar.gz") || downloadFilename.endsWith(".tgz")) {
-//                                val extractCommand = "tar -xzf $destinationFile -C $toolDir"
-//                                extractResult = executeCommandSudo(extractCommand)
-//                            } else if (downloadFilename.endsWith(".tar")) {
-//                                val extractCommand = "tar -xf $destinationFile -C $toolDir"
-//                                extractResult = executeCommandSudo(extractCommand)
-//                            } else if (downloadFilename.endsWith(".gz")) {
-//                                val extractCommand = "gunzip -c $destinationFile > $toolDir/${downloadFilename.removeSuffix(".gz")}"
-//                                extractResult = executeCommandSudo(extractCommand)
-//                            } else if (downloadFilename.endsWith(".zip")) {
-//                                val extractCommand = "unzip $destinationFile -d $toolDir"
-//                                extractResult = executeCommandSudo(extractCommand)
-//                            } else if (downloadFilename.endsWith(".xz")) {
-//                                val extractCommand = "tar -xJf $destinationFile -C $toolDir"
-//                                extractResult = executeCommandSudo(extractCommand)
-//                            } else if (downloadFilename.endsWith(".tar.xz")) {
-//                                val extractCommand = "tar -xJf $destinationFile -C $toolDir"
-//                                extractResult = executeCommandSudo(extractCommand)
-//                            } else if (downloadFilename.endsWith(".bz2")) {
-//                                if (downloadFilename.endsWith(".tar.bz2")) {
-//                                    val extractCommand = "tar -xjf $destinationFile -C $toolDir"
-//                                    extractResult = executeCommandSudo(extractCommand)
-//                                } else {
-//                                    val extractCommand = "bunzip2 -c $destinationFile > $toolDir/${downloadFilename.removeSuffix(".bz2")}"
-//                                    extractResult = executeCommandSudo(extractCommand)
-//                                }
-//                            } else {
-//                                installationStatus = "Unsupported package format"
-//                                //extractResult = false
-//                                false
-//                            }
-//
-//                            if (extractResult) {
-//                                // Find the binary and copy it to the installation path
-//                                if (afterUnpackInstallFlag) {
-//                                    val execCmd = "${if (afterUnpackInstallSudo) {"sudo "} else {""} }$toolDir/$afterUnpackInstallCmd"
-//                                    executeCommandSudo(execCmd)
-//                                } else {
-//                                    val installPath = settingsManager.getString("settings.install_path", "/usr/bin")
-//                                    val binaryFile = binaryName.ifEmpty { name }
-//                                    // Search for the binary in the extracted files
-//                                    val foundBinary = findBinary(toolDir, binaryFile)
-//                                    if (foundBinary.isNotEmpty()) {
-//                                        val copyCommand = "sudo cp $foundBinary $installPath/$binaryFile"
-//                                        val chmodCommand = "sudo chmod +x $installPath/$binaryFile"
-//                                        //TODO Temporary comment executing and add true return
-//                                        //true
-//                                        executeCommandSudo(copyCommand) && executeCommandSudo(chmodCommand)
-//                                    } else {
-//                                        installationStatus = "Binary not found in the package"
-//                                        false
-//                                    }
-//                                }
-//                            } else {
-//                                false
-//                            }
-//
-//                        }
-//                        "binary" -> {
-//                            // Copy binary file directly
-//                            val installPath = settingsManager.getString("settings.install_path", "/usr/bin")
-//                            val binaryFile = binaryName.ifEmpty { name }
-//                            // Make the binary executable
-//                            val chmodCommand = "chmod +x $destinationFile"
-//                            val copyCommand = "sudo cp $destinationFile $installPath/$binaryFile"
-//                            val finalChmodCommand = "sudo chmod +x $installPath/$binaryFile"
-//                            executeCommandSudo(chmodCommand) && executeCommandSudo(copyCommand) && executeCommandSudo(finalChmodCommand)
-//                        }
-//                        else -> {
-//                            installationStatus = "Unsupported installation type: $assetInstallType"
-//                            false
-//                        }
-//                    }
-//
-//                    installationProgress = 0.9f
-//
-//                    if (installResult) {
-//                        installationStatus = "Installation completed successfully"
-//                        // Refresh current version after installation
-//                        delay(1000) // Wait a moment for the installation to settle
-//                        //currentVersion = getInstallTypeForTask(task)?.getCurrentVersion(task) ?: "Unknown"
-//                        currentVersion = TaskUtils.checkCurrentVersion(task)
-//                    } else {
-//                        installationStatus = "Installation failed"
-//                    }
-//
-//                } catch (e: Exception) {
-//                    installationStatus = "Installation error: ${e.message}"
-//                    logger.e("TaskEditDialog.packageInstallTool", "Installation error", e)
-//                    e.printStackTrace()
-//                } finally {
-//                    installationProgress = 1.0f
-//                    isInstalling = false
-//                }
-//            }
-//        }
 
         // Check current version when dialog opens
         LaunchedEffect(Unit) {
@@ -1315,19 +956,29 @@ fun TaskEditDialog(
                                     modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
                                     singleLine = true
                                 )
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
+                                ) {
+                                    Checkbox(
+                                        checked = disableVersionCheck,
+                                        onCheckedChange = { disableVersionCheck = it }
+                                    )
+                                    Text("Disable version check", modifier = Modifier.padding(start = 8.dp))
+                                }
                             }
 
                             // Second column
                             Column(
                                 modifier = Modifier.weight(1f)
                             ) {
-                                OutlinedTextField(
-                                    value = installedAs,
-                                    onValueChange = { installedAs = it },
-                                    label = { Text("Installed As") },
-                                    modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
-                                    singleLine = true
-                                )
+//                                OutlinedTextField(
+//                                    value = installedAs,
+//                                    onValueChange = { installedAs = it },
+//                                    label = { Text("Installed As") },
+//                                    modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+//                                    singleLine = true
+//                                )
                                 // Current version section with update button
                                 Row(
                                     modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
@@ -1456,7 +1107,7 @@ fun TaskEditDialog(
                                     value = githubUrl,
                                     onValueChange = { githubUrl = it },
                                     label = { Text("Repository URL") },
-                                    modifier = Modifier.weight(1f).padding(vertical = 4.dp),
+                                    modifier = Modifier.weight(0.5f).padding(vertical = 4.dp),
                                     singleLine = true
                                 )
                                 IconButton(
@@ -1480,7 +1131,7 @@ fun TaskEditDialog(
                                     value = githubApiUrl,
                                     onValueChange = { githubApiUrl = it },
                                     label = { Text("GitHub API URL") },
-                                    modifier = Modifier.weight(1f).padding(vertical = 4.dp),
+                                    modifier = Modifier.weight(0.5f).padding(vertical = 4.dp),
                                     singleLine = true,
                                     readOnly = true
                                 )
@@ -1507,8 +1158,6 @@ fun TaskEditDialog(
                                     ExposedDropdownMenuBox(
                                         expanded = assetExpanded,
                                         onExpandedChange = { assetExpanded = it },
-                                        //modifier = Modifier.size(450.dp)
-                                        //modifier = Modifier.fillMaxWidth()
                                     ) {
                                         OutlinedTextField(
                                             value = selectedAsset,
@@ -1556,8 +1205,6 @@ fun TaskEditDialog(
                                     }
 
                                     // Install button
-                                    //Spacer(Modifier.width(4.dp))
-
                                     if (selectedAsset.isNotEmpty() && assetDownloadUrl.isNotEmpty() && enabled) {
                                         makeEditedTask()
                                         InstallButton(
@@ -1568,15 +1215,6 @@ fun TaskEditDialog(
                                             }
                                         )
                                     }
-
-//                                    Button(
-//                                        onClick = { githubInstallTool() },
-//                                        enabled = selectedAsset.isNotEmpty() && assetDownloadUrl.isNotEmpty(),
-//                                    ) {
-//                                        Icon(ICON_PLAY, contentDescription = "Install")
-//                                        Spacer(Modifier.width(4.dp))
-//                                        Text("Install")
-//                                    }
                                 }
                         }
 
@@ -1593,7 +1231,6 @@ fun TaskEditDialog(
                                 modifier = Modifier.fillMaxWidth(),
                                 singleLine = true
                             )
-                            //Spacer(modifier = Modifier.height(16.dp))
                             // After Unpack
                             Row(
                                 modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
@@ -1638,14 +1275,6 @@ fun TaskEditDialog(
                                     }
                                 )
                             }
-//                            Button(
-//                                onClick = { packageInstallTool() },
-//                                enabled = packageLink.isNotEmpty(),
-//                            ) {
-//                                Icon(ICON_PLAY, contentDescription = "Install")
-//                                Spacer(Modifier.width(4.dp))
-//                                Text("Install")
-//                            }
                         }
                         // Status (enabled) as checkbox
                         Row(
@@ -1673,43 +1302,6 @@ fun TaskEditDialog(
             confirmButton = {
                 Button(
                     onClick = {
-                        // Update all fields in the task
-//                        editedTask.addProperty("name", name)
-//                        editedTask.addProperty("description", description)
-//                        editedTask.addProperty("binary_name", binaryName)
-//                        editedTask.addProperty("install_type", installType)
-//                        editedTask.addProperty("version_cmd", versionCmd)
-//                        editedTask.addProperty("installed_as", installedAs)
-//                        editedTask.addProperty("enabled", enabled)
-//                        editedTask.addProperty("install_version", if (installType == StaticSettings.InstallTypes.GITHUB) selectedVersion else installVersion)
-//
-//                        // Update GitHub fields if installation type is github
-//                        if (installType == StaticSettings.InstallTypes.GITHUB) {
-//                            val githubObj = JsonObject()
-//                            githubObj.addProperty("url", githubUrl)
-//                            githubObj.addProperty("api_url", githubApiUrl)
-//                            githubObj.addProperty("parse_release_notes", parseReleaseNotes)
-//
-//                            // Add selected asset
-//                            if (selectedAsset.isNotEmpty()) {
-//                                githubObj.addProperty("asset", selectedAsset)
-//                                githubObj.addProperty("asset_type", assetInstallType)
-//                            }
-//
-//                            editedTask.add(StaticSettings.InstallTypes.GITHUB, githubObj)
-//                        }
-//                        if (installType == StaticSettings.InstallTypes.PACKAGE) {
-//                            val packageObj = JsonObject()
-//                            packageObj.addProperty("link", packageLink)
-//                            val afterunpackObj = JsonObject().apply {
-//                                addProperty("flag", afterUnpackInstallFlag)
-//                                addProperty("sudo", afterUnpackInstallSudo)
-//                                addProperty("cmd", afterUnpackInstallCmd)
-//                            }
-//                            packageObj.add("after_unpack_install_cmd", afterunpackObj)
-//
-//                            editedTask.add(StaticSettings.InstallTypes.PACKAGE, packageObj)
-//                        }
                         makeEditedTask()
                         onSaveRequest(editedTask)
                         onDismissRequest()
@@ -1905,7 +1497,7 @@ fun TasksTable() {
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         Text(
-                            "Version",
+                            "Selected Version",
                             style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
                             modifier = Modifier.weight(versionWidth),
                             color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -1939,6 +1531,7 @@ fun TasksTable() {
                 ) {
                     items(tasks) { task ->
                         val taskName = task.get("name")?.asString ?: "Unknown name"
+                        val taskInstallType = task.get("install_type")?.asString ?: "Unknown install type"
 
                         Row(
                             modifier = Modifier
@@ -1948,15 +1541,55 @@ fun TasksTable() {
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             // Name
-                            Text(
-                                text = task.get("name")?.asString ?: "Unknown name",
-                                style = MaterialTheme.typography.bodyMedium,
+                            Row(
                                 modifier = Modifier
                                     .padding(start = 12.dp, end = 12.dp )
                                     .weight(nameWidth),
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
-                            )
+                                horizontalArrangement = Arrangement.Start,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+
+
+                                if (taskInstallType == StaticSettings.InstallTypes.GITHUB) {
+                                    val githubObj = task.getAsJsonObject(StaticSettings.InstallTypes.GITHUB)
+                                    val githubUrl = githubObj.get("url")?.asString ?: ""
+                                    val interactionSource = remember { MutableInteractionSource() }
+                                    val isHovered by interactionSource.collectIsHoveredAsState()
+
+                                    Text(
+                                        text = task.get("name")?.asString ?: "Unknown name",
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = if (isHovered) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+                                        maxLines = 1,
+                                        modifier = Modifier
+                                            .padding(start = 12.dp, end = 12.dp)
+                                            .clickable(
+                                                enabled = githubUrl.isNotEmpty(),
+                                                interactionSource = interactionSource,
+                                                indication = null // Це прибирає ефект ripple
+                                            ) {
+                                                if (githubUrl.isNotEmpty()) {
+                                                    try {
+                                                        val url = URI(githubUrl).toURL()
+                                                        Desktop.getDesktop().browse(url.toURI())
+                                                    } catch (e: Exception) {
+                                                        logger.e("TasksTable", "Error opening URL:", e)
+                                                    }
+                                                }
+                                            }
+                                    )
+
+                                } else {
+                                    Text(
+                                        text = task.get("name")?.asString ?: "Unknown name",
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        modifier = Modifier
+                                            .padding(start = 12.dp, end = 12.dp),
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+                                }
+                            }
                             // Install
                             Row(
                                 modifier = Modifier
@@ -1965,7 +1598,9 @@ fun TasksTable() {
                                 horizontalArrangement = Arrangement.Center,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                if ((task.get("install_type")?.asString == StaticSettings.InstallTypes.GITHUB || task.get("install_type")?.asString == StaticSettings.InstallTypes.PACKAGE) && task.get("enabled")?.asBoolean == true) {
+                                if ((task.get("install_type")?.asString == StaticSettings.InstallTypes.GITHUB
+                                            || task.get("install_type")?.asString == StaticSettings.InstallTypes.PACKAGE)
+                                    && task.get("enabled")?.asBoolean == true) {
                                     InstallButton(
                                         task,
                                         onInstallComplete = { refreshTasks() }
@@ -2018,6 +1653,7 @@ fun TasksTable() {
                                     currentVersion == "Checking..." -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
                                     currentVersion.startsWith("Not installed") -> MaterialTheme.colorScheme.error
                                     currentVersion.startsWith("Check error") -> MaterialTheme.colorScheme.error
+                                    currentVersion.startsWith("Check disabled") -> MaterialTheme.colorScheme.tertiary
                                     else -> MaterialTheme.colorScheme.primary
                                 }
                             )

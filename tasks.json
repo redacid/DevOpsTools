@@ -7,7 +7,6 @@
       "install_type": "github",
       "install_version": "v4.45.4",
       "version_cmd": "--version",
-      "installed_as": "binary",
       "enabled": true,
       "github": {
         "url": "https://github.com/mikefarah/yq",
@@ -24,7 +23,6 @@
       "install_type": "github",
       "install_version": "jq-1.8.1",
       "version_cmd": "--version",
-      "installed_as": "binary",
       "enabled": true,
       "github": {
         "url": "https://github.com/jqlang/jq",
@@ -41,7 +39,6 @@
       "install_type": "github",
       "install_version": "v0.13.1",
       "version_cmd": "--version",
-      "installed_as": "deb",
       "enabled": true,
       "github": {
         "url": "https://github.com/wagoodman/dive",
@@ -56,7 +53,6 @@
       "binary_name": "kubeval",
       "install_type": "github",
       "version_cmd": "--version",
-      "installed_as": "",
       "enabled": true,
       "install_version": "v0.16.1",
       "github": {
@@ -72,7 +68,6 @@
       "binary_name": "regsync",
       "install_type": "github",
       "version_cmd": "version",
-      "installed_as": "",
       "enabled": true,
       "install_version": "v0.8.3",
       "github": {
@@ -88,7 +83,6 @@
       "binary_name": "regbot",
       "install_type": "github",
       "version_cmd": "version",
-      "installed_as": "",
       "enabled": true,
       "install_version": "v0.8.3",
       "github": {
@@ -104,7 +98,6 @@
       "binary_name": "regctl",
       "install_type": "github",
       "version_cmd": "version",
-      "installed_as": "",
       "enabled": true,
       "install_version": "v0.8.3",
       "github": {
@@ -120,14 +113,13 @@
       "binary_name": "helm",
       "install_type": "github",
       "version_cmd": "version",
-      "installed_as": "",
       "enabled": true,
-      "install_version": "v3.18.3",
+      "install_version": "v3.18.4",
       "github": {
         "url": "https://github.com/helm/helm",
         "api_url": "https://api.github.com/repos/helm/helm",
         "parse_release_notes": true,
-        "asset": "helm-v3.18.3-linux-amd64.tar.gz",
+        "asset": "helm-v3.18.4-linux-amd64.tar.gz",
         "asset_type": "package"
       }
     },
@@ -137,7 +129,6 @@
       "binary_name": "cmctl",
       "install_type": "github",
       "version_cmd": "version",
-      "installed_as": "",
       "enabled": true,
       "install_version": "v2.2.0",
       "github": {
@@ -153,7 +144,6 @@
       "binary_name": "eksctl",
       "install_type": "github",
       "version_cmd": "version",
-      "installed_as": "",
       "enabled": true,
       "install_version": "v0.210.0",
       "github": {
@@ -169,7 +159,6 @@
       "binary_name": "gh",
       "install_type": "github",
       "version_cmd": "--version",
-      "installed_as": "",
       "enabled": true,
       "install_version": "v2.74.2",
       "github": {
@@ -185,7 +174,6 @@
       "binary_name": "kubeconform",
       "install_type": "github",
       "version_cmd": "-v",
-      "installed_as": "",
       "enabled": true,
       "install_version": "v0.6.8",
       "github": {
@@ -201,7 +189,6 @@
       "binary_name": "lazydocker",
       "install_type": "github",
       "version_cmd": "--version",
-      "installed_as": "",
       "enabled": true,
       "install_version": "v0.24.1",
       "github": {
@@ -218,7 +205,6 @@
       "binary_name": "glab",
       "install_type": "package",
       "version_cmd": "--version",
-      "installed_as": "",
       "enabled": true,
       "install_version": "latest",
       "package": {
@@ -231,7 +217,6 @@
       "binary_name": "aws",
       "install_type": "package",
       "version_cmd": "--version",
-      "installed_as": "",
       "enabled": true,
       "install_version": "latest",
       "package": {
@@ -249,7 +234,6 @@
       "binary_name": "devopstools",
       "install_type": "github",
       "version_cmd": "--version",
-      "installed_as": "",
       "enabled": true,
       "install_version": "0.1.0",
       "github": {
@@ -258,7 +242,8 @@
         "parse_release_notes": false,
         "asset": "devopstools_0.1.0-1_amd64.deb",
         "asset_type": "deb_based"
-      }
+      },
+      "disable_version_check": true
     },
     {
       "name": "kubebuilder",
@@ -266,7 +251,6 @@
       "binary_name": "kubebuilder",
       "install_type": "github",
       "version_cmd": "version",
-      "installed_as": "",
       "enabled": true,
       "install_version": "v4.6.0",
       "github": {
@@ -283,7 +267,6 @@
       "binary_name": "kustomize",
       "install_type": "github",
       "version_cmd": "version",
-      "installed_as": "",
       "enabled": true,
       "install_version": "kustomize/v5.7.0",
       "github": {
@@ -300,7 +283,6 @@
       "binary_name": "terraform",
       "install_type": "package",
       "version_cmd": "--version",
-      "installed_as": "",
       "enabled": true,
       "install_version": "latest",
       "package": {
@@ -310,7 +292,8 @@
           "sudo": false,
           "cmd": ""
         }
-      }
+      },
+      "disable_version_check": false
     },
     {
       "name": "kind",
@@ -318,7 +301,6 @@
       "binary_name": "kind",
       "install_type": "github",
       "version_cmd": "--version",
-      "installed_as": "",
       "enabled": true,
       "install_version": "v0.29.0",
       "github": {
@@ -335,7 +317,6 @@
       "binary_name": "helm-docs",
       "install_type": "github",
       "version_cmd": "--version",
-      "installed_as": "",
       "enabled": true,
       "install_version": "v1.14.2",
       "github": {
@@ -352,7 +333,6 @@
       "binary_name": "cr",
       "install_type": "github",
       "version_cmd": "version",
-      "installed_as": "",
       "enabled": true,
       "install_version": "v1.8.1",
       "github": {
@@ -369,7 +349,6 @@
       "binary_name": "pike",
       "install_type": "github",
       "version_cmd": "--version",
-      "installed_as": "",
       "enabled": true,
       "install_version": "v0.3.72",
       "github": {
@@ -386,7 +365,6 @@
       "binary_name": "kubectx",
       "install_type": "github",
       "version_cmd": "--version",
-      "installed_as": "",
       "enabled": true,
       "install_version": "v0.9.5",
       "github": {
@@ -403,7 +381,6 @@
       "binary_name": "kubens",
       "install_type": "github",
       "version_cmd": "--version",
-      "installed_as": "",
       "enabled": true,
       "install_version": "v0.9.5",
       "github": {
@@ -411,6 +388,23 @@
         "api_url": "https://api.github.com/repos/ahmetb/kubectx",
         "parse_release_notes": false,
         "asset": "kubens_v0.9.5_linux_x86_64.tar.gz",
+        "asset_type": "package"
+      },
+      "disable_version_check": false
+    },
+    {
+      "name": "minikube",
+      "description": "minikube implements a local Kubernetes cluster on macOS, Linux, and Windows. minikube\u0027s primary goals are to be the best tool for local Kubernetes application development and to support all Kubernetes features that fit.",
+      "binary_name": "minikube",
+      "install_type": "github",
+      "version_cmd": "version",
+      "enabled": true,
+      "install_version": "v1.36.0",
+      "github": {
+        "url": "https://github.com/kubernetes/minikube",
+        "api_url": "https://api.github.com/repos/kubernetes/minikube",
+        "parse_release_notes": false,
+        "asset": "minikube-linux-amd64.tar.gz",
         "asset_type": "package"
       }
     }
