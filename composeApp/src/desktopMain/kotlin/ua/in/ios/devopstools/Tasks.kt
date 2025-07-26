@@ -156,7 +156,7 @@ class TasksManager {
     private val gson: Gson = GsonBuilder().setPrettyPrinting().create()
     private val homeDir: String = System.getProperty("user.home")
     private val configDir: String = "$homeDir/.devopstools"
-    private val tasksFile: String = "$configDir/tasks.json"
+    val tasksFile: String = "$configDir/tasks.json"
     private var tasks: JsonObject = JsonObject()
     //private val settingsManager = SettingsManager.getInstance()
 

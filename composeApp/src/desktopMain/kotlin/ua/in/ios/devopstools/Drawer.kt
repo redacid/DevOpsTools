@@ -45,20 +45,21 @@ fun NavigationDrawer() {
         Box(modifier = Modifier.padding(innerPadding)) {
             when (currentScreen) {
                 "Tasks" -> TasksTable()
-                "Settings" -> Text(
-                    "Settings",
-                    modifier = Modifier.padding(16.dp)
-                )
+//                "Settings" -> Text(
+//                    "Settings",
+//                    modifier = Modifier.padding(16.dp)
+//                )
                 "Help" -> Text(
                     "Help",
                     modifier = Modifier.padding(16.dp)
                 )
-                "Update Tasks" -> Text(
-                    "Update Tasks",
-                    modifier = Modifier.padding(16.dp)
-                )
+//                "Update Tasks" -> Text(
+//                    "Update Tasks",
+//                    modifier = Modifier.padding(16.dp)
+//                )
                 "System Info" -> SystemInfoView()
                 "Logs" -> LogViewer(modifier = Modifier.fillMaxSize().padding(16.dp))
+                "JSON View" -> JsonViewer()
                 else -> TasksTable()
 //                    Text(
 //                    "DevOps Tools - допомога у встановленні та оновленні DevOps інструментів",
@@ -141,6 +142,18 @@ fun DetailedDrawer(
                         }
                     )
 
+                    NavigationDrawerItem(
+                        label = { Text("JSON View") },
+                        selected = selectedItem == "JSON View",
+                        icon = { Icon(ICON_CODE, contentDescription = null) },
+                        onClick = {
+                            selectedItem = "JSON View"
+                            onScreenSelected("JSON View")
+                            scope.launch {
+                                drawerState.close()
+                            }
+                        }
+                    )
 
                     HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
 
