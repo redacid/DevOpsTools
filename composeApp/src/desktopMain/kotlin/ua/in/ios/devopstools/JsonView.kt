@@ -8,6 +8,7 @@ import com.google.gson.GsonBuilder
 import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea
 import org.fife.ui.rsyntaxtextarea.SyntaxConstants
 import org.fife.ui.rsyntaxtextarea.Theme
+import org.fife.ui.rtextarea.FoldIndicatorStyle
 import org.fife.ui.rtextarea.RTextScrollPane
 import java.awt.BorderLayout
 import java.awt.Color
@@ -24,75 +25,35 @@ class RSyntaxJsonEditor {
     }
 
     private fun setupTextArea() {
-        // Налаштування синтаксису для JSON
         textArea.syntaxEditingStyle = SyntaxConstants.SYNTAX_STYLE_JSON
         textArea.isCodeFoldingEnabled = true
         textArea.isEditable = false
 
-        // Темна тема
         try {
-            val theme = Theme.load(javaClass.getResourceAsStream("/org/fife/ui/rsyntaxtextarea/themes/dark.xml"))
+            val theme = Theme.load(javaClass.getResourceAsStream("/org/fife/ui/rsyntaxtextarea/themes/idea.xml"))
             theme.apply(textArea)
         } catch (e: Exception) {
-            // Якщо не вдалося завантажити тему, налаштовуємо вручну
-            textArea.background = Color(0x1E1E1E)
-            textArea.foreground = Color(0xD4D4D4)
-            textArea.currentLineHighlightColor = Color(0x2D2D30)
-            textArea.caretColor = Color(0xD4D4D4)
+            textArea.background = Color(0xFCF5FD)
+            textArea.foreground = Color(0x767278)
+            textArea.currentLineHighlightColor = Color(0xffffd7)
+            textArea.caretColor = Color(0x767278)
         }
 
-        // Шрифт
-        textArea.font = Font("JetBrains Mono", Font.PLAIN, 14)
-
-        // Налаштування скролу
+        //textArea.font = Font("JetBrains Mono", Font.PLAIN, 14)
+        textArea.font = Font("DejaVu Mono", Font.PLAIN, 14)
+        textArea.setLineWrap(!textArea.lineWrap);
         scrollPane.isIconRowHeaderEnabled = true
-        // Вимкнення букмарків якщо потрібно
+        scrollPane.gutter.setFoldIndicatorStyle(FoldIndicatorStyle.CLASSIC);
         try {
             scrollPane.gutter.isBookmarkingEnabled = false
         } catch (e: Exception) {
-            // Ігноруємо якщо властивість не існує
+            // I ignore if the property does not exist
         }
     }
 
     fun createEditor(): JComponent {
         return JPanel(BorderLayout()).apply {
             background = Color(0x1E1E1E)
-
-            val toolbar = JPanel().apply {
-                background = Color(0x1E1E1E)
-
-                add(JButton("Згорнути все").apply {
-                    background = Color(0x3C3C3C)
-                    foreground = Color(0xD4D4D4)
-                    border = BorderFactory.createEmptyBorder(5, 10, 5, 10)
-                    addActionListener {
-                        // Згортаємо всі блоки
-                        val foldManager = textArea.foldManager
-                        for (i in 0 until foldManager.foldCount) {
-                            val fold = foldManager.getFold(i)
-                            fold.isCollapsed = true
-                        }
-                        textArea.repaint()
-                    }
-                })
-
-                add(JButton("Розгорнути все").apply {
-                    background = Color(0x3C3C3C)
-                    foreground = Color(0xD4D4D4)
-                    border = BorderFactory.createEmptyBorder(5, 10, 5, 10)
-                    addActionListener {
-                        // Розгортаємо всі блоки
-                        val foldManager = textArea.foldManager
-                        for (i in 0 until foldManager.foldCount) {
-                            val fold = foldManager.getFold(i)
-                            fold.isCollapsed = false
-                        }
-                        textArea.repaint()
-                    }
-                })
-            }
-
-            add(toolbar, BorderLayout.NORTH)
             add(scrollPane, BorderLayout.CENTER)
         }
     }
@@ -115,7 +76,7 @@ fun JsonViewer() {
             val formattedJson = gson.toJson(gson.fromJson(jsonContent, Any::class.java))
             jsonEditor.setText(formattedJson)
         } catch (e: Exception) {
-            jsonEditor.setText("Помилка завантаження JSON: ${e.message}")
+            jsonEditor.setText("JSON Loading error: ${e.message}")
         }
     }
 

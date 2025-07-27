@@ -9,6 +9,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.DismissibleDrawerSheet
+import androidx.compose.material3.DismissibleNavigationDrawer
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
@@ -79,13 +81,12 @@ fun DetailedDrawer(
 ) {
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
-    //val tasksManager = TasksManager.getInstance()
     var tasks by remember { mutableStateOf(emptyList<JsonObject>()) }
     var selectedItem by remember { mutableStateOf("Home") }
 
-    ModalNavigationDrawer(
+    DismissibleNavigationDrawer(
         drawerContent = {
-            ModalDrawerSheet {
+            DismissibleDrawerSheet{
                 Column(
                     modifier = Modifier.padding(horizontal = 16.dp)
                         .verticalScroll(rememberScrollState())
@@ -104,18 +105,18 @@ fun DetailedDrawer(
                             }
                         }
                     )
-                    NavigationDrawerItem(
-                        label = { Text("Check for updates") },
-                        selected = selectedItem == "Updates",
-                        icon = { Icon(ICON_REFRESH, contentDescription = null) },
-                        onClick = {
-                            selectedItem = "Updates"
-                            onScreenSelected("Updates")
-                            scope.launch {
-                                drawerState.close()
-                            }
-                        }
-                    )
+//                    NavigationDrawerItem(
+//                        label = { Text("Check for updates") },
+//                        selected = selectedItem == "Updates",
+//                        icon = { Icon(ICON_REFRESH, contentDescription = null) },
+//                        onClick = {
+//                            selectedItem = "Updates"
+//                            onScreenSelected("Updates")
+//                            scope.launch {
+//                                drawerState.close()
+//                            }
+//                        }
+//                    )
                     NavigationDrawerItem(
                         label = { Text("System information") },
                         selected = selectedItem == "System Info",
@@ -141,48 +142,49 @@ fun DetailedDrawer(
                             }
                         }
                     )
-
-                    NavigationDrawerItem(
-                        label = { Text("JSON View") },
-                        selected = selectedItem == "JSON View",
-                        icon = { Icon(ICON_CODE, contentDescription = null) },
-                        onClick = {
-                            selectedItem = "JSON View"
-                            onScreenSelected("JSON View")
-                            scope.launch {
-                                drawerState.close()
+                    if (settingsManager.getString("settings.log_level") == "DEBUG") {
+                        NavigationDrawerItem(
+                            label = { Text("JSON View") },
+                            selected = selectedItem == "JSON View",
+                            icon = { Icon(ICON_CODE, contentDescription = null) },
+                            onClick = {
+                                selectedItem = "JSON View"
+                                onScreenSelected("JSON View")
+                                scope.launch {
+                                    drawerState.close()
+                                }
                             }
-                        }
-                    )
+                        )
+                    }
 
                     HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
 
-                    NavigationDrawerItem(
-                        label = { Text("Settings") },
-                        selected = selectedItem == "Settings",
-                        icon = { Icon(ICON_SETTINGS, contentDescription = null) },
-                        onClick = {
-                            selectedItem = "Settings"
-                            onScreenSelected("Settings")
-                            scope.launch {
-                                drawerState.close()
-                            }
-                        }
-                    )
+//                    NavigationDrawerItem(
+//                        label = { Text("Settings") },
+//                        selected = selectedItem == "Settings",
+//                        icon = { Icon(ICON_SETTINGS, contentDescription = null) },
+//                        onClick = {
+//                            selectedItem = "Settings"
+//                            onScreenSelected("Settings")
+//                            scope.launch {
+//                                drawerState.close()
+//                            }
+//                        }
+//                    )
 
-                    NavigationDrawerItem(
-                        label = {Text("Update Tasks")},
-                        selected = selectedItem == "Update Tasks",
-                        icon = { Icon(ICON_REFRESH, contentDescription = null) },
-                        onClick = {
-                            tasksManager.reloadTasks()
-                            selectedItem = "Update Tasks"
-                            onScreenSelected("Update Tasks")
-                            scope.launch {
-                                drawerState.close()
-                            }
-                        }
-                    )
+//                    NavigationDrawerItem(
+//                        label = {Text("Update Tasks")},
+//                        selected = selectedItem == "Update Tasks",
+//                        icon = { Icon(ICON_REFRESH, contentDescription = null) },
+//                        onClick = {
+//                            tasksManager.reloadTasks()
+//                            selectedItem = "Update Tasks"
+//                            onScreenSelected("Update Tasks")
+//                            scope.launch {
+//                                drawerState.close()
+//                            }
+//                        }
+//                    )
 
                     NavigationDrawerItem(
                         label = { Text("Help") },
@@ -216,7 +218,7 @@ fun DetailedDrawer(
                                 }
                             }
                         }) {
-                            Icon(ICON_MENU, contentDescription = "Меню")
+                            Icon(ICON_MENU, contentDescription = "Menu")
                         }
                     }
                 )
