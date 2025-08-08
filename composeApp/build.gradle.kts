@@ -55,6 +55,8 @@ kotlin {
             implementation(compose.desktop.currentOs)
             implementation(libs.kotlinx.coroutinesSwing)
             implementation("com.fifesoft:rsyntaxtextarea:3.6.0")
+            implementation("org.swinglabs.swingx:swingx-core:1.6.5-1")
+
         }
     }
 }

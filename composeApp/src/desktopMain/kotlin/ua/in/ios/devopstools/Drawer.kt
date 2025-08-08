@@ -51,6 +51,7 @@ fun NavigationDrawer() {
 //                    "Settings",
 //                    modifier = Modifier.padding(16.dp)
 //                )
+                "JSON Tasks" -> JsonTaskTable()
                 "Help" -> Text(
                     "Help",
                     modifier = Modifier.padding(16.dp)
@@ -117,6 +118,21 @@ fun DetailedDrawer(
 //                            }
 //                        }
 //                    )
+                    if (settingsManager.getString("settings.log_level") == "DEBUG") {
+                        NavigationDrawerItem(
+                            label = { Text("JSON Tasks Table") },
+                            selected = selectedItem == "JSON Tasks",
+                            icon = { Icon(ICON_BOX, contentDescription = null) },
+                            onClick = {
+                                selectedItem = "JSON Tasks"
+                                onScreenSelected("JSON Tasks")
+                                scope.launch {
+                                    drawerState.close()
+                                }
+                            }
+                        )
+                    }
+
                     NavigationDrawerItem(
                         label = { Text("System information") },
                         selected = selectedItem == "System Info",
