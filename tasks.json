@@ -135,12 +135,12 @@
       "install_type": "github",
       "version_cmd": "version",
       "enabled": true,
-      "install_version": "v3.18.5",
+      "install_version": "v3.18.6",
       "github": {
         "url": "https://github.com/helm/helm",
         "api_url": "https://api.github.com/repos/helm/helm",
         "parse_release_notes": true,
-        "asset": "helm-v3.18.5-linux-amd64.tar.gz",
+        "asset": "helm-v3.18.6-linux-amd64.tar.gz",
         "asset_type": "package"
       },
       "disable_version_check": false
@@ -191,6 +191,24 @@
         "parse_release_notes": false,
         "asset": "kind-linux-amd64",
         "asset_type": "binary"
+      }
+    },
+    {
+      "name": "krew",
+      "description": "Krew is the plugin manager for kubectl command-line tool. https://krew.sigs.k8s.io/",
+      "binary_name": "krew",
+      "install_type": "package",
+      "version_cmd": "version",
+      "disable_version_check": true,
+      "enabled": true,
+      "install_version": "latest",
+      "package": {
+        "link": "https://github.com/kubernetes-sigs/krew/releases/latest/download/krew-linux_amd64.tar.gz",
+        "after_unpack_install_cmd": {
+          "flag": true,
+          "sudo": false,
+          "cmd": "./krew-linux_amd64 install krew"
+        }
       }
     },
     {
@@ -347,12 +365,12 @@
       "install_type": "github",
       "version_cmd": "--version",
       "enabled": true,
-      "install_version": "v0.3.74",
+      "install_version": "v0.3.76",
       "github": {
         "url": "https://github.com/jameswoolfenden/pike",
         "api_url": "https://api.github.com/repos/jameswoolfenden/pike",
         "parse_release_notes": false,
-        "asset": "pike_0.3.74_linux_amd64.tar.gz",
+        "asset": "pike_0.3.76_linux_amd64.tar.gz",
         "asset_type": "package"
       },
       "disable_version_check": false
