@@ -21,11 +21,15 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.BaselineShift
 import androidx.compose.ui.window.DialogProperties
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.zIndex
 import java.awt.Desktop
 import java.net.URI
@@ -75,7 +79,7 @@ fun InstallationPatternsSection(task: JsonObject) {
 
             patterns.forEach { pattern ->
                 Text(
-                    text = "$pattern",
+                    text = pattern,
                     style = MaterialTheme.typography.bodyMedium,
                     modifier = Modifier.padding(start = 16.dp, bottom = 2.dp)
                 )
@@ -680,7 +684,7 @@ fun TaskEditDialog(
         // Function to load available versions from GitHub
         fun githubLoadAvailableVersions() {
             if (installType != StaticSettings.InstallTypes.GITHUB) return
-            var CurrentSelectedVersion = selectedVersion
+            val CurrentSelectedVersion = selectedVersion
             coroutineScope.launch(Dispatchers.Main) {
                 showLoadingOverlay = true
                 isLoadingVersions = true
@@ -719,6 +723,7 @@ fun TaskEditDialog(
                             githubLoadAssetsForVersion(selectedVersion)
 
                         } else {
+                            // TODO
                             val latestRelease = tasksManager.getLatestGithubRelease(githubApiUrl)
                             if (latestRelease != null) {
                                 val tagNameElement = latestRelease.get("tag_name")
@@ -752,34 +757,6 @@ fun TaskEditDialog(
             }
         }
 
-        // Helper function to find a binary file in a directory
-//        suspend fun findBinary(directory: String, binaryName: String): String {
-//            return withContext(Dispatchers.IO) {
-//                try {
-//                    val dir = File(directory)
-//
-//                    // Find the binary file recursively
-//                    fun searchRecursively(dir: File): File? {
-//                        dir.listFiles()?.forEach { file ->
-//                            if (file.isFile && file.name == binaryName && file.canExecute()) {
-//                                return file
-//                            } else if (file.isDirectory) {
-//                                val found = searchRecursively(file)
-//                                if (found != null) return found
-//                            }
-//                        }
-//                        return null
-//                    }
-//
-//                    val binaryFile = searchRecursively(dir)
-//                    binaryFile?.absolutePath ?: ""
-//                } catch (e: Exception) {
-//                    logger.e("TasksManager", "Error finding binary file:", e)
-//                    ""
-//                }
-//            }
-//        }
-
         fun makeEditedTask(): JsonObject {
             editedTask.addProperty("name", name)
             editedTask.addProperty("description", description)
@@ -787,7 +764,6 @@ fun TaskEditDialog(
             editedTask.addProperty("install_type", installType)
             editedTask.addProperty("version_cmd", versionCmd)
             editedTask.addProperty("disable_version_check", disableVersionCheck)
-            //editedTask.addProperty("installed_as", installedAs)
             editedTask.addProperty("enabled", enabled)
             editedTask.addProperty("install_version", if (installType == StaticSettings.InstallTypes.GITHUB) selectedVersion else installVersion)
 
@@ -972,13 +948,6 @@ fun TaskEditDialog(
                             Column(
                                 modifier = Modifier.weight(1f)
                             ) {
-//                                OutlinedTextField(
-//                                    value = installedAs,
-//                                    onValueChange = { installedAs = it },
-//                                    label = { Text("Installed As") },
-//                                    modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
-//                                    singleLine = true
-//                                )
                                 // Current version section with update button
                                 Row(
                                     modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
@@ -1291,7 +1260,7 @@ fun TaskEditDialog(
                         Spacer(modifier = Modifier.height(16.dp))
                         HorizontalDivider()
                         Spacer(modifier = Modifier.height(16.dp))
-                        if (settingsManager.getString("settings.log_level") == "DEBUG") {
+                        if (settingsManager.getString("settings.log_level") == "DEBUG" || settingsManager.getString("settings.log_level") == "DEV") {
                             InstallationPatternsSection(task)
                         }
 
@@ -1339,6 +1308,7 @@ fun TasksTable() {
     var loadResult by remember { mutableStateOf<Boolean?>(null) }
     val coroutineScope = rememberCoroutineScope()
     var installedVersions by remember { mutableStateOf(mutableMapOf<String, String>()) }
+    var latestVersions by remember { mutableStateOf(mutableMapOf<String, String>()) }
 
     // Load tasks when component is first displayed
     LaunchedEffect(tasksArray) {
@@ -1352,11 +1322,30 @@ fun TasksTable() {
         // Check installed versions for all tasks
         coroutineScope.launch {
             val versions = mutableMapOf<String, String>()
+            val latest = mutableMapOf<String, String>()
             tasks.forEach { task ->
                 val name = task.get("name")?.asString ?: "unknown"
+                logger.d("TasksManager", "Checking installed version for $name")
+                // Check latest version
+                val installType = task.get("install_type")?.asString ?: ""
+                if (installType == StaticSettings.InstallTypes.GITHUB) {
+                    val githubObj = task.getAsJsonObject(StaticSettings.InstallTypes.GITHUB)
+                    val apiUrl = githubObj.get("api_url").asString ?: ""
+                    if (apiUrl.isNotEmpty()) {
+                        val latestObj = tasksManager.getLatestGithubRelease(apiUrl)
+                        latest[name] = latestObj?.get("tag_name")?.asString ?: ""
+                        logger.d("TasksTable.Versions", "Latest version for $name: ${latest[name]} with url: $apiUrl")
+                    }
+                }
+                else  {
+                    latest[name] = "none"
+                }
                 versions[name] = TaskUtils.checkCurrentVersion(task)
+                logger.d("TasksTable.Versions", "Checked version for $name: ${versions[name]}")
+
             }
             installedVersions = versions
+            latestVersions = latest
         }
     }
 
@@ -1453,10 +1442,11 @@ fun TasksTable() {
                 // Define constant relative sizes for columns
                 val nameWidth = 0.10f
                 val descriptionWidth = 0.25f
-                val installTypeWidth = 0.12f
-                val versionWidth = 0.10f
-                val installedVersionWidth = 0.12f
-                val statusWidth = 0.07f
+                val installTypeWidth = 0.10f
+                val versionWidth = 0.09f
+                //val latestVersionWidth = 0.08f
+                val installedVersionWidth = 0.09f
+                val statusWidth = 0.05f
                 val installWidth = 0.14f
                 val actionsWidth = 0.10f
 
@@ -1502,6 +1492,12 @@ fun TasksTable() {
                             modifier = Modifier.weight(versionWidth),
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
+//                        Text(
+//                            "Latest Version",
+//                            style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+//                            modifier = Modifier.weight(latestVersionWidth),
+//                            color = MaterialTheme.colorScheme.onSurfaceVariant
+//                        )
                         Text(
                             "Installed Version",
                             style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
@@ -1630,15 +1626,67 @@ fun TasksTable() {
                             )
 
                             // Version
+                            val installVersion = task.get("install_version")?.asString ?: ""
+                            val latestVersion = latestVersions[taskName] ?: ""
+                            var annotatedString = ""
+                            if (latestVersion != installVersion && latestVersion != "none") {
+                                annotatedString = latestVersion
+                            }
                             Text(
-                                text = task.get("install_version")?.asString ?: "",
+                                //text = installVersion,
+                                text = buildAnnotatedString {
+                                    append(installVersion)
+                                    withStyle(
+                                        style = SpanStyle(
+                                            baselineShift = BaselineShift.Superscript,
+                                            fontSize = MaterialTheme.typography.bodyMedium.fontSize * 0.7f,
+                                            color = MaterialTheme.colorScheme.primary
+                                        )
+                                    ) {
+                                        append(" $annotatedString")
+                                    }
+                                },
                                 style = MaterialTheme.typography.bodyMedium,
                                 modifier = Modifier
                                     .padding(start = 12.dp, end = 12.dp )
                                     .weight(versionWidth),
                                 maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
+                                overflow = TextOverflow.Ellipsis,
+                                color = when {
+                                    latestVersion != installVersion && latestVersion != "none" && latestVersion != "" -> MaterialTheme.colorScheme.error
+                                    else -> MaterialTheme.colorScheme.primary
+                                }
+
                             )
+//                            // latest version
+//                            Text(
+//                                //text = latestVersion,
+//
+//                                text = buildAnnotatedString {
+//                                    append(latestVersion)
+//                                    withStyle(
+//                                        style = SpanStyle(
+//                                            baselineShift = BaselineShift.Superscript,
+//                                            fontSize = MaterialTheme.typography.bodyMedium.fontSize * 0.7f
+//                                        )
+//                                    ) {
+//                                        append(latestVersion)
+//                                    }
+//                                },
+//
+//                                style = MaterialTheme.typography.bodyMedium,
+//                                modifier = Modifier
+//                                    .padding(start = 12.dp, end = 12.dp )
+//                                    .weight(latestVersionWidth),
+//                                maxLines = 1,
+//                                overflow = TextOverflow.Ellipsis,
+//                                color = when {
+//                                    latestVersion == "Checking..." -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+//                                    latestVersion != installVersion && latestVersion != "none" -> MaterialTheme.colorScheme.error
+//                                    latestVersion.startsWith("none") -> MaterialTheme.colorScheme.tertiary
+//                                    else -> MaterialTheme.colorScheme.primary
+//                                }
+//                            )
                             // Installed Version from TaskUtils.checkCurrentVersion
                             val currentVersion = installedVersions[taskName] ?: "Checking..."
                             Text(
@@ -1657,7 +1705,6 @@ fun TasksTable() {
                                     else -> MaterialTheme.colorScheme.primary
                                 }
                             )
-
 
                             // Status
                             var enabled by remember { mutableStateOf(task.get("enabled")?.asBoolean ?: false) }

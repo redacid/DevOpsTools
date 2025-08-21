@@ -40,86 +40,86 @@ object StaticSettings {
         )
     }
 
-    /**
-     * Package types and their patterns
-     */
-    object PackagePatterns {
-        object Linux {
-            object AMD64 {
-                val DEB_BASED = listOf(
-                    "*amd64.deb",
-                    "*x86_64.deb"
-                )
-
-                val RPM_BASED = listOf(
-                    "*amd64.rpm",
-                    "*x86_64.rpm"
-                )
-
-                val PACKAGE = listOf(
-                    "*linux*amd64.tar.gz",
-                    "*linux*x86_64.tar.gz"
-                )
-
-                val BINARY = listOf(
-                    "*linux*amd64",
-                    "*linux*x86_64"
-                )
-            }
-
-            object I386 {
-                val DEB_BASED = listOf("*386.deb")
-                val RPM_BASED = listOf("*386.rpm")
-                val PACKAGE = listOf("*linux*386.tar.gz")
-                val BINARY = listOf("*linux*386")
-            }
-        }
-    }
-
-    /**
-     * Package manager commands
-     */
-    object PackageManagers {
-        object Apt {
-            const val UPDATE = "update"
-            const val INSTALL = "install"
-            const val REMOVE = "remove"
-        }
-
-        object Yum {
-            const val INSTALL = "install"
-            const val REMOVE = "remove"
-        }
-
-        object Dnf {
-            const val INSTALL = "install"
-            const val REMOVE = "remove"
-        }
-    }
-
-    /**
-     * Package installer commands
-     */
-    object PackageInstallers {
-        object Dpkg {
-            const val INSTALL = "--install"
-            const val REMOVE = "--remove"
-        }
-
-        object Rpm {
-            const val INSTALL = "--install"
-            const val REMOVE = "--erase"
-        }
-    }
-
-    /**
-     * Default paths and URLs
-     */
-    object Defaults {
-        const val INSTALL_PATH = "/usr/bin"
-        const val TEMP_PATH = "/tmp/devopstools"
-        const val TASKS_URL = "https://github.com/redacid/DevOpsTools/blob/main/tasks.json"
-    }
+//    /**
+//     * Package types and their patterns
+//     */
+//    object PackagePatterns {
+//        object Linux {
+//            object AMD64 {
+//                val DEB_BASED = listOf(
+//                    "*amd64.deb",
+//                    "*x86_64.deb"
+//                )
+//
+//                val RPM_BASED = listOf(
+//                    "*amd64.rpm",
+//                    "*x86_64.rpm"
+//                )
+//
+//                val PACKAGE = listOf(
+//                    "*linux*amd64.tar.gz",
+//                    "*linux*x86_64.tar.gz"
+//                )
+//
+//                val BINARY = listOf(
+//                    "*linux*amd64",
+//                    "*linux*x86_64"
+//                )
+//            }
+//
+//            object I386 {
+//                val DEB_BASED = listOf("*386.deb")
+//                val RPM_BASED = listOf("*386.rpm")
+//                val PACKAGE = listOf("*linux*386.tar.gz")
+//                val BINARY = listOf("*linux*386")
+//            }
+//        }
+//    }
+//
+//    /**
+//     * Package manager commands
+//     */
+//    object PackageManagers {
+//        object Apt {
+//            const val UPDATE = "update"
+//            const val INSTALL = "install"
+//            const val REMOVE = "remove"
+//        }
+//
+//        object Yum {
+//            const val INSTALL = "install"
+//            const val REMOVE = "remove"
+//        }
+//
+//        object Dnf {
+//            const val INSTALL = "install"
+//            const val REMOVE = "remove"
+//        }
+//    }
+//
+//    /**
+//     * Package installer commands
+//     */
+//    object PackageInstallers {
+//        object Dpkg {
+//            const val INSTALL = "--install"
+//            const val REMOVE = "--remove"
+//        }
+//
+//        object Rpm {
+//            const val INSTALL = "--install"
+//            const val REMOVE = "--erase"
+//        }
+//    }
+//
+//    /**
+//     * Default paths and URLs
+//     */
+//    object Defaults {
+//        const val INSTALL_PATH = "/usr/bin"
+//        const val TEMP_PATH = "/tmp/devopstools"
+//        const val TASKS_URL = "https://github.com/redacid/DevOpsTools/blob/main/tasks.json"
+//    }
 }
 
 
@@ -176,14 +176,14 @@ class SettingsManager {
                                 // amd64
                                 val amd64Obj = JsonObject().apply {
                                     val debBasedArray = gson.toJsonTree(arrayOf(
-                                        "*amd64.deb",
-                                        "*x86_64.deb"
+                                        "*amd64*.deb",
+                                        "*x86_64*.deb"
                                     )).asJsonArray
                                     add("deb_based", debBasedArray)
 
                                     val rpmBasedArray = gson.toJsonTree(arrayOf(
-                                        "*amd64.rpm",
-                                        "*x86_64.rpm"
+                                        "*amd64*.rpm",
+                                        "*x86_64*.rpm"
                                     )).asJsonArray
                                     add("rpm_based", rpmBasedArray)
 
@@ -204,12 +204,12 @@ class SettingsManager {
                                 // 386
                                 val i386Obj = JsonObject().apply {
                                     val debBasedArray = gson.toJsonTree(arrayOf(
-                                        "*386.deb"
+                                        "*386*.deb"
                                     )).asJsonArray
                                     add("deb_based", debBasedArray)
 
                                     val rpmBasedArray = gson.toJsonTree(arrayOf(
-                                        "*386.rpm"
+                                        "*386*.rpm"
                                     )).asJsonArray
                                     add("rpm_based", rpmBasedArray)
 

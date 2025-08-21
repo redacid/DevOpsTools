@@ -14,6 +14,7 @@ val systemInfo = SystemInfo.getInstance()
 fun App() {
     val loglevel = settingsManager.getString("settings.log_level")
     when (loglevel) {
+        "DEV" -> logger.setMinimumLogLevel(LogLevel.DEBUG)
         "DEBUG" -> logger.setMinimumLogLevel(LogLevel.DEBUG)
         "INFO" -> logger.setMinimumLogLevel(LogLevel.INFO)
         "WARNING" -> logger.setMinimumLogLevel(LogLevel.WARNING)

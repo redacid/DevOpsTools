@@ -432,9 +432,10 @@ class PackageInstaller {
                 state.packageLink = packageObj.get("link")?.asString ?: ""
 
                 if (packageObj.has("after_unpack_install_cmd")) {
-                    state.afterUnpackInstallFlag = packageObj.get("flag")?.asBoolean ?: false
-                    state.afterUnpackInstallSudo = packageObj.get("sudo")?.asBoolean ?: false
-                    state.afterUnpackInstallCmd = packageObj.get("cmd")?.asString ?: ""
+                    val afterUnpackObj = packageObj.getAsJsonObject("after_unpack_install_cmd")
+                    state.afterUnpackInstallFlag = afterUnpackObj.get("flag")?.asBoolean ?: false
+                    state.afterUnpackInstallSudo = afterUnpackObj.get("sudo")?.asBoolean ?: false
+                    state.afterUnpackInstallCmd = afterUnpackObj.get("cmd")?.asString ?: ""
                 }
             }
 
@@ -595,8 +596,14 @@ class PackageInstaller {
                     if (extractResult) {
                         // Find the binary and copy it to the installation path
                         if (state.afterUnpackInstallFlag) {
-                            val execCmd = "${if (state.afterUnpackInstallSudo) {"sudo "} else {""} }$toolDir/$state.afterUnpackInstallCmd"
-                            executeCommandSudo(execCmd)
+                            logger.d("PackageInstaller.installTask", "After unpack install flag is enabled, cmd: ${state.afterUnpackInstallCmd}")
+                            if (state.afterUnpackInstallSudo) {
+                                val execCmd = "sudo $toolDir/${state.afterUnpackInstallCmd}"
+                                executeCommandSudo(execCmd)
+                            } else {
+                                val execCmd = "$toolDir/${state.afterUnpackInstallCmd}"
+                                executeCommandSudo(execCmd)
+                            }
                         } else {
                             val installPath = settingsManager.getString("settings.install_path", "/usr/bin")
                             val binaryFile = state.binaryName.ifEmpty { state.name }

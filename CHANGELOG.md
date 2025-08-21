@@ -4,3 +4,5 @@
 * add a disable version checking checkbox
 * modify a task name to clickable for opening a GitHub repository in a task list
 * Change a drawer type to dismissible
+* Check for latest version on github
+* fix package install "after install cmd"

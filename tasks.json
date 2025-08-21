@@ -40,13 +40,15 @@
       "install_type": "github",
       "version_cmd": "version",
       "enabled": true,
-      "install_version": "v2.2.0",
+      "install_version": "v2.3.0",
       "github": {
         "url": "https://github.com/cert-manager/cmctl",
         "api_url": "https://api.github.com/repos/cert-manager/cmctl",
+        "parse_release_notes": false,
         "asset": "cmctl_linux_amd64",
         "asset_type": "binary"
-      }
+      },
+      "disable_version_check": false
     },
     {
       "name": "devopstools",
@@ -87,13 +89,15 @@
       "install_type": "github",
       "version_cmd": "version",
       "enabled": true,
-      "install_version": "v0.210.0",
+      "install_version": "v0.212.0",
       "github": {
         "url": "https://github.com/eksctl-io/eksctl",
         "api_url": "https://api.github.com/repos/eksctl-io/eksctl",
+        "parse_release_notes": false,
         "asset": "eksctl_Linux_amd64.tar.gz",
         "asset_type": "package"
-      }
+      },
+      "disable_version_check": false
     },
     {
       "name": "gh",
@@ -102,13 +106,15 @@
       "install_type": "github",
       "version_cmd": "--version",
       "enabled": true,
-      "install_version": "v2.74.2",
+      "install_version": "v2.76.2",
       "github": {
         "url": "https://github.com/cli/cli/",
         "api_url": "https://api.github.com/repos/cli/cli",
-        "asset": "gh_2.74.2_linux_amd64.deb",
+        "parse_release_notes": false,
+        "asset": "gh_2.76.2_linux_amd64.deb",
         "asset_type": "deb_based"
-      }
+      },
+      "disable_version_check": false
     },
     {
       "name": "glab",
@@ -129,14 +135,15 @@
       "install_type": "github",
       "version_cmd": "version",
       "enabled": true,
-      "install_version": "v3.18.4",
+      "install_version": "v3.18.5",
       "github": {
         "url": "https://github.com/helm/helm",
         "api_url": "https://api.github.com/repos/helm/helm",
         "parse_release_notes": true,
-        "asset": "helm-v3.18.4-linux-amd64.tar.gz",
+        "asset": "helm-v3.18.5-linux-amd64.tar.gz",
         "asset_type": "package"
-      }
+      },
+      "disable_version_check": false
     },
     {
       "name": "helm-docs",
@@ -193,14 +200,15 @@
       "install_type": "github",
       "version_cmd": "version",
       "enabled": true,
-      "install_version": "v4.6.0",
+      "install_version": "v4.7.1",
       "github": {
         "url": "https://github.com/kubernetes-sigs/kubebuilder",
         "api_url": "https://api.github.com/repos/kubernetes-sigs/kubebuilder",
         "parse_release_notes": false,
         "asset": "kubebuilder_linux_amd64",
         "asset_type": "binary"
-      }
+      },
+      "disable_version_check": false
     },
     {
       "name": "kubeconform",
@@ -339,14 +347,15 @@
       "install_type": "github",
       "version_cmd": "--version",
       "enabled": true,
-      "install_version": "v0.3.72",
+      "install_version": "v0.3.74",
       "github": {
         "url": "https://github.com/jameswoolfenden/pike",
         "api_url": "https://api.github.com/repos/jameswoolfenden/pike",
         "parse_release_notes": false,
-        "asset": "pike_0.3.72_linux_amd64.tar.gz",
+        "asset": "pike_0.3.74_linux_amd64.tar.gz",
         "asset_type": "package"
-      }
+      },
+      "disable_version_check": false
     },
     {
       "name": "regbot",
@@ -355,13 +364,15 @@
       "install_type": "github",
       "version_cmd": "version",
       "enabled": true,
-      "install_version": "v0.8.3",
+      "install_version": "v0.9.0",
       "github": {
         "url": "https://github.com/regclient/regclient",
         "api_url": "https://api.github.com/repos/regclient/regclient",
+        "parse_release_notes": false,
         "asset": "regbot-linux-amd64",
         "asset_type": "binary"
-      }
+      },
+      "disable_version_check": false
     },
     {
       "name": "regctl",
@@ -370,13 +381,15 @@
       "install_type": "github",
       "version_cmd": "version",
       "enabled": true,
-      "install_version": "v0.8.3",
+      "install_version": "v0.9.0",
       "github": {
         "url": "https://github.com/regclient/regclient",
         "api_url": "https://api.github.com/repos/regclient/regclient",
+        "parse_release_notes": false,
         "asset": "regctl-linux-amd64",
         "asset_type": "binary"
-      }
+      },
+      "disable_version_check": false
     },
     {
       "name": "regsync",
@@ -385,12 +398,31 @@
       "install_type": "github",
       "version_cmd": "version",
       "enabled": true,
-      "install_version": "v0.8.3",
+      "install_version": "v0.9.0",
       "github": {
         "url": "https://github.com/regclient/regclient",
         "api_url": "https://api.github.com/repos/regclient/regclient",
+        "parse_release_notes": false,
         "asset": "regsync-linux-amd64",
         "asset_type": "binary"
+      },
+      "disable_version_check": false
+    },
+    {
+      "name": "tabiew",
+      "description": "Tabiew is a lightweight TUI application that allows users to view and query tabular data files, such as CSV, Parquet, Arrow, and ...",
+      "binary_name": "tw",
+      "install_type": "github",
+      "version_cmd": "--version",
+      "disable_version_check": false,
+      "enabled": true,
+      "install_version": "v0.11.0",
+      "github": {
+        "url": "https://github.com/shshemi/tabiew",
+        "api_url": "https://api.github.com/repos/shshemi/tabiew",
+        "parse_release_notes": false,
+        "asset": "tabiew-x86_64-unknown-linux-gnu.deb",
+        "asset_type": "deb_based"
       }
     },
     {
@@ -416,7 +448,7 @@
       "binary_name": "yq",
       "description": "A lightweight and portable command-line YAML, JSON, INI and XML processor",
       "install_type": "github",
-      "install_version": "v4.45.4",
+      "install_version": "v4.47.1",
       "version_cmd": "--version",
       "enabled": true,
       "github": {
@@ -425,7 +457,8 @@
         "parse_release_notes": false,
         "asset": "yq_linux_amd64",
         "asset_type": "binary"
-      }
+      },
+      "disable_version_check": false
     }
   ]
 }

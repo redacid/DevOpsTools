@@ -16,8 +16,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.ModalDrawerSheet
-import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.NavigationDrawerItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -118,9 +116,9 @@ fun DetailedDrawer(
 //                            }
 //                        }
 //                    )
-                    if (settingsManager.getString("settings.log_level") == "DEBUG") {
+                    if (settingsManager.getString("settings.log_level") == "DEV") {
                         NavigationDrawerItem(
-                            label = { Text("JSON Tasks Table") },
+                            label = { Text("DEV JSON Tasks Table") },
                             selected = selectedItem == "JSON Tasks",
                             icon = { Icon(ICON_BOX, contentDescription = null) },
                             onClick = {
@@ -158,9 +156,9 @@ fun DetailedDrawer(
                             }
                         }
                     )
-                    if (settingsManager.getString("settings.log_level") == "DEBUG") {
+                    if (settingsManager.getString("settings.log_level") == "DEV") {
                         NavigationDrawerItem(
-                            label = { Text("JSON View") },
+                            label = { Text("DEV JSON View") },
                             selected = selectedItem == "JSON View",
                             icon = { Icon(ICON_CODE, contentDescription = null) },
                             onClick = {

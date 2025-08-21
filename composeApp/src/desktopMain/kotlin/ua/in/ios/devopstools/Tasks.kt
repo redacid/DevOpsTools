@@ -272,10 +272,10 @@ class TasksManager {
                 // Зберігаємо відсортовані завдання
                 saveTasks()
 
-                logger.i("TasksManager", "Tasks відсортовано за $sortBy (ascending: $ascending)")
+                logger.i("TasksManager", "Tasks sorted by $sortBy (ascending: $ascending)")
             }
         } catch (e: Exception) {
-            logger.e("TasksManager", "Помилка сортування tasks:", e)
+            logger.e("TasksManager", "Tasks sorting error:", e)
         }
     }
 
