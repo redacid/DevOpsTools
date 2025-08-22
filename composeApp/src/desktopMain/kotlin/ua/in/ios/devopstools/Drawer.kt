@@ -9,13 +9,13 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.DismissibleDrawerSheet
+import androidx.compose.material3.DismissibleNavigationDrawer
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.ModalDrawerSheet
-import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.NavigationDrawerItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -45,20 +45,22 @@ fun NavigationDrawer() {
         Box(modifier = Modifier.padding(innerPadding)) {
             when (currentScreen) {
                 "Tasks" -> TasksTable()
-                "Settings" -> Text(
-                    "Settings",
-                    modifier = Modifier.padding(16.dp)
-                )
+//                "Settings" -> Text(
+//                    "Settings",
+//                    modifier = Modifier.padding(16.dp)
+//                )
+                "JSON Tasks" -> JsonTaskTable()
                 "Help" -> Text(
                     "Help",
                     modifier = Modifier.padding(16.dp)
                 )
-                "Update Tasks" -> Text(
-                    "Update Tasks",
-                    modifier = Modifier.padding(16.dp)
-                )
+//                "Update Tasks" -> Text(
+//                    "Update Tasks",
+//                    modifier = Modifier.padding(16.dp)
+//                )
                 "System Info" -> SystemInfoView()
                 "Logs" -> LogViewer(modifier = Modifier.fillMaxSize().padding(16.dp))
+                "JSON View" -> JsonViewer()
                 else -> TasksTable()
 //                    Text(
 //                    "DevOps Tools - допомога у встановленні та оновленні DevOps інструментів",
@@ -78,13 +80,12 @@ fun DetailedDrawer(
 ) {
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
-    //val tasksManager = TasksManager.getInstance()
     var tasks by remember { mutableStateOf(emptyList<JsonObject>()) }
     var selectedItem by remember { mutableStateOf("Home") }
 
-    ModalNavigationDrawer(
+    DismissibleNavigationDrawer(
         drawerContent = {
-            ModalDrawerSheet {
+            DismissibleDrawerSheet{
                 Column(
                     modifier = Modifier.padding(horizontal = 16.dp)
                         .verticalScroll(rememberScrollState())
@@ -103,18 +104,33 @@ fun DetailedDrawer(
                             }
                         }
                     )
-                    NavigationDrawerItem(
-                        label = { Text("Check for updates") },
-                        selected = selectedItem == "Updates",
-                        icon = { Icon(ICON_REFRESH, contentDescription = null) },
-                        onClick = {
-                            selectedItem = "Updates"
-                            onScreenSelected("Updates")
-                            scope.launch {
-                                drawerState.close()
+//                    NavigationDrawerItem(
+//                        label = { Text("Check for updates") },
+//                        selected = selectedItem == "Updates",
+//                        icon = { Icon(ICON_REFRESH, contentDescription = null) },
+//                        onClick = {
+//                            selectedItem = "Updates"
+//                            onScreenSelected("Updates")
+//                            scope.launch {
+//                                drawerState.close()
+//                            }
+//                        }
+//                    )
+                    if (settingsManager.getString("settings.log_level") == "DEV") {
+                        NavigationDrawerItem(
+                            label = { Text("DEV JSON Tasks Table") },
+                            selected = selectedItem == "JSON Tasks",
+                            icon = { Icon(ICON_BOX, contentDescription = null) },
+                            onClick = {
+                                selectedItem = "JSON Tasks"
+                                onScreenSelected("JSON Tasks")
+                                scope.launch {
+                                    drawerState.close()
+                                }
                             }
-                        }
-                    )
+                        )
+                    }
+
                     NavigationDrawerItem(
                         label = { Text("System information") },
                         selected = selectedItem == "System Info",
@@ -140,36 +156,49 @@ fun DetailedDrawer(
                             }
                         }
                     )
-
+                    if (settingsManager.getString("settings.log_level") == "DEV") {
+                        NavigationDrawerItem(
+                            label = { Text("DEV JSON View") },
+                            selected = selectedItem == "JSON View",
+                            icon = { Icon(ICON_CODE, contentDescription = null) },
+                            onClick = {
+                                selectedItem = "JSON View"
+                                onScreenSelected("JSON View")
+                                scope.launch {
+                                    drawerState.close()
+                                }
+                            }
+                        )
+                    }
 
                     HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
 
-                    NavigationDrawerItem(
-                        label = { Text("Settings") },
-                        selected = selectedItem == "Settings",
-                        icon = { Icon(ICON_SETTINGS, contentDescription = null) },
-                        onClick = {
-                            selectedItem = "Settings"
-                            onScreenSelected("Settings")
-                            scope.launch {
-                                drawerState.close()
-                            }
-                        }
-                    )
+//                    NavigationDrawerItem(
+//                        label = { Text("Settings") },
+//                        selected = selectedItem == "Settings",
+//                        icon = { Icon(ICON_SETTINGS, contentDescription = null) },
+//                        onClick = {
+//                            selectedItem = "Settings"
+//                            onScreenSelected("Settings")
+//                            scope.launch {
+//                                drawerState.close()
+//                            }
+//                        }
+//                    )
 
-                    NavigationDrawerItem(
-                        label = {Text("Update Tasks")},
-                        selected = selectedItem == "Update Tasks",
-                        icon = { Icon(ICON_REFRESH, contentDescription = null) },
-                        onClick = {
-                            tasksManager.reloadTasks()
-                            selectedItem = "Update Tasks"
-                            onScreenSelected("Update Tasks")
-                            scope.launch {
-                                drawerState.close()
-                            }
-                        }
-                    )
+//                    NavigationDrawerItem(
+//                        label = {Text("Update Tasks")},
+//                        selected = selectedItem == "Update Tasks",
+//                        icon = { Icon(ICON_REFRESH, contentDescription = null) },
+//                        onClick = {
+//                            tasksManager.reloadTasks()
+//                            selectedItem = "Update Tasks"
+//                            onScreenSelected("Update Tasks")
+//                            scope.launch {
+//                                drawerState.close()
+//                            }
+//                        }
+//                    )
 
                     NavigationDrawerItem(
                         label = { Text("Help") },
@@ -203,7 +232,7 @@ fun DetailedDrawer(
                                 }
                             }
                         }) {
-                            Icon(ICON_MENU, contentDescription = "Меню")
+                            Icon(ICON_MENU, contentDescription = "Menu")
                         }
                     }
                 )

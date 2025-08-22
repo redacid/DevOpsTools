@@ -77,7 +77,7 @@ fun TaskLoadStrategyDialog(
 
                     // Радіо-кнопки для вибору стратегії
                     Column {
-                        TasksManager.LoadStrategy.values().forEach { strategy ->
+                        TasksManager.LoadStrategy.entries.forEach { strategy ->
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()

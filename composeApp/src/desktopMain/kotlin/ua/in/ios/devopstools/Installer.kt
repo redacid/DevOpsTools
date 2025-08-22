@@ -45,7 +45,10 @@ data class InstallationState(
     var packageLink: String = "",
     var afterUnpackInstallFlag: Boolean = false,
     var afterUnpackInstallSudo: Boolean = false,
-    var afterUnpackInstallCmd: String = ""
+    var afterUnpackInstallCmd: String = "",
+    var afterInstallFlag: Boolean = false,
+    var afterInstallSudo: Boolean = false,
+    var afterInstallCmd: String = ""
 )
 
 /**
@@ -61,7 +64,9 @@ class GithubInstaller {
 
                 fun searchRecursively(dir: File): File? {
                     dir.listFiles()?.forEach { file ->
-                        if (file.isFile && file.name == binaryName && file.canExecute()) {
+                        if (file.isFile
+                            && file.name.contains(binaryName, ignoreCase = true)
+                            && file.canExecute()) {
                             return file
                         } else if (file.isDirectory) {
                             val found = searchRecursively(file)
@@ -141,20 +146,6 @@ class GithubInstaller {
                 val assets = mutableListOf<String>()
                 val assetUrlMap = mutableMapOf<String, String>() // Map asset name to download URL
 
-//                if (release?.has("assets") == true && release.get("assets").isJsonArray) {
-//                    val assetsArray = release.getAsJsonArray("assets")
-//                    for (i in 0 until assetsArray.size()) {
-//                        val asset = assetsArray.get(i).asJsonObject
-//                        val assetName = asset.get("name").asString
-//                        assets.add(assetName)
-//
-//                        // Store download URL for each asset
-//                        if (asset.has("browser_download_url")) {
-//                            assetUrlMap[assetName] = asset.get("browser_download_url").asString
-//                        }
-//                    }
-//                }
-
                 if (release != null) {
                     if (state.parseReleaseNotes && release.has("body")) {
                         // Парсимо посилання з release notes
@@ -205,6 +196,13 @@ class GithubInstaller {
                 if (githubObj.has("asset")) {
                     state.selectedAsset = githubObj.get("asset")?.asString ?: ""
                     state.assetInstallType = githubObj.get("asset_type")?.asString ?: ""
+                }
+
+                if (githubObj.has("after_install_cmd")) {
+                    val afterInstallObj = githubObj.getAsJsonObject("after_install_cmd")
+                    state.afterInstallFlag = afterInstallObj.get("flag")?.asBoolean ?: false
+                    state.afterInstallSudo = afterInstallObj.get("sudo")?.asBoolean ?: false
+                    state.afterInstallCmd = afterInstallObj.get("cmd")?.asString ?: ""
                 }
             }
 
@@ -374,6 +372,17 @@ class GithubInstaller {
                 state.installationStatus = "Failed"
             }
 
+            if (state.afterInstallFlag) {
+                logger.d("PackageInstaller.installTask", "After install cmd flag is enabled, cmd: ${state.afterInstallCmd}")
+                if (state.afterInstallSudo) {
+                    val execCmd = "sudo ${state.afterInstallCmd}"
+                    executeCommandSudo(execCmd)
+                } else {
+                    val execCmd = "${state.afterInstallCmd}"
+                    executeCommandSudo(execCmd)
+                }
+            }
+
         } catch (e: Exception) {
             state.installationStatus = "Error: ${e.message}"
             logger.e("GithubInstaller.InstallTask", "Installation error", e)
@@ -430,9 +439,16 @@ class PackageInstaller {
                 state.packageLink = packageObj.get("link")?.asString ?: ""
 
                 if (packageObj.has("after_unpack_install_cmd")) {
-                    state.afterUnpackInstallFlag = packageObj.get("flag")?.asBoolean ?: false
-                    state.afterUnpackInstallSudo = packageObj.get("sudo")?.asBoolean ?: false
-                    state.afterUnpackInstallCmd = packageObj.get("cmd")?.asString ?: ""
+                    val afterUnpackObj = packageObj.getAsJsonObject("after_unpack_install_cmd")
+                    state.afterUnpackInstallFlag = afterUnpackObj.get("flag")?.asBoolean ?: false
+                    state.afterUnpackInstallSudo = afterUnpackObj.get("sudo")?.asBoolean ?: false
+                    state.afterUnpackInstallCmd = afterUnpackObj.get("cmd")?.asString ?: ""
+                }
+                if (packageObj.has("after_install_cmd")) {
+                    val afterInstallObj = packageObj.getAsJsonObject("after_install_cmd")
+                    state.afterInstallFlag = afterInstallObj.get("flag")?.asBoolean ?: false
+                    state.afterInstallSudo = afterInstallObj.get("sudo")?.asBoolean ?: false
+                    state.afterInstallCmd = afterInstallObj.get("cmd")?.asString ?: ""
                 }
             }
 
@@ -593,8 +609,14 @@ class PackageInstaller {
                     if (extractResult) {
                         // Find the binary and copy it to the installation path
                         if (state.afterUnpackInstallFlag) {
-                            val execCmd = "${if (state.afterUnpackInstallSudo) {"sudo "} else {""} }$toolDir/$state.afterUnpackInstallCmd"
-                            executeCommandSudo(execCmd)
+                            logger.d("PackageInstaller.installTask", "After unpack install flag is enabled, cmd: ${state.afterUnpackInstallCmd}")
+                            if (state.afterUnpackInstallSudo) {
+                                val execCmd = "sudo $toolDir/${state.afterUnpackInstallCmd}"
+                                executeCommandSudo(execCmd)
+                            } else {
+                                val execCmd = "$toolDir/${state.afterUnpackInstallCmd}"
+                                executeCommandSudo(execCmd)
+                            }
                         } else {
                             val installPath = settingsManager.getString("settings.install_path", "/usr/bin")
                             val binaryFile = state.binaryName.ifEmpty { state.name }
@@ -641,6 +663,17 @@ class PackageInstaller {
                 state.currentVersion = getInstallTypeForTask(task)?.getCurrentVersion(task) ?: "Unknown"
             } else {
                 state.installationStatus = "Failed"
+            }
+
+            if (state.afterInstallFlag) {
+                logger.d("PackageInstaller.installTask", "After install cmd flag is enabled, cmd: ${state.afterInstallCmd}")
+                if (state.afterInstallSudo) {
+                    val execCmd = "sudo ${state.afterInstallCmd}"
+                    executeCommandSudo(execCmd)
+                } else {
+                    val execCmd = "${state.afterInstallCmd}"
+                    executeCommandSudo(execCmd)
+                }
             }
 
         } catch (e: Exception) {

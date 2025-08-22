@@ -1,16 +1,10 @@
 {
   "settings": {
     "install_path": "/usr/bin",
-    "temp_path": "/tmp",
-    "tasks_url": "https://github.com/redacid/DevOpsTools/blob/init/tasks.json",
-    "install_types": [
-      "github",
-      "distributive_package",
-      "package",
-      "remote_shell_script",
-      "shell_cmd",
-      "package_manager"
-    ],
+    "temp_path": "/tmp/devopstools",
+    "tasks_url": "https://github.com/redacid/DevOpsTools/blob/main/tasks.json",
+    "github_token": "",
+    "log_level": "DEBUG",
     "application_patterns": {
       "os": {
         "linux": {
@@ -30,8 +24,7 @@
               ],
               "binary": [
                 "*linux*amd64",
-                "*linux*x86_64",
-                "*linux*64"
+                "*linux*x86_64"
               ]
             },
             "386": {

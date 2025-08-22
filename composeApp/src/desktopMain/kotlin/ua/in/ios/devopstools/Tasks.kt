@@ -156,7 +156,7 @@ class TasksManager {
     private val gson: Gson = GsonBuilder().setPrettyPrinting().create()
     private val homeDir: String = System.getProperty("user.home")
     private val configDir: String = "$homeDir/.devopstools"
-    private val tasksFile: String = "$configDir/tasks.json"
+    val tasksFile: String = "$configDir/tasks.json"
     private var tasks: JsonObject = JsonObject()
     //private val settingsManager = SettingsManager.getInstance()
 
@@ -191,6 +191,7 @@ class TasksManager {
         try {
             FileReader(tasksFile).use { reader ->
                 tasks = JsonParser.parseReader(reader).asJsonObject
+                sortTasks()
             }
             updateGitHubApiUrls()
 
@@ -200,7 +201,86 @@ class TasksManager {
         }
     }
 
-/**
+//    // Приклад сортування в TasksTable()
+//    Button(
+//    onClick = {
+//        tasksManager.sortTasks("name", true) // сортування за назвою за зростанням
+//        refreshTasks()
+//    }
+//    ) {
+//        Icon(ICON_SORT, contentDescription = "Sort")
+//        Spacer(Modifier.width(4.dp))
+//        Text("Sort A-Z")
+//    }
+
+
+    /**
+     * Сортує завдання за вказаним критерієм
+     * @param sortBy критерій сортування: "name", "install_type", "enabled"
+     * @param ascending якщо true - за зростанням, false - за спаданням
+     */
+    fun sortTasks(sortBy: String = "name", ascending: Boolean = true) {
+        try {
+            if (tasks.has("tasks") && tasks.get("tasks").isJsonArray) {
+                val tasksArray = tasks.getAsJsonArray("tasks")
+                val sortedTasks = JsonArray()
+
+                // Створюємо список для сортування
+                val tasksList = mutableListOf<JsonObject>()
+
+                for (i in 0 until tasksArray.size()) {
+                    tasksList.add(tasksArray.get(i).asJsonObject)
+                }
+
+                // Сортуємо за обраним критерієм
+                when (sortBy) {
+                    "name" -> {
+                        if (ascending) {
+                            tasksList.sortBy { it.get("name")?.asString?.lowercase() ?: "" }
+                        } else {
+                            tasksList.sortByDescending { it.get("name")?.asString?.lowercase() ?: "" }
+                        }
+                    }
+                    "install_type" -> {
+                        if (ascending) {
+                            tasksList.sortBy { it.get("install_type")?.asString ?: "" }
+                        } else {
+                            tasksList.sortByDescending { it.get("install_type")?.asString ?: "" }
+                        }
+                    }
+                    "enabled" -> {
+                        if (ascending) {
+                            tasksList.sortBy { it.get("enabled")?.asBoolean ?: false }
+                        } else {
+                            tasksList.sortByDescending { it.get("enabled")?.asBoolean ?: false }
+                        }
+                    }
+                    else -> {
+                        // За замовчуванням сортуємо за назвою
+                        tasksList.sortBy { it.get("name")?.asString?.lowercase() ?: "" }
+                    }
+                }
+
+                // Додаємо відсортовані завдання до нового масиву
+                for (task in tasksList) {
+                    sortedTasks.add(task)
+                }
+
+                // Замінюємо старий масив на відсортований
+                tasks.add("tasks", sortedTasks)
+
+                // Зберігаємо відсортовані завдання
+                saveTasks()
+
+                logger.i("TasksManager", "Tasks sorted by $sortBy (ascending: $ascending)")
+            }
+        } catch (e: Exception) {
+            logger.e("TasksManager", "Tasks sorting error:", e)
+        }
+    }
+
+
+    /**
      * Loads a task from a URL with the specified loading strategy
      * @param strategy The loading strategy for tasks
      * @return true if the loading is successful, false in case of an error
@@ -422,11 +502,6 @@ class TasksManager {
         }
     }
 
-    // Старий метод, залишений для сумісності
-//    fun reloadTasks() {
-//        //reloadTasks(LoadStrategy.REPLACE_ALL)
-//    }
-
     private fun downloadTasksFromUrl() {
         reloadTasks(LoadStrategy.REPLACE_ALL)
     }
@@ -489,10 +564,6 @@ class TasksManager {
             //println("Помилка збереження завдань: ${e.message}")
         }
     }
-
-//    fun getTasks(): JsonObject {
-//        return tasks
-//    }
 
     fun getTaskByName(name: String): JsonObject? {
         val tasksArray = getTasksArray() ?: return null
@@ -1006,6 +1077,9 @@ object TaskUtils {
      */
     suspend fun checkCurrentVersion(task: JsonObject): String {
         return withContext(Dispatchers.IO) {
+            if (task.get("disable_version_check")?.asBoolean == true) {
+                return@withContext "Check disabled"
+            }
             try {
                 val installType = getInstallTypeForTask(task)
                 if (installType != null) {

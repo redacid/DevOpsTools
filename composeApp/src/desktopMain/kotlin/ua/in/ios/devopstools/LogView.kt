@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material3.*
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.runtime.*
@@ -34,10 +35,21 @@ import kotlinx.coroutines.launch
 @Composable
 fun LogViewer(modifier: Modifier = Modifier) {
     val logger = Logger.getInstance()
-    val logs by remember { mutableStateOf(logger.getLogs()) }
+    val logs by remember {
+        derivedStateOf { logger.getLogs() }
+    }
+
     var selectedLogLevel by remember { mutableStateOf(LogLevel.DEBUG) }
     val listState = rememberLazyListState()
     val coroutineScope = rememberCoroutineScope()
+
+    var logsKey by remember { mutableStateOf(0) }
+    LaunchedEffect(logs.size) {
+        logsKey++
+        if (logs.isNotEmpty()) {
+            listState.scrollToItem(logs.size - 1)
+        }
+    }
 
     // Автоматичне прокручування до останнього запису
     LaunchedEffect(logs.size) {
@@ -58,7 +70,7 @@ fun LogViewer(modifier: Modifier = Modifier) {
             // Фільтр за рівнем логів
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text("Filter: ")
-                LogLevel.values().forEach { level ->
+                LogLevel.entries.forEach { level ->
                     FilterChip(
                         selected = selectedLogLevel == level,
                         onClick = { selectedLogLevel = level },
@@ -73,6 +85,7 @@ fun LogViewer(modifier: Modifier = Modifier) {
                 Button(
                     onClick = {
                         logger.clearLogs()
+                        logsKey++
                     },
                     modifier = Modifier.padding(horizontal = 4.dp)
                 ) {
@@ -128,43 +141,44 @@ fun LogEntryRow(entry: LogEntry) {
             .padding(8.dp)
     ) {
         // Основна інформація про запис
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(
-                "[${entry.getFormattedTime()}]",
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-                style = MaterialTheme.typography.bodySmall,
-                fontFamily = FontFamily.Monospace
-            )
+        SelectionContainer {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    "[${entry.getFormattedTime()}]",
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                    style = MaterialTheme.typography.bodySmall,
+                    fontFamily = FontFamily.Monospace
+                )
 
-            Spacer(Modifier.width(8.dp))
+                Spacer(Modifier.width(8.dp))
 
-            Text(
-                entry.level.name,
-                color = logColor,
-                style = MaterialTheme.typography.bodySmall,
-                fontFamily = FontFamily.Monospace
-            )
+                Text(
+                    entry.level.name,
+                    color = logColor,
+                    style = MaterialTheme.typography.bodySmall,
+                    fontFamily = FontFamily.Monospace
+                )
 
-            Spacer(Modifier.width(8.dp))
+                Spacer(Modifier.width(8.dp))
 
-            Text(
-                entry.tag,
-                color = MaterialTheme.colorScheme.onSurface,
-                style = MaterialTheme.typography.bodySmall,
-                fontFamily = FontFamily.Monospace,
-                modifier = Modifier.width(120.dp)
-            )
+                Text(
+                    entry.tag,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    style = MaterialTheme.typography.bodySmall,
+                    fontFamily = FontFamily.Monospace,
+                    modifier = Modifier.width(120.dp)
+                )
 
-            Spacer(Modifier.width(8.dp))
+                Spacer(Modifier.width(8.dp))
 
-            Text(
-                entry.message,
-                color = MaterialTheme.colorScheme.onSurface,
-                style = MaterialTheme.typography.bodyMedium,
-                fontFamily = FontFamily.Monospace
-            )
+                Text(
+                    entry.message,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontFamily = FontFamily.Monospace
+                )
+            }
         }
-
         // Відображення стеку викликів, якщо є і якщо запис розгорнуто
         if (entry.throwable != null) {
             TextButton(onClick = { expanded = !expanded }) {
