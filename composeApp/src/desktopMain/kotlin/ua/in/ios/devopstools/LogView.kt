@@ -70,7 +70,7 @@ fun LogViewer(modifier: Modifier = Modifier) {
             // Фільтр за рівнем логів
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text("Filter: ")
-                LogLevel.values().forEach { level ->
+                LogLevel.entries.forEach { level ->
                     FilterChip(
                         selected = selectedLogLevel == level,
                         onClick = { selectedLogLevel = level },

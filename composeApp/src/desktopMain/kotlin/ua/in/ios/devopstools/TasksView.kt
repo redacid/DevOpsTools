@@ -701,7 +701,7 @@ fun TaskEditDialog(
                 showLoadingOverlay = true
                 isLoadingVersions = true
                 availableVersions = listOf("Loading...")
-                logger.i("LoadVersions", "Setting showLoadingOverlay to ${showLoadingOverlay}")
+                logger.d("LoadVersions", "Setting showLoadingOverlay to ${showLoadingOverlay}")
             }
 
             coroutineScope.launch(Dispatchers.IO) {
