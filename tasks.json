@@ -106,12 +106,12 @@
       "install_type": "github",
       "version_cmd": "--version",
       "enabled": true,
-      "install_version": "v2.76.2",
+      "install_version": "v2.78.0",
       "github": {
         "url": "https://github.com/cli/cli/",
         "api_url": "https://api.github.com/repos/cli/cli",
         "parse_release_notes": false,
-        "asset": "gh_2.76.2_linux_amd64.deb",
+        "asset": "gh_2.78.0_linux_amd64.deb",
         "asset_type": "deb_based"
       },
       "disable_version_check": false
@@ -194,12 +194,46 @@
       }
     },
     {
+      "name": "kompose",
+      "description": "kompose is a tool to help users who are familiar with docker-compose move to Kubernetes. kompose takes a Compose Specification file and translates it into Kubernetes resources",
+      "binary_name": "kompose",
+      "install_type": "github",
+      "version_cmd": "version",
+      "disable_version_check": false,
+      "enabled": true,
+      "install_version": "v1.37.0",
+      "github": {
+        "url": "https://github.com/kubernetes/kompose",
+        "api_url": "https://api.github.com/repos/kubernetes/kompose",
+        "parse_release_notes": false,
+        "asset": "kompose-linux-amd64",
+        "asset_type": "binary"
+      }
+    },
+    {
+      "name": "kops",
+      "description": "The easiest way to get a production grade Kubernetes cluster up and running",
+      "binary_name": "kops",
+      "install_type": "github",
+      "version_cmd": "version",
+      "disable_version_check": false,
+      "enabled": true,
+      "install_version": "v1.33.0",
+      "github": {
+        "url": "https://github.com/kubernetes/kops",
+        "api_url": "https://api.github.com/repos/kubernetes/kops",
+        "parse_release_notes": false,
+        "asset": "kops-linux-amd64",
+        "asset_type": "binary"
+      }
+    },
+    {
       "name": "krew",
       "description": "Krew is the plugin manager for kubectl command-line tool. https://krew.sigs.k8s.io/",
       "binary_name": "krew",
       "install_type": "package",
       "version_cmd": "version",
-      "disable_version_check": true,
+      "disable_version_check": false,
       "enabled": true,
       "install_version": "latest",
       "package": {
@@ -208,6 +242,11 @@
           "flag": true,
           "sudo": false,
           "cmd": "./krew-linux_amd64 install krew"
+        },
+        "after_install_cmd": {
+          "flag": true,
+          "sudo": true,
+          "cmd": "ln -s ~/.krew/bin/kubectl-krew /usr/bin/krew"
         }
       }
     },
@@ -474,7 +513,12 @@
         "api_url": "https://api.github.com/repos/mikefarah/yq",
         "parse_release_notes": false,
         "asset": "yq_linux_amd64",
-        "asset_type": "binary"
+        "asset_type": "binary",
+        "after_install_cmd": {
+          "flag": true,
+          "sudo": true,
+          "cmd": "ln -s /usr/bin/yq /usr/bin/yq4"
+        }
       },
       "disable_version_check": false
     }

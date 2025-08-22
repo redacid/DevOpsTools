@@ -6,3 +6,6 @@
 * Change a drawer type to dismissible
 * Check for latest version on github
 * fix package install "after install cmd"
+* fix log clear in view
+* allow select and copy logs from view 
+* add after install cmd for github and package install types

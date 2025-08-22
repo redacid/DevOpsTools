@@ -539,12 +539,20 @@ fun TaskEditDialog(
         var afterUnpackInstallCmd by remember { mutableStateOf("") }
         var afterUnpackInstallSudo by remember { mutableStateOf(false) }
 
+        var afterInstallFlag by remember { mutableStateOf(false) }
+        var afterInstallCmd by remember { mutableStateOf("") }
+        var afterInstallSudo by remember { mutableStateOf(false) }
+
         if (task.has(StaticSettings.InstallTypes.GITHUB)) {
             val githubObj = task.getAsJsonObject(StaticSettings.InstallTypes.GITHUB)
             githubUrl = githubObj.get("url")?.asString ?: ""
             githubApiUrl = githubObj.get("api_url")?.asString ?: ""
             savedAssetType = githubObj.get("asset_type")?.asString ?: ""
             parseReleaseNotes = githubObj.get("parse_release_notes")?.asBoolean ?: false
+            val afterInstallObj = githubObj.getAsJsonObject("after_install_cmd") ?: JsonObject()
+            afterInstallFlag = afterInstallObj.get("flag")?.asBoolean ?: false
+            afterInstallCmd = afterInstallObj.get("cmd")?.asString ?: ""
+            afterInstallSudo = afterInstallObj.get("sudo")?.asBoolean ?: false
         }
 
         if (task.has(StaticSettings.InstallTypes.PACKAGE)) {
@@ -554,6 +562,10 @@ fun TaskEditDialog(
             afterUnpackInstallFlag = afterunpackObj.get("flag")?.asBoolean ?: false
             afterUnpackInstallCmd = afterunpackObj.get("cmd")?.asString ?: ""
             afterUnpackInstallSudo = afterunpackObj.get("sudo")?.asBoolean ?: false
+            val afterInstallObj = packageObj.getAsJsonObject("after_install_cmd") ?: JsonObject()
+            afterInstallFlag = afterInstallObj.get("flag")?.asBoolean ?: false
+            afterInstallCmd = afterInstallObj.get("cmd")?.asString ?: ""
+            afterInstallSudo = afterInstallObj.get("sudo")?.asBoolean ?: false
         }
 
         // Function to check current version
@@ -780,6 +792,13 @@ fun TaskEditDialog(
                     githubObj.addProperty("asset_type", assetInstallType)
                 }
 
+                val afterInstallObj = JsonObject().apply {
+                    addProperty("flag", afterInstallFlag)
+                    addProperty("sudo", afterInstallSudo)
+                    addProperty("cmd", afterInstallCmd)
+                }
+                githubObj.add("after_install_cmd", afterInstallObj)
+
                 editedTask.add(StaticSettings.InstallTypes.GITHUB, githubObj)
             }
             if (installType == StaticSettings.InstallTypes.PACKAGE) {
@@ -791,6 +810,13 @@ fun TaskEditDialog(
                     addProperty("cmd", afterUnpackInstallCmd)
                 }
                 packageObj.add("after_unpack_install_cmd", afterunpackObj)
+
+                val afterInstallObj = JsonObject().apply {
+                    addProperty("flag", afterInstallFlag)
+                    addProperty("sudo", afterInstallSudo)
+                    addProperty("cmd", afterInstallCmd)
+                }
+                packageObj.add("after_install_cmd", afterInstallObj)
 
                 editedTask.add(StaticSettings.InstallTypes.PACKAGE, packageObj)
             }
@@ -1234,6 +1260,7 @@ fun TaskEditDialog(
                                 }
                             }
                             // End After unpack
+
                             if (packageLink.isNotEmpty() && enabled) {
                                 makeEditedTask()
                                 InstallButton(
@@ -1245,6 +1272,43 @@ fun TaskEditDialog(
                                 )
                             }
                         }
+
+
+                        // After Install
+                        Row(
+                            modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Checkbox(
+                                checked = afterInstallFlag,
+                                onCheckedChange = { afterInstallFlag = it }
+                            )
+                            Text("Execute a command after install ", modifier = Modifier.padding(start = 8.dp))
+                        }
+                        if (afterInstallFlag) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Checkbox(
+                                    checked = afterInstallSudo,
+                                    onCheckedChange = { afterInstallSudo = it }
+                                )
+                                Text("Execute with sudo", modifier = Modifier.padding(start = 8.dp))
+                                Spacer(Modifier.width(16.dp))
+                                OutlinedTextField(
+                                    value = afterInstallCmd,
+                                    onValueChange = { afterInstallCmd = it },
+                                    label = { Text("After install command") },
+                                    modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                                    singleLine = true,
+                                    readOnly = false,
+                                    enabled = true
+                                )
+                            }
+                        }
+                        // End After install
+
                         // Status (enabled) as checkbox
                         Row(
                             modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
