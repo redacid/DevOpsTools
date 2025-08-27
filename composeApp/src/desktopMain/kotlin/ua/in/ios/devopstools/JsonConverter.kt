@@ -273,13 +273,6 @@ fun JsonConverter(modifier: Modifier = Modifier) {
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
         ) {
             Column(modifier = Modifier.padding(20.dp)) {
-                Text(
-                    text = "Format Selection",
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.padding(bottom = 12.dp)
-                )
-
                 // Format selection using improved chips
                 Row(
                     modifier = Modifier.fillMaxWidth(),
