@@ -17,8 +17,10 @@ import compose.icons.feathericons.Edit
 import compose.icons.feathericons.ExternalLink
 import compose.icons.feathericons.Eye
 import compose.icons.feathericons.EyeOff
+import compose.icons.feathericons.Feather
 import compose.icons.feathericons.Filter
 import compose.icons.feathericons.HardDrive
+import compose.icons.feathericons.Hash
 import compose.icons.feathericons.HelpCircle
 import compose.icons.feathericons.Hexagon
 import compose.icons.feathericons.Home
@@ -52,6 +54,8 @@ var ICON_UP = FeatherIcons.ArrowUp
 var ICON_DOWN = FeatherIcons.ArrowDown
 var ICON_RIGHT = FeatherIcons.ArrowRight
 var ICON_LEFT = FeatherIcons.ArrowLeft
+var ICON_HASH = FeatherIcons.Hash
+var ICON_FEATHER = FeatherIcons.Feather
 var ICON_LOGS = FeatherIcons.List
 var ICON_HELP = FeatherIcons.HelpCircle
 var ICON_INFO = FeatherIcons.Info

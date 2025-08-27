@@ -45,27 +45,17 @@ fun NavigationDrawer() {
         Box(modifier = Modifier.padding(innerPadding)) {
             when (currentScreen) {
                 "Tasks" -> TasksTable()
-//                "Settings" -> Text(
-//                    "Settings",
-//                    modifier = Modifier.padding(16.dp)
-//                )
+                "Subnet Calculator" -> SubnetCalculator(modifier = Modifier.fillMaxSize())
+                "WHOIS Lookup" -> WhoisLookup(modifier = Modifier.fillMaxSize())
                 "JSON Tasks" -> JsonTaskTable()
-                "Help" -> Text(
-                    "Help",
-                    modifier = Modifier.padding(16.dp)
-                )
-//                "Update Tasks" -> Text(
-//                    "Update Tasks",
-//                    modifier = Modifier.padding(16.dp)
-//                )
+                "Base64 Tool" -> Base64Tool(modifier = Modifier.fillMaxSize())
+                "Color Picker" -> ColorPicker(modifier = Modifier.fillMaxSize())
+                "JSON Converter" -> JsonConverter(modifier = Modifier.fillMaxSize())
+                "Help" -> Text("Help", modifier = Modifier.padding(16.dp))
                 "System Info" -> SystemInfoView()
                 "Logs" -> LogViewer(modifier = Modifier.fillMaxSize().padding(16.dp))
                 "JSON View" -> JsonViewer()
                 else -> TasksTable()
-//                    Text(
-//                    "DevOps Tools - допомога у встановленні та оновленні DevOps інструментів",
-//                    modifier = Modifier.padding(16.dp)
-//                )
             }
         }
     }
@@ -104,32 +94,6 @@ fun DetailedDrawer(
                             }
                         }
                     )
-//                    NavigationDrawerItem(
-//                        label = { Text("Check for updates") },
-//                        selected = selectedItem == "Updates",
-//                        icon = { Icon(ICON_REFRESH, contentDescription = null) },
-//                        onClick = {
-//                            selectedItem = "Updates"
-//                            onScreenSelected("Updates")
-//                            scope.launch {
-//                                drawerState.close()
-//                            }
-//                        }
-//                    )
-                    if (settingsManager.getString("settings.log_level") == "DEV") {
-                        NavigationDrawerItem(
-                            label = { Text("DEV JSON Tasks Table") },
-                            selected = selectedItem == "JSON Tasks",
-                            icon = { Icon(ICON_BOX, contentDescription = null) },
-                            onClick = {
-                                selectedItem = "JSON Tasks"
-                                onScreenSelected("JSON Tasks")
-                                scope.launch {
-                                    drawerState.close()
-                                }
-                            }
-                        )
-                    }
 
                     NavigationDrawerItem(
                         label = { Text("System information") },
@@ -156,49 +120,70 @@ fun DetailedDrawer(
                             }
                         }
                     )
-                    if (settingsManager.getString("settings.log_level") == "DEV") {
-                        NavigationDrawerItem(
-                            label = { Text("DEV JSON View") },
-                            selected = selectedItem == "JSON View",
-                            icon = { Icon(ICON_CODE, contentDescription = null) },
-                            onClick = {
-                                selectedItem = "JSON View"
-                                onScreenSelected("JSON View")
-                                scope.launch {
-                                    drawerState.close()
-                                }
-                            }
-                        )
-                    }
 
                     HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+                    NavigationDrawerItem(
+                        label = { Text("Subnet Calculator") },
+                        selected = selectedItem == "Subnet Calculator",
+                        icon = { Icon(ICON_HASH, contentDescription = null) },
+                        onClick = {
+                            selectedItem = "Subnet Calculator"
+                            onScreenSelected("Subnet Calculator")
+                            scope.launch {
+                                drawerState.close()
+                            }
+                        }
+                    )
+                    NavigationDrawerItem(
+                        label = { Text("WHOIS Lookup") },
+                        selected = selectedItem == "WHOIS Lookup",
+                        icon = { Icon(ICON_SEARCH, contentDescription = null) },
+                        onClick = {
+                            selectedItem = "WHOIS Lookup"
+                            onScreenSelected("WHOIS Lookup")
+                            scope.launch {
+                                drawerState.close()
+                            }
+                        }
+                    )
+                    NavigationDrawerItem(
+                        label = { Text("Base64 Tool") },
+                        selected = selectedItem == "Base64 Tool",
+                        icon = { Icon(ICON_CODE, contentDescription = null) }, // або ICON_TRANSFORM
+                        onClick = {
+                            selectedItem = "Base64 Tool"
+                            onScreenSelected("Base64 Tool")
+                            scope.launch {
+                                drawerState.close()
+                            }
+                        }
+                    )
+                    NavigationDrawerItem(
+                        label = { Text("Color Picker") },
+                        selected = selectedItem == "Color Picker",
+                        icon = { Icon(ICON_FEATHER, contentDescription = null) }, // або використайте інші іконки якщо немає цієї
+                        onClick = {
+                            selectedItem = "Color Picker"
+                            onScreenSelected("Color Picker")
+                            scope.launch {
+                                drawerState.close()
+                            }
+                        }
+                    )
+                    NavigationDrawerItem(
+                        label = { Text("JSON Converter") },
+                        selected = selectedItem == "JSON Converter",
+                        icon = { Icon(ICON_CODE, contentDescription = null) },
+                        onClick = {
+                            selectedItem = "JSON Converter"
+                            onScreenSelected("JSON Converter")
+                            scope.launch {
+                                drawerState.close()
+                            }
+                        }
+                    )
 
-//                    NavigationDrawerItem(
-//                        label = { Text("Settings") },
-//                        selected = selectedItem == "Settings",
-//                        icon = { Icon(ICON_SETTINGS, contentDescription = null) },
-//                        onClick = {
-//                            selectedItem = "Settings"
-//                            onScreenSelected("Settings")
-//                            scope.launch {
-//                                drawerState.close()
-//                            }
-//                        }
-//                    )
-
-//                    NavigationDrawerItem(
-//                        label = {Text("Update Tasks")},
-//                        selected = selectedItem == "Update Tasks",
-//                        icon = { Icon(ICON_REFRESH, contentDescription = null) },
-//                        onClick = {
-//                            tasksManager.reloadTasks()
-//                            selectedItem = "Update Tasks"
-//                            onScreenSelected("Update Tasks")
-//                            scope.launch {
-//                                drawerState.close()
-//                            }
-//                        }
-//                    )
+                    HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
 
                     NavigationDrawerItem(
                         label = { Text("Help") },
@@ -212,6 +197,37 @@ fun DetailedDrawer(
                             }
                         }
                     )
+
+                    if (settingsManager.getString("settings.log_level") == "DEV") {
+                        HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+
+                        NavigationDrawerItem(
+                            label = { Text("DEV JSON View") },
+                            selected = selectedItem == "JSON View",
+                            icon = { Icon(ICON_CODE, contentDescription = null) },
+                            onClick = {
+                                selectedItem = "JSON View"
+                                onScreenSelected("JSON View")
+                                scope.launch {
+                                    drawerState.close()
+                                }
+                            }
+                        )
+
+                        NavigationDrawerItem(
+                            label = { Text("DEV JSON Tasks Table") },
+                            selected = selectedItem == "JSON Tasks",
+                            icon = { Icon(ICON_BOX, contentDescription = null) },
+                            onClick = {
+                                selectedItem = "JSON Tasks"
+                                onScreenSelected("JSON Tasks")
+                                scope.launch {
+                                    drawerState.close()
+                                }
+                            }
+                        )
+                    }
+
                     Spacer(Modifier.height(12.dp))
                 }
             }
