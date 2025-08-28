@@ -1,7 +1,7 @@
-
 package ua.`in`.ios.devopstools
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.hoverable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -14,9 +14,11 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.awt.SwingPanel
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.dp
 import com.google.gson.GsonBuilder
@@ -28,7 +30,6 @@ import org.fife.ui.rtextarea.RTextScrollPane
 import org.yaml.snakeyaml.Yaml
 import org.yaml.snakeyaml.DumperOptions
 import java.awt.BorderLayout
-import java.awt.Color
 import java.awt.Font
 import java.io.StringWriter
 import javax.swing.JComponent
@@ -45,12 +46,37 @@ import org.w3c.dom.Element
 import java.io.StringReader
 import org.xml.sax.InputSource
 import androidx.compose.foundation.layout.BoxWithConstraints
-import androidx.compose.ui.platform.LocalDensity
-
 
 enum class ConversionFormat {
     JSON, JSONL, YAML, XML
 }
+
+data class FormattingOptions(
+    // JSON опції
+    val jsonPrettyPrint: Boolean = true,
+    val jsonIndentSize: Int = 2,
+    val jsonSortKeys: Boolean = false,
+
+    // YAML опції
+    val yamlFlowStyle: DumperOptions.FlowStyle = DumperOptions.FlowStyle.BLOCK,
+    val yamlPrettyFlow: Boolean = true,
+    val yamlScalarStyle: DumperOptions.ScalarStyle = DumperOptions.ScalarStyle.SINGLE_QUOTED,
+    val yamlAllowUnicode: Boolean = true,
+    val yamlProcessComments: Boolean = true,
+    val yamlIndentSize: Int = 2,
+
+    // XML опції
+    val xmlIndentSize: Int = 2,
+    val xmlOmitXmlDeclaration: Boolean = false,
+    val xmlPrettyPrint: Boolean = true,
+
+    // Загальні опції редактора
+    val fontSize: Int = 12,
+    val fontFamily: String = "DejaVu Sans Mono",
+    val lineWrap: Boolean = false,
+    val showLineNumbers: Boolean = true,
+    val theme: String = "idea"
+)
 
 class RSyntaxEditor(
     private var syntaxStyle: String,
@@ -73,10 +99,10 @@ class RSyntaxEditor(
             val theme = Theme.load(javaClass.getResourceAsStream("/org/fife/ui/rsyntaxtextarea/themes/idea.xml"))
             theme.apply(textArea)
         } catch (e: Exception) {
-            textArea.background = Color(0xFCF5FD)
-            textArea.foreground = Color(0x767278)
-            textArea.currentLineHighlightColor = Color(0xffffd7)
-            textArea.caretColor = Color(0x767278)
+            textArea.background = java.awt.Color(0xFCF5FD)
+            textArea.foreground = java.awt.Color(0x767278)
+            textArea.currentLineHighlightColor = java.awt.Color(0xffffd7)
+            textArea.caretColor = java.awt.Color(0x767278)
         }
 
         textArea.font = Font("DejaVu Sans Mono", Font.PLAIN, 12)
@@ -105,7 +131,7 @@ class RSyntaxEditor(
 
     fun createComponent(): JComponent {
         return JPanel(BorderLayout()).apply {
-            background = Color(0x1E1E1E)
+            background = java.awt.Color(0x1E1E1E)
             add(scrollPane, BorderLayout.CENTER)
         }
     }
@@ -117,11 +143,26 @@ class RSyntaxEditor(
         }
     }
 
-    // Додаємо функцію для оновлення синтаксису
     fun updateSyntaxStyle(newSyntaxStyle: String) {
         if (syntaxStyle != newSyntaxStyle) {
             syntaxStyle = newSyntaxStyle
             textArea.syntaxEditingStyle = syntaxStyle
+        }
+    }
+
+    // Додаємо функцію для оновлення налаштувань
+    fun updateSettings(options: FormattingOptions) {
+        textArea.font = Font(options.fontFamily, Font.PLAIN, options.fontSize)
+        textArea.setLineWrap(options.lineWrap)
+        scrollPane.isIconRowHeaderEnabled = options.showLineNumbers
+
+        // Apply theme
+        try {
+            val themeResource = "/org/fife/ui/rsyntaxtextarea/themes/${options.theme}.xml"
+            val theme = Theme.load(javaClass.getResourceAsStream(themeResource))
+            theme?.apply(textArea)
+        } catch (e: Exception) {
+            // Keep default theme if loading fails
         }
     }
 
@@ -142,12 +183,474 @@ private fun getSyntaxStyle(format: ConversionFormat): String {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
+fun FormattingSettingsPanel(
+    options: FormattingOptions,
+    onOptionsChanged: (FormattingOptions) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    var expanded by remember { mutableStateOf(false) }
+
+    Card(
+        modifier = modifier,
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            // Заголовок з можливістю згортання
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { expanded = !expanded },
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        ICON_SETTINGS,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        "Налаштування форматування",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                }
+
+                Icon(
+                    if (expanded) ICON_UP else ICON_DOWN,
+                    contentDescription = if (expanded) "Згорнути" else "Розгорнути",
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+
+            if (expanded) {
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // Вкладки для різних типів налаштувань
+                var selectedTabIndex by remember { mutableStateOf(0) }
+                val tabs = listOf("JSON", "YAML", "XML", "Редактор")
+
+                TabRow(
+                    selectedTabIndex = selectedTabIndex,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    tabs.forEachIndexed { index, title ->
+                        Tab(
+                            selected = selectedTabIndex == index,
+                            onClick = { selectedTabIndex = index },
+                            text = { Text(title) }
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // Контент вкладок
+                when (selectedTabIndex) {
+                    0 -> JsonSettingsTab(options, onOptionsChanged)
+                    1 -> YamlSettingsTab(options, onOptionsChanged)
+                    2 -> XmlSettingsTab(options, onOptionsChanged)
+                    3 -> EditorSettingsTab(options, onOptionsChanged)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun JsonSettingsTab(
+    options: FormattingOptions,
+    onOptionsChanged: (FormattingOptions) -> Unit
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        // Pretty print
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text("Форматування з відступами", style = MaterialTheme.typography.bodyMedium)
+            Switch(
+                checked = options.jsonPrettyPrint,
+                onCheckedChange = { onOptionsChanged(options.copy(jsonPrettyPrint = it)) }
+            )
+        }
+
+        // Indent size
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text("Розмір відступу", style = MaterialTheme.typography.bodyMedium)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                OutlinedTextField(
+                    value = options.jsonIndentSize.toString(),
+                    onValueChange = { value ->
+                        value.toIntOrNull()?.let {
+                            if (it in 1..8) {
+                                onOptionsChanged(options.copy(jsonIndentSize = it))
+                            }
+                        }
+                    },
+                    modifier = Modifier.width(80.dp),
+                    singleLine = true,
+                    textStyle = MaterialTheme.typography.bodySmall
+                )
+            }
+        }
+
+        // Sort keys
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text("Сортувати ключі", style = MaterialTheme.typography.bodyMedium)
+            Switch(
+                checked = options.jsonSortKeys,
+                onCheckedChange = { onOptionsChanged(options.copy(jsonSortKeys = it)) }
+            )
+        }
+    }
+}
+
+@Composable
+private fun YamlSettingsTab(
+    options: FormattingOptions,
+    onOptionsChanged: (FormattingOptions) -> Unit
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        // Flow style
+        Column {
+            Text("Стиль потоку", style = MaterialTheme.typography.bodyMedium)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                FilterChip(
+                    selected = options.yamlFlowStyle == DumperOptions.FlowStyle.BLOCK,
+                    onClick = { onOptionsChanged(options.copy(yamlFlowStyle = DumperOptions.FlowStyle.BLOCK)) },
+                    label = { Text("Block") }
+                )
+                FilterChip(
+                    selected = options.yamlFlowStyle == DumperOptions.FlowStyle.FLOW,
+                    onClick = { onOptionsChanged(options.copy(yamlFlowStyle = DumperOptions.FlowStyle.FLOW)) },
+                    label = { Text("Flow") }
+                )
+                FilterChip(
+                    selected = options.yamlFlowStyle == DumperOptions.FlowStyle.AUTO,
+                    onClick = { onOptionsChanged(options.copy(yamlFlowStyle = DumperOptions.FlowStyle.AUTO)) },
+                    label = { Text("Auto") }
+                )
+            }
+        }
+
+        // Scalar style
+        Column {
+            Text("Стиль скалярних значень", style = MaterialTheme.typography.bodyMedium)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                FilterChip(
+                    selected = options.yamlScalarStyle == DumperOptions.ScalarStyle.PLAIN,
+                    onClick = { onOptionsChanged(options.copy(yamlScalarStyle = DumperOptions.ScalarStyle.PLAIN)) },
+                    label = { Text("Plain") }
+                )
+                FilterChip(
+                    selected = options.yamlScalarStyle == DumperOptions.ScalarStyle.SINGLE_QUOTED,
+                    onClick = { onOptionsChanged(options.copy(yamlScalarStyle = DumperOptions.ScalarStyle.SINGLE_QUOTED)) },
+                    label = { Text("Single") }
+                )
+                FilterChip(
+                    selected = options.yamlScalarStyle == DumperOptions.ScalarStyle.DOUBLE_QUOTED,
+                    onClick = { onOptionsChanged(options.copy(yamlScalarStyle = DumperOptions.ScalarStyle.DOUBLE_QUOTED)) },
+                    label = { Text("Double") }
+                )
+            }
+        }
+
+        // Pretty flow
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text("Красиве форматування", style = MaterialTheme.typography.bodyMedium)
+            Switch(
+                checked = options.yamlPrettyFlow,
+                onCheckedChange = { onOptionsChanged(options.copy(yamlPrettyFlow = it)) }
+            )
+        }
+
+        // Allow unicode
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text("Підтримка Unicode", style = MaterialTheme.typography.bodyMedium)
+            Switch(
+                checked = options.yamlAllowUnicode,
+                onCheckedChange = { onOptionsChanged(options.copy(yamlAllowUnicode = it)) }
+            )
+        }
+
+        // Process comments
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text("Обробляти коментарі", style = MaterialTheme.typography.bodyMedium)
+            Switch(
+                checked = options.yamlProcessComments,
+                onCheckedChange = { onOptionsChanged(options.copy(yamlProcessComments = it)) }
+            )
+        }
+
+        // Indent size
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text("Розмір відступу", style = MaterialTheme.typography.bodyMedium)
+            OutlinedTextField(
+                value = options.yamlIndentSize.toString(),
+                onValueChange = { value ->
+                    value.toIntOrNull()?.let {
+                        if (it in 1..8) {
+                            onOptionsChanged(options.copy(yamlIndentSize = it))
+                        }
+                    }
+                },
+                modifier = Modifier.width(80.dp),
+                singleLine = true,
+                textStyle = MaterialTheme.typography.bodySmall
+            )
+        }
+    }
+}
+
+@Composable
+private fun XmlSettingsTab(
+    options: FormattingOptions,
+    onOptionsChanged: (FormattingOptions) -> Unit
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        // Pretty print
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text("Форматування з відступами", style = MaterialTheme.typography.bodyMedium)
+            Switch(
+                checked = options.xmlPrettyPrint,
+                onCheckedChange = { onOptionsChanged(options.copy(xmlPrettyPrint = it)) }
+            )
+        }
+
+        // Indent size
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text("Розмір відступу", style = MaterialTheme.typography.bodyMedium)
+            OutlinedTextField(
+                value = options.xmlIndentSize.toString(),
+                onValueChange = { value ->
+                    value.toIntOrNull()?.let {
+                        if (it in 1..8) {
+                            onOptionsChanged(options.copy(xmlIndentSize = it))
+                        }
+                    }
+                },
+                modifier = Modifier.width(80.dp),
+                singleLine = true,
+                textStyle = MaterialTheme.typography.bodySmall
+            )
+        }
+
+        // Omit XML declaration
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text("Приховати XML декларацію", style = MaterialTheme.typography.bodyMedium)
+            Switch(
+                checked = options.xmlOmitXmlDeclaration,
+                onCheckedChange = { onOptionsChanged(options.copy(xmlOmitXmlDeclaration = it)) }
+            )
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun EditorSettingsTab(
+    options: FormattingOptions,
+    onOptionsChanged: (FormattingOptions) -> Unit
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        // Font size
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text("Розмір шрифту", style = MaterialTheme.typography.bodyMedium)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                OutlinedTextField(
+                    value = options.fontSize.toString(),
+                    onValueChange = { value ->
+                        value.toIntOrNull()?.let {
+                            if (it in 8..24) {
+                                onOptionsChanged(options.copy(fontSize = it))
+                            }
+                        }
+                    },
+                    modifier = Modifier.width(80.dp),
+                    singleLine = true,
+                    textStyle = MaterialTheme.typography.bodySmall
+                )
+                Text(" px", style = MaterialTheme.typography.bodySmall)
+            }
+        }
+
+        // Font family
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text("Сімейство шрифтів", style = MaterialTheme.typography.bodyMedium)
+            var fontExpanded by remember { mutableStateOf(false) }
+            val fonts = listOf("DejaVu Sans Mono", "Courier New", "Monaco", "Consolas")
+
+            ExposedDropdownMenuBox(
+                expanded = fontExpanded,
+                onExpandedChange = { fontExpanded = !fontExpanded }
+            ) {
+                OutlinedTextField(
+                    value = options.fontFamily,
+                    onValueChange = { },
+                    readOnly = true,
+                    modifier = Modifier
+                        .width(150.dp)
+                        .menuAnchor(),
+                    trailingIcon = {
+                        ExposedDropdownMenuDefaults.TrailingIcon(expanded = fontExpanded)
+                    },
+                    textStyle = MaterialTheme.typography.bodySmall
+                )
+                ExposedDropdownMenu(
+                    expanded = fontExpanded,
+                    onDismissRequest = { fontExpanded = false }
+                ) {
+                    fonts.forEach { font ->
+                        DropdownMenuItem(
+                            text = { Text(font) },
+                            onClick = {
+                                onOptionsChanged(options.copy(fontFamily = font))
+                                fontExpanded = false
+                            }
+                        )
+                    }
+                }
+            }
+        }
+
+        // Line wrap
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text("Перенос рядків", style = MaterialTheme.typography.bodyMedium)
+            Switch(
+                checked = options.lineWrap,
+                onCheckedChange = { onOptionsChanged(options.copy(lineWrap = it)) }
+            )
+        }
+
+        // Show line numbers
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text("Показувати номери рядків", style = MaterialTheme.typography.bodyMedium)
+            Switch(
+                checked = options.showLineNumbers,
+                onCheckedChange = { onOptionsChanged(options.copy(showLineNumbers = it)) }
+            )
+        }
+
+        // Theme
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text("Тема", style = MaterialTheme.typography.bodyMedium)
+            var themeExpanded by remember { mutableStateOf(false) }
+            val themes = listOf("idea", "dark", "eclipse", "vs")
+
+            ExposedDropdownMenuBox(
+                expanded = themeExpanded,
+                onExpandedChange = { themeExpanded = !themeExpanded }
+            ) {
+                OutlinedTextField(
+                    value = options.theme,
+                    onValueChange = { },
+                    readOnly = true,
+                    modifier = Modifier
+                        .width(120.dp)
+                        .menuAnchor(),
+                    trailingIcon = {
+                        ExposedDropdownMenuDefaults.TrailingIcon(expanded = themeExpanded)
+                    },
+                    textStyle = MaterialTheme.typography.bodySmall
+                )
+                ExposedDropdownMenu(
+                    expanded = themeExpanded,
+                    onDismissRequest = { themeExpanded = false }
+                ) {
+                    themes.forEach { theme ->
+                        DropdownMenuItem(
+                            text = { Text(theme.uppercase()) },
+                            onClick = {
+                                onOptionsChanged(options.copy(theme = theme))
+                                themeExpanded = false
+                            }
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
 fun JsonConverter(modifier: Modifier = Modifier) {
     var inputFormat by remember { mutableStateOf(ConversionFormat.JSON) }
     var outputFormat by remember { mutableStateOf(ConversionFormat.YAML) }
     var errorMessage by remember { mutableStateOf("") }
     var inputText by remember { mutableStateOf("") }
     var outputText by remember { mutableStateOf("") }
+
+    // Додаємо стан для налаштувань
+    var formattingOptions by remember { mutableStateOf(FormattingOptions()) }
 
     val clipboardManager = LocalClipboardManager.current
 
@@ -174,6 +677,12 @@ fun JsonConverter(modifier: Modifier = Modifier) {
         inputEditor.updateSyntaxStyle(getSyntaxStyle(inputFormat))
     }
 
+    // Update editor settings when options change
+    LaunchedEffect(formattingOptions) {
+        inputEditor.updateSettings(formattingOptions)
+        outputEditor.updateSettings(formattingOptions)
+    }
+
     fun convertFormat() {
         try {
             errorMessage = ""
@@ -186,50 +695,49 @@ fun JsonConverter(modifier: Modifier = Modifier) {
 
             val newOutputText = when {
                 inputFormat == ConversionFormat.JSON && outputFormat == ConversionFormat.YAML -> {
-                    jsonToYaml(inputText)
+                    jsonToYaml(inputText, formattingOptions)
                 }
                 inputFormat == ConversionFormat.JSON && outputFormat == ConversionFormat.XML -> {
-                    jsonToXml(inputText)
+                    jsonToXml(inputText, formattingOptions)
                 }
                 inputFormat == ConversionFormat.JSON && outputFormat == ConversionFormat.JSONL -> {
-                    jsonToJsonl(inputText)
+                    jsonToJsonl(inputText, formattingOptions)
                 }
                 inputFormat == ConversionFormat.YAML && outputFormat == ConversionFormat.JSON -> {
-                    yamlToJson(inputText)
+                    yamlToJson(inputText, formattingOptions)
                 }
                 inputFormat == ConversionFormat.YAML && outputFormat == ConversionFormat.XML -> {
-                    val jsonText = yamlToJson(inputText)
-                    jsonToXml(jsonText)
+                    val jsonText = yamlToJson(inputText, formattingOptions)
+                    jsonToXml(jsonText, formattingOptions)
                 }
                 inputFormat == ConversionFormat.YAML && outputFormat == ConversionFormat.JSONL -> {
-                    val jsonText = yamlToJson(inputText)
-                    jsonToJsonl(jsonText)
+                    val jsonText = yamlToJson(inputText, formattingOptions)
+                    jsonToJsonl(jsonText, formattingOptions)
                 }
                 inputFormat == ConversionFormat.XML && outputFormat == ConversionFormat.JSON -> {
-                    xmlToJson(inputText)
+                    xmlToJson(inputText, formattingOptions)
                 }
                 inputFormat == ConversionFormat.XML && outputFormat == ConversionFormat.YAML -> {
-                    val jsonText = xmlToJson(inputText)
-                    jsonToYaml(jsonText)
+                    val jsonText = xmlToJson(inputText, formattingOptions)
+                    jsonToYaml(jsonText, formattingOptions)
                 }
                 inputFormat == ConversionFormat.XML && outputFormat == ConversionFormat.JSONL -> {
-                    val jsonText = xmlToJson(inputText)
-                    jsonToJsonl(jsonText)
+                    val jsonText = xmlToJson(inputText, formattingOptions)
+                    jsonToJsonl(jsonText, formattingOptions)
                 }
                 inputFormat == ConversionFormat.JSONL && outputFormat == ConversionFormat.JSON -> {
-                    jsonlToJson(inputText)
+                    jsonlToJson(inputText, formattingOptions)
                 }
                 inputFormat == ConversionFormat.JSONL && outputFormat == ConversionFormat.YAML -> {
-                    jsonlToYaml(inputText)
+                    jsonlToYaml(inputText, formattingOptions)
                 }
                 inputFormat == ConversionFormat.JSONL && outputFormat == ConversionFormat.XML -> {
-                    jsonlToXml(inputText)
+                    jsonlToXml(inputText, formattingOptions)
                 }
                 else -> inputText // Same format
             }
 
             outputText = newOutputText
-            // Обов'язково оновлюємо текст в редакторі
             outputEditor.setText(newOutputText)
 
         } catch (e: Exception) {
@@ -251,7 +759,7 @@ fun JsonConverter(modifier: Modifier = Modifier) {
         }
     }
 
-    LaunchedEffect(inputText, inputFormat, outputFormat) {
+    LaunchedEffect(inputText, inputFormat, outputFormat, formattingOptions) {
         convertFormat()
     }
 
@@ -264,6 +772,15 @@ fun JsonConverter(modifier: Modifier = Modifier) {
             text = "JSON/YAML/XML Converter",
             style = MaterialTheme.typography.headlineMedium,
             modifier = Modifier.padding(bottom = 16.dp)
+        )
+
+        // Додаємо панель налаштувань
+        FormattingSettingsPanel(
+            options = formattingOptions,
+            onOptionsChanged = { formattingOptions = it },
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 16.dp)
         )
 
         // Control panel - покращений дизайн
@@ -326,8 +843,6 @@ fun JsonConverter(modifier: Modifier = Modifier) {
                                         selectedBorderWidth = 1.dp,
                                         borderWidth = 1.dp
                                     )
-
-
                                 )
                             }
                         }
@@ -400,8 +915,6 @@ fun JsonConverter(modifier: Modifier = Modifier) {
                                         selectedBorderWidth = 1.dp,
                                         borderWidth = 1.dp
                                     )
-
-
                                 )
                             }
                         }
@@ -441,7 +954,7 @@ fun JsonConverter(modifier: Modifier = Modifier) {
 
         Spacer(modifier = Modifier.height(20.dp))
 
-// Input/Output sections з можливістю зміни розміру
+        // Input/Output sections з можливістю зміни розміру
         ResizablePanels(
             modifier = Modifier
                 .fillMaxWidth()
@@ -579,8 +1092,6 @@ fun JsonConverter(modifier: Modifier = Modifier) {
                 }
             }
         )
-
-
     }
 }
 
@@ -641,31 +1152,35 @@ private fun ResizablePanels(
     }
 }
 
-// Conversion functions
-private fun jsonToYaml(json: String): String {
-    val gson = GsonBuilder()
-        .setPrettyPrinting()
-        .setLenient()
-        .create()
+// Conversion functions з підтримкою налаштувань
+private fun jsonToYaml(json: String, options: FormattingOptions = FormattingOptions()): String {
+    val gsonBuilder = GsonBuilder()
+    if (options.jsonPrettyPrint) {
+        gsonBuilder.setPrettyPrinting()
+    }
+    val gson = gsonBuilder.setLenient().create()
     val jsonObject = JsonParser.parseString(json)
     val map = gson.fromJson(jsonObject, Map::class.java)
 
-    val options = DumperOptions()
-    options.defaultFlowStyle = DumperOptions.FlowStyle.BLOCK
-    options.isPrettyFlow = true
-    options.isProcessComments = true
-    options.isAllowUnicode = true
-    options.defaultScalarStyle = DumperOptions.ScalarStyle.SINGLE_QUOTED
-    val yaml = Yaml(options)
+    val yamlOptions = DumperOptions().apply {
+        defaultFlowStyle = options.yamlFlowStyle
+        isPrettyFlow = options.yamlPrettyFlow
+        isProcessComments = options.yamlProcessComments
+        isAllowUnicode = options.yamlAllowUnicode
+        defaultScalarStyle = options.yamlScalarStyle
+        indent = options.yamlIndentSize
+    }
+    val yaml = Yaml(yamlOptions)
 
     return yaml.dump(map)
 }
 
-private fun jsonToXml(json: String): String {
-    val gson = GsonBuilder()
-        .setPrettyPrinting()
-        .setLenient()
-        .create()
+private fun jsonToXml(json: String, options: FormattingOptions = FormattingOptions()): String {
+    val gsonBuilder = GsonBuilder()
+    if (options.jsonPrettyPrint) {
+        gsonBuilder.setPrettyPrinting()
+    }
+    val gson = gsonBuilder.setLenient().create()
     val jsonElement = JsonParser.parseString(json)
 
     val doc = DocumentBuilderFactory.newInstance().newDocumentBuilder().newDocument()
@@ -699,8 +1214,13 @@ private fun jsonToXml(json: String): String {
     }
 
     val transformer = TransformerFactory.newInstance().newTransformer()
-    transformer.setOutputProperty(OutputKeys.INDENT, "yes")
-    transformer.setOutputProperty("{http://xml.apache.org/xslt}indent-amount", "2")
+    if (options.xmlPrettyPrint) {
+        transformer.setOutputProperty(OutputKeys.INDENT, "yes")
+        transformer.setOutputProperty("{http://xml.apache.org/xslt}indent-amount", options.xmlIndentSize.toString())
+    }
+    if (options.xmlOmitXmlDeclaration) {
+        transformer.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "yes")
+    }
 
     val writer = StringWriter()
     transformer.transform(DOMSource(doc), StreamResult(writer))
@@ -708,22 +1228,30 @@ private fun jsonToXml(json: String): String {
     return writer.toString()
 }
 
-private fun yamlToJson(yaml: String): String {
+private fun yamlToJson(yaml: String, options: FormattingOptions = FormattingOptions()): String {
     val yamlParser = Yaml()
     val obj = yamlParser.load<Any>(yaml)
 
-    val gson = GsonBuilder().setPrettyPrinting().create()
+    val gsonBuilder = GsonBuilder()
+    if (options.jsonPrettyPrint) {
+        gsonBuilder.setPrettyPrinting()
+    }
+    val gson = gsonBuilder.create()
     return gson.toJson(obj)
 }
 
-private fun xmlToJson(xml: String): String {
+private fun xmlToJson(xml: String, options: FormattingOptions = FormattingOptions()): String {
     val factory = DocumentBuilderFactory.newInstance()
     val builder = factory.newDocumentBuilder()
     val doc = builder.parse(InputSource(StringReader(xml)))
 
     val map = xmlToMap(doc.documentElement)
 
-    val gson = GsonBuilder().setPrettyPrinting().create()
+    val gsonBuilder = GsonBuilder()
+    if (options.jsonPrettyPrint) {
+        gsonBuilder.setPrettyPrinting()
+    }
+    val gson = gsonBuilder.create()
     return gson.toJson(map)
 }
 
@@ -785,9 +1313,10 @@ private fun xmlToMap(element: Element): Map<String, Any> {
     return map
 }
 
-// JSON Lines conversion functions
-private fun jsonToJsonl(json: String): String {
-    val gson = GsonBuilder().create()
+// JSON Lines conversion functions з підтримкою опцій
+private fun jsonToJsonl(json: String, options: FormattingOptions = FormattingOptions()): String {
+    val gsonBuilder = GsonBuilder()
+    val gson = gsonBuilder.create()
     val jsonElement = JsonParser.parseString(json)
 
     return if (jsonElement.isJsonArray) {
@@ -800,8 +1329,12 @@ private fun jsonToJsonl(json: String): String {
     }
 }
 
-private fun jsonlToJson(jsonl: String): String {
-    val gson = GsonBuilder().setPrettyPrinting().create()
+private fun jsonlToJson(jsonl: String, options: FormattingOptions = FormattingOptions()): String {
+    val gsonBuilder = GsonBuilder()
+    if (options.jsonPrettyPrint) {
+        gsonBuilder.setPrettyPrinting()
+    }
+    val gson = gsonBuilder.create()
     val lines = jsonl.trim().lines().filter { it.isNotBlank() }
 
     if (lines.isEmpty()) {
@@ -820,7 +1353,7 @@ private fun jsonlToJson(jsonl: String): String {
     return gson.toJson(jsonElements)
 }
 
-private fun jsonlToYaml(jsonl: String): String {
+private fun jsonlToYaml(jsonl: String, options: FormattingOptions = FormattingOptions()): String {
     val gson = GsonBuilder().create()
     val lines = jsonl.trim().lines().filter { it.isNotBlank() }
 
@@ -828,12 +1361,14 @@ private fun jsonlToYaml(jsonl: String): String {
         return ""
     }
 
-    val options = DumperOptions()
-    options.defaultFlowStyle = DumperOptions.FlowStyle.BLOCK
-    options.isPrettyFlow = true
-    options.isProcessComments = true
-    options.isAllowUnicode = true
-    val yaml = Yaml(options)
+    val yamlOptions = DumperOptions().apply {
+        defaultFlowStyle = options.yamlFlowStyle
+        isPrettyFlow = options.yamlPrettyFlow
+        isProcessComments = options.yamlProcessComments
+        isAllowUnicode = options.yamlAllowUnicode
+        indent = options.yamlIndentSize
+    }
+    val yaml = Yaml(yamlOptions)
 
     return lines.mapIndexed { index, line ->
         val jsonElement = JsonParser.parseString(line)
@@ -848,7 +1383,7 @@ private fun jsonlToYaml(jsonl: String): String {
     }.joinToString("\n")
 }
 
-private fun jsonlToXml(jsonl: String): String {
+private fun jsonlToXml(jsonl: String, options: FormattingOptions = FormattingOptions()): String {
     val gson = GsonBuilder().create()
     val lines = jsonl.trim().lines().filter { it.isNotBlank() }
 
@@ -872,8 +1407,13 @@ private fun jsonlToXml(jsonl: String): String {
     }
 
     val transformer = TransformerFactory.newInstance().newTransformer()
-    transformer.setOutputProperty(OutputKeys.INDENT, "yes")
-    transformer.setOutputProperty("{http://xml.apache.org/xslt}indent-amount", "2")
+    if (options.xmlPrettyPrint) {
+        transformer.setOutputProperty(OutputKeys.INDENT, "yes")
+        transformer.setOutputProperty("{http://xml.apache.org/xslt}indent-amount", options.xmlIndentSize.toString())
+    }
+    if (options.xmlOmitXmlDeclaration) {
+        transformer.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "yes")
+    }
 
     val writer = StringWriter()
     transformer.transform(DOMSource(doc), StreamResult(writer))
