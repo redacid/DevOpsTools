@@ -641,26 +641,29 @@ private fun ResizablePanels(
     }
 }
 
-
-
-
-
 // Conversion functions
 private fun jsonToYaml(json: String): String {
-    val gson = GsonBuilder().setPrettyPrinting().create()
+    val gson = GsonBuilder()
+        .setPrettyPrinting()
+        .setLenient()
+        .create()
     val jsonObject = JsonParser.parseString(json)
     val map = gson.fromJson(jsonObject, Map::class.java)
 
     val options = DumperOptions()
     options.defaultFlowStyle = DumperOptions.FlowStyle.BLOCK
     options.isPrettyFlow = true
+    options.isProcessComments = true
     val yaml = Yaml(options)
 
     return yaml.dump(map)
 }
 
 private fun jsonToXml(json: String): String {
-    val gson = GsonBuilder().setPrettyPrinting().create()
+    val gson = GsonBuilder()
+        .setPrettyPrinting()
+        .setLenient()
+        .create()
     val jsonElement = JsonParser.parseString(json)
 
     val doc = DocumentBuilderFactory.newInstance().newDocumentBuilder().newDocument()
@@ -826,6 +829,7 @@ private fun jsonlToYaml(jsonl: String): String {
     val options = DumperOptions()
     options.defaultFlowStyle = DumperOptions.FlowStyle.BLOCK
     options.isPrettyFlow = true
+    options.isProcessComments = true
     val yaml = Yaml(options)
 
     return lines.mapIndexed { index, line ->
@@ -836,7 +840,7 @@ private fun jsonlToYaml(jsonl: String): String {
         if (index == 0) {
             yamlContent
         } else {
-            "\n---\n\n$yamlContent"
+            "\n---\n$yamlContent"
         }
     }.joinToString("\n")
 }

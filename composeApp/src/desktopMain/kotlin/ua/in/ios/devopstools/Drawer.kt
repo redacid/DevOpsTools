@@ -51,6 +51,7 @@ fun NavigationDrawer() {
                 "Base64 Tool" -> Base64Tool(modifier = Modifier.fillMaxSize())
                 "Color Picker" -> ColorPicker(modifier = Modifier.fillMaxSize())
                 "JSON Converter" -> JsonConverter(modifier = Modifier.fillMaxSize())
+                "Regex Tester" -> RegexTester(modifier = Modifier.fillMaxSize())
                 "Help" -> Text("Help", modifier = Modifier.padding(16.dp))
                 "System Info" -> SystemInfoView()
                 "Logs" -> LogViewer(modifier = Modifier.fillMaxSize().padding(16.dp))
@@ -177,6 +178,18 @@ fun DetailedDrawer(
                         onClick = {
                             selectedItem = "JSON Converter"
                             onScreenSelected("JSON Converter")
+                            scope.launch {
+                                drawerState.close()
+                            }
+                        }
+                    )
+                    NavigationDrawerItem(
+                        label = { Text("Regex Tester") },
+                        selected = selectedItem == "Regex Tester",
+                        icon = { Icon(ICON_SEARCH, contentDescription = null) },
+                        onClick = {
+                            selectedItem = "Regex Tester"
+                            onScreenSelected("Regex Tester")
                             scope.launch {
                                 drawerState.close()
                             }
