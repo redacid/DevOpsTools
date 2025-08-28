@@ -192,15 +192,16 @@ fun FormattingSettingsPanel(
 
     Card(
         modifier = modifier,
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            // Заголовок з можливістю згортання
+        Column(modifier = Modifier.padding(12.dp)) {
+            // Компактний заголовок
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clickable { expanded = !expanded },
+                    .clickable { expanded = !expanded }
+                    .padding(vertical = 4.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -209,52 +210,60 @@ fun FormattingSettingsPanel(
                         ICON_SETTINGS,
                         contentDescription = null,
                         tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(20.dp)
+                        modifier = Modifier.size(16.dp)
                     )
-                    Spacer(modifier = Modifier.width(8.dp))
+                    Spacer(modifier = Modifier.width(6.dp))
                     Text(
-                        "Налаштування форматування",
-                        style = MaterialTheme.typography.titleMedium,
+                        "Settings",
+                        style = MaterialTheme.typography.titleSmall,
                         color = MaterialTheme.colorScheme.onSurface
                     )
                 }
 
                 Icon(
                     if (expanded) ICON_UP else ICON_DOWN,
-                    contentDescription = if (expanded) "Згорнути" else "Розгорнути",
+                    contentDescription = if (expanded) "Collapse" else "Expand",
                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.size(20.dp)
+                    modifier = Modifier.size(16.dp)
                 )
             }
 
             if (expanded) {
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(8.dp))
 
-                // Вкладки для різних типів налаштувань
+                // Компактні вкладки
                 var selectedTabIndex by remember { mutableStateOf(0) }
-                val tabs = listOf("JSON", "YAML", "XML", "Редактор")
+                val tabs = listOf("JSON", "YAML", "XML", "UI")
 
                 TabRow(
                     selectedTabIndex = selectedTabIndex,
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
+                    containerColor = Color.Transparent,
+                    divider = {}
                 ) {
                     tabs.forEachIndexed { index, title ->
                         Tab(
                             selected = selectedTabIndex == index,
                             onClick = { selectedTabIndex = index },
-                            text = { Text(title) }
+                            text = {
+                                Text(
+                                    title,
+                                    style = MaterialTheme.typography.labelMedium
+                                )
+                            },
+                            modifier = Modifier.height(36.dp)
                         )
                     }
                 }
 
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(8.dp))
 
-                // Контент вкладок
+                // Компактний контент вкладок
                 when (selectedTabIndex) {
-                    0 -> JsonSettingsTab(options, onOptionsChanged)
-                    1 -> YamlSettingsTab(options, onOptionsChanged)
-                    2 -> XmlSettingsTab(options, onOptionsChanged)
-                    3 -> EditorSettingsTab(options, onOptionsChanged)
+                    0 -> CompactJsonSettingsTab(options, onOptionsChanged)
+                    1 -> CompactYamlSettingsTab(options, onOptionsChanged)
+                    2 -> CompactXmlSettingsTab(options, onOptionsChanged)
+                    3 -> CompactEditorSettingsTab(options, onOptionsChanged)
                 }
             }
         }
@@ -262,364 +271,231 @@ fun FormattingSettingsPanel(
 }
 
 @Composable
-private fun JsonSettingsTab(
+private fun CompactJsonSettingsTab(
     options: FormattingOptions,
     onOptionsChanged: (FormattingOptions) -> Unit
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        // Pretty print
+    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        // Компактний ряд з перемикачами
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text("Форматування з відступами", style = MaterialTheme.typography.bodyMedium)
-            Switch(
+            CompactSwitch(
+                label = "Format",
                 checked = options.jsonPrettyPrint,
-                onCheckedChange = { onOptionsChanged(options.copy(jsonPrettyPrint = it)) }
+                onCheckedChange = { onOptionsChanged(options.copy(jsonPrettyPrint = it)) },
+                modifier = Modifier.weight(1f)
             )
-        }
 
-        // Indent size
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text("Розмір відступу", style = MaterialTheme.typography.bodyMedium)
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                OutlinedTextField(
-                    value = options.jsonIndentSize.toString(),
-                    onValueChange = { value ->
-                        value.toIntOrNull()?.let {
-                            if (it in 1..8) {
-                                onOptionsChanged(options.copy(jsonIndentSize = it))
-                            }
-                        }
-                    },
-                    modifier = Modifier.width(80.dp),
-                    singleLine = true,
-                    textStyle = MaterialTheme.typography.bodySmall
-                )
-            }
-        }
-
-        // Sort keys
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text("Сортувати ключі", style = MaterialTheme.typography.bodyMedium)
-            Switch(
+            CompactSwitch(
+                label = "Sort",
                 checked = options.jsonSortKeys,
-                onCheckedChange = { onOptionsChanged(options.copy(jsonSortKeys = it)) }
+                onCheckedChange = { onOptionsChanged(options.copy(jsonSortKeys = it)) },
+                modifier = Modifier.weight(1f)
             )
         }
+
+        // Компактне поле для відступу
+        CompactNumberField(
+            label = "Indent",
+            value = options.jsonIndentSize,
+            onValueChange = {
+                if (it in 1..8) {
+                    onOptionsChanged(options.copy(jsonIndentSize = it))
+                }
+            },
+            range = 1..8
+        )
     }
 }
 
 @Composable
-private fun YamlSettingsTab(
+private fun CompactYamlSettingsTab(
     options: FormattingOptions,
     onOptionsChanged: (FormattingOptions) -> Unit
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        // Flow style
-        Column {
-            Text("Стиль потоку", style = MaterialTheme.typography.bodyMedium)
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                FilterChip(
-                    selected = options.yamlFlowStyle == DumperOptions.FlowStyle.BLOCK,
-                    onClick = { onOptionsChanged(options.copy(yamlFlowStyle = DumperOptions.FlowStyle.BLOCK)) },
-                    label = { Text("Block") }
-                )
-                FilterChip(
-                    selected = options.yamlFlowStyle == DumperOptions.FlowStyle.FLOW,
-                    onClick = { onOptionsChanged(options.copy(yamlFlowStyle = DumperOptions.FlowStyle.FLOW)) },
-                    label = { Text("Flow") }
-                )
-                FilterChip(
-                    selected = options.yamlFlowStyle == DumperOptions.FlowStyle.AUTO,
-                    onClick = { onOptionsChanged(options.copy(yamlFlowStyle = DumperOptions.FlowStyle.AUTO)) },
-                    label = { Text("Auto") }
-                )
-            }
-        }
-
-        // Scalar style
-        Column {
-            Text("Стиль скалярних значень", style = MaterialTheme.typography.bodyMedium)
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                FilterChip(
-                    selected = options.yamlScalarStyle == DumperOptions.ScalarStyle.PLAIN,
-                    onClick = { onOptionsChanged(options.copy(yamlScalarStyle = DumperOptions.ScalarStyle.PLAIN)) },
-                    label = { Text("Plain") }
-                )
-                FilterChip(
-                    selected = options.yamlScalarStyle == DumperOptions.ScalarStyle.SINGLE_QUOTED,
-                    onClick = { onOptionsChanged(options.copy(yamlScalarStyle = DumperOptions.ScalarStyle.SINGLE_QUOTED)) },
-                    label = { Text("Single") }
-                )
-                FilterChip(
-                    selected = options.yamlScalarStyle == DumperOptions.ScalarStyle.DOUBLE_QUOTED,
-                    onClick = { onOptionsChanged(options.copy(yamlScalarStyle = DumperOptions.ScalarStyle.DOUBLE_QUOTED)) },
-                    label = { Text("Double") }
-                )
-            }
-        }
-
-        // Pretty flow
+    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        // Стиль потоку - компактні чіпси
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text("Красиве форматування", style = MaterialTheme.typography.bodyMedium)
-            Switch(
-                checked = options.yamlPrettyFlow,
-                onCheckedChange = { onOptionsChanged(options.copy(yamlPrettyFlow = it)) }
+            Text(
+                "Style:",
+                style = MaterialTheme.typography.labelSmall,
+                modifier = Modifier.width(40.dp)
+            )
+            FilterChip(
+                selected = options.yamlFlowStyle == DumperOptions.FlowStyle.BLOCK,
+                onClick = { onOptionsChanged(options.copy(yamlFlowStyle = DumperOptions.FlowStyle.BLOCK)) },
+                label = { Text("Block", style = MaterialTheme.typography.labelSmall) },
+                modifier = Modifier.height(28.dp)
+            )
+            FilterChip(
+                selected = options.yamlFlowStyle == DumperOptions.FlowStyle.FLOW,
+                onClick = { onOptionsChanged(options.copy(yamlFlowStyle = DumperOptions.FlowStyle.FLOW)) },
+                label = { Text("Flow", style = MaterialTheme.typography.labelSmall) },
+                modifier = Modifier.height(28.dp)
+            )
+        }
+        // Стиль потоку - компактні чіпси
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                "Scalar style:",
+                style = MaterialTheme.typography.labelSmall,
+                modifier = Modifier.width(40.dp)
+            )
+            FilterChip(
+                selected = options.yamlScalarStyle == DumperOptions.ScalarStyle.PLAIN,
+                onClick = { onOptionsChanged(options.copy(yamlScalarStyle = DumperOptions.ScalarStyle.PLAIN)) },
+                label = { Text("Plain", style = MaterialTheme.typography.labelSmall) },
+                modifier = Modifier.height(28.dp)
+            )
+            FilterChip(
+                selected = options.yamlScalarStyle == DumperOptions.ScalarStyle.SINGLE_QUOTED,
+                onClick = { onOptionsChanged(options.copy(yamlScalarStyle = DumperOptions.ScalarStyle.SINGLE_QUOTED)) },
+                label = { Text("Single quoted", style = MaterialTheme.typography.labelSmall) },
+                modifier = Modifier.height(28.dp)
+            )
+            FilterChip(
+                selected = options.yamlScalarStyle == DumperOptions.ScalarStyle.DOUBLE_QUOTED,
+                onClick = { onOptionsChanged(options.copy(yamlScalarStyle = DumperOptions.ScalarStyle.DOUBLE_QUOTED)) },
+                label = { Text("Double quoted", style = MaterialTheme.typography.labelSmall) },
+                modifier = Modifier.height(28.dp)
             )
         }
 
-        // Allow unicode
+
+        // Компактні перемикачі
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            Text("Підтримка Unicode", style = MaterialTheme.typography.bodyMedium)
-            Switch(
+            CompactSwitch(
+                label = "Unicode",
                 checked = options.yamlAllowUnicode,
-                onCheckedChange = { onOptionsChanged(options.copy(yamlAllowUnicode = it)) }
+                onCheckedChange = { onOptionsChanged(options.copy(yamlAllowUnicode = it)) },
+                modifier = Modifier.weight(1f)
             )
-        }
 
-        // Process comments
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text("Обробляти коментарі", style = MaterialTheme.typography.bodyMedium)
-            Switch(
+            CompactSwitch(
+                label = "Process comments",
                 checked = options.yamlProcessComments,
-                onCheckedChange = { onOptionsChanged(options.copy(yamlProcessComments = it)) }
+                onCheckedChange = { onOptionsChanged(options.copy(yamlProcessComments = it)) },
+                modifier = Modifier.weight(1f)
             )
         }
 
-        // Indent size
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text("Розмір відступу", style = MaterialTheme.typography.bodyMedium)
-            OutlinedTextField(
-                value = options.yamlIndentSize.toString(),
-                onValueChange = { value ->
-                    value.toIntOrNull()?.let {
-                        if (it in 1..8) {
-                            onOptionsChanged(options.copy(yamlIndentSize = it))
-                        }
-                    }
-                },
-                modifier = Modifier.width(80.dp),
-                singleLine = true,
-                textStyle = MaterialTheme.typography.bodySmall
-            )
-        }
+        CompactNumberField(
+            label = "Indent",
+            value = options.yamlIndentSize,
+            onValueChange = {
+                if (it in 1..8) {
+                    onOptionsChanged(options.copy(yamlIndentSize = it))
+                }
+            },
+            range = 1..8
+        )
     }
 }
 
 @Composable
-private fun XmlSettingsTab(
+private fun CompactXmlSettingsTab(
     options: FormattingOptions,
     onOptionsChanged: (FormattingOptions) -> Unit
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        // Pretty print
+    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Text("Форматування з відступами", style = MaterialTheme.typography.bodyMedium)
-            Switch(
+            CompactSwitch(
+                label = "Format",
                 checked = options.xmlPrettyPrint,
-                onCheckedChange = { onOptionsChanged(options.copy(xmlPrettyPrint = it)) }
+                onCheckedChange = { onOptionsChanged(options.copy(xmlPrettyPrint = it)) },
+                modifier = Modifier.weight(1f)
             )
-        }
 
-        // Indent size
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text("Розмір відступу", style = MaterialTheme.typography.bodyMedium)
-            OutlinedTextField(
-                value = options.xmlIndentSize.toString(),
-                onValueChange = { value ->
-                    value.toIntOrNull()?.let {
-                        if (it in 1..8) {
-                            onOptionsChanged(options.copy(xmlIndentSize = it))
-                        }
-                    }
-                },
-                modifier = Modifier.width(80.dp),
-                singleLine = true,
-                textStyle = MaterialTheme.typography.bodySmall
-            )
-        }
-
-        // Omit XML declaration
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text("Приховати XML декларацію", style = MaterialTheme.typography.bodyMedium)
-            Switch(
+            CompactSwitch(
+                label = "Without XML declaration",
                 checked = options.xmlOmitXmlDeclaration,
-                onCheckedChange = { onOptionsChanged(options.copy(xmlOmitXmlDeclaration = it)) }
+                onCheckedChange = { onOptionsChanged(options.copy(xmlOmitXmlDeclaration = it)) },
+                modifier = Modifier.weight(1f)
             )
         }
+
+        CompactNumberField(
+            label = "Indent",
+            value = options.xmlIndentSize,
+            onValueChange = {
+                if (it in 1..8) {
+                    onOptionsChanged(options.copy(xmlIndentSize = it))
+                }
+            },
+            range = 1..8
+        )
     }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun EditorSettingsTab(
+private fun CompactEditorSettingsTab(
     options: FormattingOptions,
     onOptionsChanged: (FormattingOptions) -> Unit
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        // Font size
+    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        // Шрифт
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text("Розмір шрифту", style = MaterialTheme.typography.bodyMedium)
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                OutlinedTextField(
-                    value = options.fontSize.toString(),
-                    onValueChange = { value ->
-                        value.toIntOrNull()?.let {
-                            if (it in 8..24) {
-                                onOptionsChanged(options.copy(fontSize = it))
-                            }
-                        }
-                    },
-                    modifier = Modifier.width(80.dp),
-                    singleLine = true,
-                    textStyle = MaterialTheme.typography.bodySmall
-                )
-                Text(" px", style = MaterialTheme.typography.bodySmall)
-            }
-        }
-
-        // Font family
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text("Сімейство шрифтів", style = MaterialTheme.typography.bodyMedium)
-            var fontExpanded by remember { mutableStateOf(false) }
-            val fonts = listOf("DejaVu Sans Mono", "Courier New", "Monaco", "Consolas")
-
-            ExposedDropdownMenuBox(
-                expanded = fontExpanded,
-                onExpandedChange = { fontExpanded = !fontExpanded }
-            ) {
-                OutlinedTextField(
-                    value = options.fontFamily,
-                    onValueChange = { },
-                    readOnly = true,
-                    modifier = Modifier
-                        .width(150.dp)
-                        .menuAnchor(),
-                    trailingIcon = {
-                        ExposedDropdownMenuDefaults.TrailingIcon(expanded = fontExpanded)
-                    },
-                    textStyle = MaterialTheme.typography.bodySmall
-                )
-                ExposedDropdownMenu(
-                    expanded = fontExpanded,
-                    onDismissRequest = { fontExpanded = false }
-                ) {
-                    fonts.forEach { font ->
-                        DropdownMenuItem(
-                            text = { Text(font) },
-                            onClick = {
-                                onOptionsChanged(options.copy(fontFamily = font))
-                                fontExpanded = false
-                            }
-                        )
-                    }
-                }
-            }
-        }
-
-        // Line wrap
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text("Перенос рядків", style = MaterialTheme.typography.bodyMedium)
-            Switch(
+//            CompactNumberField(
+//                label = "Font size",
+//                value = options.fontSize,
+//                onValueChange = {
+//                    if (it in 8..24) {
+//                        onOptionsChanged(options.copy(fontSize = it))
+//                    }
+//                },
+//                range = 8..24,
+//                modifier = Modifier.weight(1f)
+//            )
+            CompactSwitch(
+                label = "Line Wrap",
                 checked = options.lineWrap,
-                onCheckedChange = { onOptionsChanged(options.copy(lineWrap = it)) }
+                onCheckedChange = { onOptionsChanged(options.copy(lineWrap = it)) },
+                modifier = Modifier.weight(1f)
             )
-        }
-
-        // Show line numbers
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text("Показувати номери рядків", style = MaterialTheme.typography.bodyMedium)
-            Switch(
-                checked = options.showLineNumbers,
-                onCheckedChange = { onOptionsChanged(options.copy(showLineNumbers = it)) }
-            )
-        }
-
-        // Theme
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text("Тема", style = MaterialTheme.typography.bodyMedium)
+            // Компактний вибір теми
             var themeExpanded by remember { mutableStateOf(false) }
             val themes = listOf("idea", "dark", "eclipse", "vs")
 
             ExposedDropdownMenuBox(
                 expanded = themeExpanded,
-                onExpandedChange = { themeExpanded = !themeExpanded }
+                onExpandedChange = { themeExpanded = !themeExpanded },
+                modifier = Modifier.weight(1f)
             ) {
                 OutlinedTextField(
-                    value = options.theme,
+                    value = options.theme.uppercase(),
                     onValueChange = { },
                     readOnly = true,
+                    label = { Text("Тема", style = MaterialTheme.typography.labelMedium) },
                     modifier = Modifier
-                        .width(120.dp)
+                        .fillMaxWidth()
+                        .height(56.dp)
                         .menuAnchor(),
                     trailingIcon = {
                         ExposedDropdownMenuDefaults.TrailingIcon(expanded = themeExpanded)
                     },
-                    textStyle = MaterialTheme.typography.bodySmall
+                    textStyle = MaterialTheme.typography.bodyMedium
                 )
                 ExposedDropdownMenu(
                     expanded = themeExpanded,
@@ -635,6 +511,117 @@ private fun EditorSettingsTab(
                         )
                     }
                 }
+            }
+        }
+        Spacer(modifier = Modifier.height(8.dp))
+        // Опції редактора
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+//            CompactSwitch(
+//                label = "Номери рядків",
+//                checked = options.showLineNumbers,
+//                onCheckedChange = { onOptionsChanged(options.copy(showLineNumbers = it)) },
+//                modifier = Modifier.weight(1f)
+//            )
+
+//            CompactSwitch(
+//                label = "Line Wrap",
+//                checked = options.lineWrap,
+//                onCheckedChange = { onOptionsChanged(options.copy(lineWrap = it)) },
+//                modifier = Modifier.weight(1f)
+//            )
+        }
+    }
+}
+
+// Допоміжні компоненти для компактного вигляду
+@Composable
+private fun CompactSwitch(
+    label: String,
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Row(
+        modifier = modifier,
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelMedium,
+            modifier = Modifier.weight(1f)
+        )
+        Switch(
+            checked = checked,
+            onCheckedChange = onCheckedChange,
+            modifier = Modifier.height(20.dp)
+        )
+    }
+}
+
+@Composable
+private fun CompactNumberField(
+    label: String,
+    value: Int,
+    onValueChange: (Int) -> Unit,
+    range: IntRange,
+    modifier: Modifier = Modifier
+) {
+    Row(
+        modifier = modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = "$label:",
+            style = MaterialTheme.typography.labelMedium
+        )
+
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            IconButton(
+                onClick = {
+                    if (value > range.first) {
+                        onValueChange(value - 1)
+                    }
+                },
+                modifier = Modifier.size(28.dp)
+            ) {
+                Icon(
+                    ICON_MINUS,
+                    contentDescription = "Reduce",
+                    modifier = Modifier.size(14.dp)
+                )
+            }
+
+            Text(
+                text = value.toString(),
+                style = MaterialTheme.typography.bodyMedium,
+                modifier = Modifier
+                    .background(
+                        MaterialTheme.colorScheme.surfaceVariant,
+                        RoundedCornerShape(4.dp)
+                    )
+                    .padding(horizontal = 8.dp, vertical = 4.dp)
+                    .width(24.dp),
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center
+            )
+
+            IconButton(
+                onClick = {
+                    if (value < range.last) {
+                        onValueChange(value + 1)
+                    }
+                },
+                modifier = Modifier.size(28.dp)
+            ) {
+                Icon(
+                    ICON_PLUS,
+                    contentDescription = "Increase",
+                    modifier = Modifier.size(14.dp)
+                )
             }
         }
     }
@@ -768,22 +755,25 @@ fun JsonConverter(modifier: Modifier = Modifier) {
             .fillMaxSize()
             .padding(16.dp)
     ) {
+        Row(
+
+        ) {
         Text(
-            text = "JSON/YAML/XML Converter",
+            text = "JSON/JSONL/YAML/XML Converter",
             style = MaterialTheme.typography.headlineMedium,
             modifier = Modifier.padding(bottom = 16.dp)
         )
-
+        Spacer(modifier = Modifier.height(16.dp))
         // Додаємо панель налаштувань
         FormattingSettingsPanel(
             options = formattingOptions,
             onOptionsChanged = { formattingOptions = it },
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 16.dp)
+                .width(520.dp)
+                .padding(bottom = 16.dp, start = 16.dp)
         )
-
-        // Control panel - покращений дизайн
+        }
+        // Control panel
         Card(
             modifier = Modifier.fillMaxWidth(),
             elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
@@ -798,18 +788,16 @@ fun JsonConverter(modifier: Modifier = Modifier) {
                 ) {
                     // Input format selection
                     Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            "From:",
-                            style = MaterialTheme.typography.labelLarge,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(bottom = 8.dp)
-                        )
-
-                        // Використовуємо LazyRow для кращого вигляду
                         Row(
                             horizontalArrangement = Arrangement.spacedBy(6.dp),
                             modifier = Modifier.fillMaxWidth()
                         ) {
+                            Text(
+                                "From:",
+                                //style = MaterialTheme.typography.labelLarge,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.padding(bottom = 8.dp)
+                            )
                             ConversionFormat.values().forEach { format ->
                                 FilterChip(
                                     selected = inputFormat == format,
@@ -851,8 +839,8 @@ fun JsonConverter(modifier: Modifier = Modifier) {
                     // Conversion arrow with animation
                     Card(
                         modifier = Modifier
-                            .padding(top = 24.dp)
-                            .size(48.dp),
+                            .padding(top = 12.dp)
+                            .size(24.dp),
                         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
                         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
                     ) {
@@ -871,17 +859,16 @@ fun JsonConverter(modifier: Modifier = Modifier) {
 
                     // Output format selection
                     Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            "To:",
-                            style = MaterialTheme.typography.labelLarge,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(bottom = 8.dp)
-                        )
-
                         Row(
                             horizontalArrangement = Arrangement.spacedBy(6.dp),
                             modifier = Modifier.fillMaxWidth()
                         ) {
+                            Text(
+                                "To:",
+                                //style = MaterialTheme.typography.labelLarge,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                //modifier = Modifier.padding(bottom = 8.dp)
+                            )
                             ConversionFormat.values().forEach { format ->
                                 FilterChip(
                                     selected = outputFormat == format,
@@ -1366,6 +1353,7 @@ private fun jsonlToYaml(jsonl: String, options: FormattingOptions = FormattingOp
         isPrettyFlow = options.yamlPrettyFlow
         isProcessComments = options.yamlProcessComments
         isAllowUnicode = options.yamlAllowUnicode
+        defaultScalarStyle = options.yamlScalarStyle
         indent = options.yamlIndentSize
     }
     val yaml = Yaml(yamlOptions)

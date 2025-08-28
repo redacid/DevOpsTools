@@ -30,6 +30,7 @@ import compose.icons.feathericons.Lock
 import compose.icons.feathericons.Maximize2
 import compose.icons.feathericons.Menu
 import compose.icons.feathericons.Minimize2
+import compose.icons.feathericons.Minus
 import compose.icons.feathericons.Moon
 import compose.icons.feathericons.Play
 import compose.icons.feathericons.Plus
@@ -100,3 +101,5 @@ var ICON_SERVER = FeatherIcons.Server
 var ICON_HOME = FeatherIcons.Home
 var ICON_MENU = FeatherIcons.Menu
 var ICON_SHUFFLE = FeatherIcons.Shuffle
+var ICON_PLUS = FeatherIcons.Plus
+var ICON_MINUS = FeatherIcons.Minus
