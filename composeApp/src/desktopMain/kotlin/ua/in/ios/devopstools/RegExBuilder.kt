@@ -1,479 +1,333 @@
 package ua.`in`.ios.devopstools
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.awt.SwingPanel
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalClipboardManager
-import androidx.compose.ui.text.AnnotatedString
-import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
-import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea
-import org.fife.ui.rsyntaxtextarea.SyntaxConstants
-import org.fife.ui.rsyntaxtextarea.Theme
-import org.fife.ui.rtextarea.RTextScrollPane
-import java.awt.BorderLayout
-import java.awt.Font
-import javax.swing.JComponent
-import javax.swing.JPanel
-import javax.swing.event.DocumentEvent
-import javax.swing.event.DocumentListener
+import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.launch
+import java.util.regex.Pattern
+import java.util.regex.PatternSyntaxException
 
-data class RegexMatch(
-    val value: String,
-    val start: Int,
-    val end: Int,
-    val groups: List<String>
-)
-
-enum class RegexFlag(val flag: String, val description: String) {
-    IGNORE_CASE("i", "Case insensitive matching"),
-    MULTILINE("m", "Multiline mode"),
-    DOTALL("s", "Dot matches newlines"),
-    UNICODE("u", "Unicode matching"),
-    COMMENTS("x", "Extended syntax (ignore whitespace and comments)")
-}
-
-class RegexTextEditor(
-    private val syntaxStyle: String,
-    private val onTextChanged: ((String) -> Unit)? = null
-) {
-    private val textArea = RSyntaxTextArea()
-    private val scrollPane = RTextScrollPane(textArea)
-
-    init {
-        setupTextArea()
-    }
-
-    private fun setupTextArea() {
-        textArea.syntaxEditingStyle = syntaxStyle
-        textArea.isCodeFoldingEnabled = false
-        textArea.isEditable = true
-
-        try {
-            val theme = Theme.load(javaClass.getResourceAsStream("/org/fife/ui/rsyntaxtextarea/themes/idea.xml"))
-            theme.apply(textArea)
-        } catch (e: Exception) {
-            textArea.background = java.awt.Color(0xFCF5FD)
-            textArea.foreground = java.awt.Color(0x767278)
-            textArea.currentLineHighlightColor = java.awt.Color(0xffffd7)
-            textArea.caretColor = java.awt.Color(0x767278)
-        }
-
-        textArea.font = Font("DejaVu Sans Mono", Font.PLAIN, 14)
-        textArea.setLineWrap(true)
-        textArea.wrapStyleWord = true
-
-        scrollPane.isIconRowHeaderEnabled = false
-        scrollPane.gutter.isBookmarkingEnabled = false
-
-        if (onTextChanged != null) {
-            textArea.document.addDocumentListener(object : DocumentListener {
-                override fun insertUpdate(e: DocumentEvent?) {
-                    onTextChanged.invoke(textArea.text)
-                }
-
-                override fun removeUpdate(e: DocumentEvent?) {
-                    onTextChanged.invoke(textArea.text)
-                }
-
-                override fun changedUpdate(e: DocumentEvent?) {
-                    onTextChanged.invoke(textArea.text)
-                }
-            })
-        }
-    }
-
-    fun createComponent(): JComponent {
-        return JPanel(BorderLayout()).apply {
-            background = java.awt.Color(0x1E1E1E)
-            add(scrollPane, BorderLayout.CENTER)
-        }
-    }
-
-    fun setText(text: String) {
-        if (textArea.text != text) {
-            textArea.text = text
-        }
-    }
-
-    fun getText(): String = textArea.text
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RegexTester(modifier: Modifier = Modifier) {
+    var inputText by remember { mutableStateOf("") }
     var regexPattern by remember { mutableStateOf("") }
-    var testText by remember { mutableStateOf("") }
-    var selectedFlags by remember { mutableStateOf(setOf<RegexFlag>()) }
-    var matches by remember { mutableStateOf(listOf<RegexMatch>()) }
-    var errorMessage by remember { mutableStateOf("") }
-    var replaceText by remember { mutableStateOf("") }
-    var replaceResult by remember { mutableStateOf("") }
+    var testResults by remember { mutableStateOf("") }
+    var analysisResults by remember { mutableStateOf("") }
+    var generatedRegex by remember { mutableStateOf("") }
+    var isValidRegex by remember { mutableStateOf(true) }
+    var regexError by remember { mutableStateOf("") }
 
-    val clipboardManager = LocalClipboardManager.current
-
-    // Create text editor
-    val testTextEditor = remember {
-        RegexTextEditor(
-            syntaxStyle = SyntaxConstants.SYNTAX_STYLE_NONE,
-            onTextChanged = { text ->
-                testText = text
-            }
-        )
-    }
-
-    fun testRegex() {
-        if (regexPattern.isEmpty()) {
-            matches = emptyList()
-            errorMessage = ""
-            return
-        }
-
-        try {
-            var flags = 0
-            selectedFlags.forEach { flag ->
-                when (flag) {
-                    RegexFlag.IGNORE_CASE -> flags = flags or java.util.regex.Pattern.CASE_INSENSITIVE
-                    RegexFlag.MULTILINE -> flags = flags or java.util.regex.Pattern.MULTILINE
-                    RegexFlag.DOTALL -> flags = flags or java.util.regex.Pattern.DOTALL
-                    RegexFlag.UNICODE -> flags = flags or java.util.regex.Pattern.UNICODE_CASE
-                    RegexFlag.COMMENTS -> flags = flags or java.util.regex.Pattern.COMMENTS
-                }
-            }
-
-            val pattern = java.util.regex.Pattern.compile(regexPattern, flags)
-            val matcher = pattern.matcher(testText)
-
-            val foundMatches = mutableListOf<RegexMatch>()
-            while (matcher.find()) {
-                val groups = mutableListOf<String>()
-                for (i in 0..matcher.groupCount()) {
-                    groups.add(matcher.group(i) ?: "")
-                }
-
-                foundMatches.add(
-                    RegexMatch(
-                        value = matcher.group(),
-                        start = matcher.start(),
-                        end = matcher.end(),
-                        groups = groups
-                    )
-                )
-            }
-
-            matches = foundMatches
-            errorMessage = ""
-
-            // Update replace result
-            if (replaceText.isNotEmpty()) {
-                replaceResult = pattern.matcher(testText).replaceAll(replaceText)
-            } else {
-                replaceResult = ""
-            }
-
-        } catch (e: Exception) {
-            errorMessage = "Regex error: ${e.message}"
-            matches = emptyList()
-            replaceResult = ""
-        }
-    }
-
-    LaunchedEffect(regexPattern, testText, selectedFlags, replaceText) {
-        testRegex()
-    }
+    val scope = rememberCoroutineScope()
 
     Column(
         modifier = modifier
             .fillMaxSize()
             .padding(16.dp)
-            .verticalScroll(rememberScrollState())
+            .verticalScroll(rememberScrollState()),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         Text(
-            text = "RegEx Builder & Tester",
-            style = MaterialTheme.typography.headlineMedium,
-            modifier = Modifier.padding(bottom = 16.dp)
+            text = "Генератор/Тестер Регулярних Виразів",
+            fontSize = 24.sp,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.primary
         )
 
-        // Regex Pattern Input
+        // Секція вводу тексту
         Card(
             modifier = Modifier.fillMaxWidth(),
             elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
         ) {
-            Column(modifier = Modifier.padding(16.dp)) {
+            Column(
+                modifier = Modifier.padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
                 Text(
-                    "Regular Expression Pattern",
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.padding(bottom = 8.dp)
+                    text = "Текст для аналізу",
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Medium
                 )
-
                 OutlinedTextField(
-                    value = regexPattern,
-                    onValueChange = { regexPattern = it },
-                    modifier = Modifier.fillMaxWidth(),
-                    placeholder = { Text("Enter your regex pattern here...") },
-                    textStyle = MaterialTheme.typography.bodyMedium.copy(fontFamily = FontFamily.Monospace),
+                    value = inputText,
+                    onValueChange = { inputText = it },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(150.dp),
+                    placeholder = { Text("Вставте ваш текст тут для аналізу та генерації регулярних виразів...") },
                     singleLine = false,
-                    minLines = 2
-                )
-
-                // Flags
-                Spacer(modifier = Modifier.height(12.dp))
-                Text(
-                    "Flags",
-                    style = MaterialTheme.typography.labelLarge,
-                    modifier = Modifier.padding(bottom = 8.dp)
+                    maxLines = 6
                 )
 
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    RegexFlag.values().forEach { flag ->
-                        FilterChip(
-                            selected = flag in selectedFlags,
-                            onClick = {
-                                selectedFlags = if (flag in selectedFlags) {
-                                    selectedFlags - flag
-                                } else {
-                                    selectedFlags + flag
-                                }
-                            },
-                            label = {
-                                Text(
-                                    flag.flag,
-                                    style = MaterialTheme.typography.labelSmall,
-                                    fontFamily = FontFamily.Monospace
-                                )
+                    Button(
+                        onClick = {
+                            scope.launch {
+                                analysisResults = analyzeText(inputText)
+                                generatedRegex = generateRegexFromText(inputText)
                             }
-                        )
+                        },
+                        enabled = inputText.isNotEmpty()
+                    ) {
+                        Icon(ICON_SEARCH, contentDescription = null)
+                        Spacer(Modifier.width(8.dp))
+                        Text("Аналізувати")
                     }
-                }
 
-                // Flag descriptions
-                if (selectedFlags.isNotEmpty()) {
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Column {
-                        selectedFlags.forEach { flag ->
-                            Text(
-                                "${flag.flag}: ${flag.description}",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
+                    Button(
+                        onClick = {
+                            scope.launch {
+                                generatedRegex = generateRegexFromText(inputText)
+                            }
+                        },
+                        enabled = inputText.isNotEmpty()
+                    ) {
+                        Icon(ICON_CODE, contentDescription = null)
+                        Spacer(Modifier.width(8.dp))
+                        Text("Генерувати RegEx")
+                    }
+
+                    Button(
+                        onClick = {
+                            inputText = ""
+                            regexPattern = ""
+                            testResults = ""
+                            analysisResults = ""
+                            generatedRegex = ""
                         }
+                    ) {
+                        Text("Очистити")
                     }
                 }
             }
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // Error Message
-        if (errorMessage.isNotEmpty()) {
-            Card(
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Row(
-                    modifier = Modifier.padding(16.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(
-                        ICON_ERROR,
-                        contentDescription = "Error",
-                        tint = MaterialTheme.colorScheme.error,
-                        modifier = Modifier.size(20.dp)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = errorMessage,
-                        color = MaterialTheme.colorScheme.onErrorContainer,
-                        style = MaterialTheme.typography.bodyMedium
-                    )
-                }
-            }
-            Spacer(modifier = Modifier.height(16.dp))
-        }
-
-        // Test Text and Results
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            // Test Text
-            Card(
-                modifier = Modifier.weight(1f),
-                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
-            ) {
-                Column {
-                    Surface(
-                        modifier = Modifier.fillMaxWidth(),
-                        color = MaterialTheme.colorScheme.primaryContainer
-                    ) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(16.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                "Test Text",
-                                style = MaterialTheme.typography.titleMedium,
-                                color = MaterialTheme.colorScheme.onPrimaryContainer
-                            )
-                            TextButton(
-                                onClick = {
-                                    testText = ""
-                                    testTextEditor.setText("")
-                                }
-                            ) {
-                                Text("Clear")
-                            }
-                        }
-                    }
-
-                    SwingPanel(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(300.dp),
-                        factory = { testTextEditor.createComponent() }
-                    )
-                }
-            }
-
-            // Results
-            Card(
-                modifier = Modifier.weight(1f),
-                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
-            ) {
-                Column {
-                    Surface(
-                        modifier = Modifier.fillMaxWidth(),
-                        color = MaterialTheme.colorScheme.secondaryContainer
-                    ) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(16.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                "Matches (${matches.size})",
-                                style = MaterialTheme.typography.titleMedium,
-                                color = MaterialTheme.colorScheme.onSecondaryContainer
-                            )
-                            if (matches.isNotEmpty()) {
-                                TextButton(
-                                    onClick = {
-                                        val matchesText = matches.joinToString("\n") { match ->
-                                            "Match: ${match.value} (${match.start}-${match.end})"
-                                        }
-                                        clipboardManager.setText(AnnotatedString(matchesText))
-                                    }
-                                ) {
-                                    Text("Copy")
-                                }
-                            }
-                        }
-                    }
-
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(300.dp)
-                            .padding(16.dp)
-                            .verticalScroll(rememberScrollState())
-                    ) {
-                        if (matches.isEmpty() && regexPattern.isNotEmpty() && testText.isNotEmpty()) {
-                            Text(
-                                "No matches found",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        } else {
-                            matches.forEachIndexed { index, match ->
-                                MatchCard(match = match, index = index)
-                                if (index < matches.size - 1) {
-                                    Spacer(modifier = Modifier.height(8.dp))
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // Replace Section
+        // Секція регулярного виразу
         Card(
             modifier = Modifier.fillMaxWidth(),
             elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
         ) {
-            Column(modifier = Modifier.padding(16.dp)) {
+            Column(
+                modifier = Modifier.padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
                 Text(
-                    "Replace",
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.padding(bottom = 12.dp)
+                    text = "Регулярний вираз",
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Medium
                 )
 
                 OutlinedTextField(
-                    value = replaceText,
-                    onValueChange = { replaceText = it },
+                    value = regexPattern,
+                    onValueChange = { newValue ->
+                        regexPattern = newValue
+                        // Валідація regex в реальному часі
+                        try {
+                            Pattern.compile(newValue)
+                            isValidRegex = true
+                            regexError = ""
+                        } catch (e: PatternSyntaxException) {
+                            isValidRegex = false
+                            regexError = e.description ?: "Невірний синтаксис"
+                        }
+                    },
                     modifier = Modifier.fillMaxWidth(),
-                    placeholder = { Text("Replacement text (use \$1, \$2 for groups)") },
-                    label = { Text("Replace with") },
-                    textStyle = MaterialTheme.typography.bodyMedium.copy(fontFamily = FontFamily.Monospace)
-                )
-
-                if (replaceResult.isNotEmpty()) {
-                    Spacer(modifier = Modifier.height(12.dp))
-                    Text(
-                        "Result",
-                        style = MaterialTheme.typography.labelLarge,
-                        modifier = Modifier.padding(bottom = 4.dp)
-                    )
-
-                    Card(
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Column(modifier = Modifier.padding(12.dp)) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween
-                            ) {
-                                Text(
-                                    "Replaced text:",
-                                    style = MaterialTheme.typography.labelMedium
-                                )
-                                TextButton(
-                                    onClick = { clipboardManager.setText(AnnotatedString(replaceResult)) }
-                                ) {
-                                    Text("Copy")
-                                }
-                            }
+                    placeholder = { Text("Введіть регулярний вираз або використайте згенерований...") },
+                    isError = !isValidRegex,
+                    supportingText = {
+                        if (!isValidRegex) {
                             Text(
-                                replaceResult,
-                                style = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace),
-                                modifier = Modifier.padding(top = 4.dp)
+                                text = regexError,
+                                color = MaterialTheme.colorScheme.error
                             )
                         }
+                    }
+                )
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Button(
+                        onClick = {
+                            scope.launch {
+                                testResults = testRegex(regexPattern, inputText)
+                            }
+                        },
+                        enabled = regexPattern.isNotEmpty() && inputText.isNotEmpty() && isValidRegex
+                    ) {
+                        Icon(ICON_CONNECT, contentDescription = null)
+                        Spacer(Modifier.width(8.dp))
+                        Text("Тестувати")
+                    }
+
+                    if (generatedRegex.isNotEmpty()) {
+                        Button(
+                            onClick = {
+                                regexPattern = generatedRegex
+                            }
+                        ) {
+                            Text("Використати згенерований")
+                        }
+                    }
+                }
+
+                // Швидкі патерни
+                Text(
+                    text = "Швидкі патерни:",
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Medium
+                )
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.Start)
+                ) {
+                    listOf(
+                        "Email" to "[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}",
+                        "IP" to "^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$",
+                        "URL" to "https?://[\\w\\-]+(\\.[\\w\\-]+)+([\\w\\-\\.,@?^=%&:/~\\+#]*[\\w\\-\\@?^=%&/~\\+#])?",
+                        "Телефон" to "^[\\+]?[1-9][\\d\\-\\(\\)\\s]{7,15}$"
+                    ).forEach { (name, pattern) ->
+                        Button(
+                            onClick = { regexPattern = pattern },
+                            modifier = Modifier.height(32.dp)
+                        ) {
+                            Text(name, fontSize = 12.sp)
+                        }
+                    }
+                }
+            }
+        }
+
+        // Результати аналізу
+        if (analysisResults.isNotEmpty()) {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant
+                )
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text(
+                        text = "Аналіз тексту",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+
+                    SelectionContainer {
+                        Text(
+                            text = analysisResults,
+                            fontSize = 12.sp,
+                            fontFamily = FontFamily.Monospace,
+                            modifier = Modifier
+                                .background(
+                                    MaterialTheme.colorScheme.surface,
+                                    RoundedCornerShape(4.dp)
+                                )
+                                .padding(12.dp)
+                                .fillMaxWidth()
+                        )
+                    }
+                }
+            }
+        }
+
+        // Згенерований регулярний вираз
+        if (generatedRegex.isNotEmpty()) {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.primaryContainer
+                )
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text(
+                        text = "Згенерований RegEx",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
+
+                    SelectionContainer {
+                        Text(
+                            text = generatedRegex,
+                            fontSize = 14.sp,
+                            fontFamily = FontFamily.Monospace,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier
+                                .background(
+                                    MaterialTheme.colorScheme.surface,
+                                    RoundedCornerShape(4.dp)
+                                )
+                                .border(
+                                    BorderStroke(1.dp, MaterialTheme.colorScheme.primary),
+                                    RoundedCornerShape(4.dp)
+                                )
+                                .padding(12.dp)
+                                .fillMaxWidth(),
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                }
+            }
+        }
+
+        // Результати тестування
+        if (testResults.isNotEmpty()) {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.secondaryContainer
+                )
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text(
+                        text = "Результати тестування",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = MaterialTheme.colorScheme.onSecondaryContainer
+                    )
+
+                    SelectionContainer {
+                        Text(
+                            text = testResults,
+                            fontSize = 12.sp,
+                            fontFamily = FontFamily.Monospace,
+                            modifier = Modifier
+                                .background(
+                                    MaterialTheme.colorScheme.surface,
+                                    RoundedCornerShape(4.dp)
+                                )
+                                .padding(12.dp)
+                                .fillMaxWidth()
+                        )
                     }
                 }
             }
@@ -481,57 +335,359 @@ fun RegexTester(modifier: Modifier = Modifier) {
     }
 }
 
-@Composable
-private fun MatchCard(match: RegexMatch, index: Int) {
-    Card(
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Column(modifier = Modifier.padding(12.dp)) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Text(
-                    "Match #${index + 1}",
-                    style = MaterialTheme.typography.labelLarge,
-                    fontWeight = FontWeight.Bold
-                )
-                Text(
-                    "Position: ${match.start}-${match.end}",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+private fun analyzeText(text: String): String {
+    if (text.isEmpty()) return "Текст порожній"
+
+    val lines = text.split('\n')
+    val words = text.split(Regex("\\s+")).filter { it.isNotEmpty() }
+
+    val analysis = StringBuilder()
+    analysis.append("=== ЗАГАЛЬНИЙ АНАЛІЗ ===\n")
+    analysis.append("Кількість символів: ${text.length}\n")
+    analysis.append("Кількість рядків: ${lines.size}\n")
+    analysis.append("Кількість слів: ${words.size}\n")
+    analysis.append("\n")
+
+    // Аналіз патернів
+    analysis.append("=== ВИЯВЛЕНІ ПАТЕРНИ ===\n")
+
+    // Email адреси
+    val emailPattern = Regex("[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}")
+    val emails = emailPattern.findAll(text).map { it.value }.toSet()
+    if (emails.isNotEmpty()) {
+        analysis.append("📧 Email адреси (${emails.size}):\n")
+        emails.forEach { analysis.append("  - $it\n") }
+        analysis.append("\n")
+    }
+
+    // URL адреси
+    val urlPattern = Regex("https?://[\\w\\-]+(\\.[\\w\\-]+)+([\\w\\-\\.,@?^=%&:/~\\+#]*[\\w\\-\\@?^=%&/~\\+#])?")
+    val urls = urlPattern.findAll(text).map { it.value }.toSet()
+    if (urls.isNotEmpty()) {
+        analysis.append("🌐 URL адреси (${urls.size}):\n")
+        urls.forEach { analysis.append("  - $it\n") }
+        analysis.append("\n")
+    }
+
+    // IP адреси
+    val ipPattern = Regex("(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)")
+    val ips = ipPattern.findAll(text).map { it.value }.toSet()
+    if (ips.isNotEmpty()) {
+        analysis.append("🌍 IP адреси (${ips.size}):\n")
+        ips.forEach { analysis.append("  - $it\n") }
+        analysis.append("\n")
+    }
+
+    // Номери телефонів
+    val phonePattern = Regex("[\\+]?[1-9][\\d\\-\\(\\)\\s]{7,15}")
+    val phones = phonePattern.findAll(text).map { it.value }.toSet()
+    if (phones.isNotEmpty()) {
+        analysis.append("📱 Номери телефонів (${phones.size}):\n")
+        phones.forEach { analysis.append("  - $it\n") }
+        analysis.append("\n")
+    }
+
+    // Дати
+    val datePatterns = listOf(
+        Regex("\\d{1,2}/\\d{1,2}/\\d{4}"), // MM/dd/yyyy
+        Regex("\\d{1,2}-\\d{1,2}-\\d{4}"), // MM-dd-yyyy
+        Regex("\\d{4}-\\d{1,2}-\\d{1,2}"), // yyyy-MM-dd
+        Regex("\\d{1,2}\\.\\d{1,2}\\.\\d{4}") // dd.MM.yyyy
+    )
+    val dates = mutableSetOf<String>()
+    datePatterns.forEach { pattern ->
+        dates.addAll(pattern.findAll(text).map { it.value })
+    }
+    if (dates.isNotEmpty()) {
+        analysis.append("📅 Дати (${dates.size}):\n")
+        dates.forEach { analysis.append("  - $it\n") }
+        analysis.append("\n")
+    }
+
+    // Числа
+    val numberPattern = Regex("-?\\d+(?:\\.\\d+)?")
+    val numbers = numberPattern.findAll(text).map { it.value }.toSet()
+    if (numbers.isNotEmpty() && numbers.size <= 20) {
+        analysis.append("🔢 Числа (${numbers.size}):\n")
+        numbers.forEach { analysis.append("  - $it\n") }
+        analysis.append("\n")
+    }
+
+    // Структурний аналіз
+    analysis.append("=== СТРУКТУРНИЙ АНАЛІЗ ===\n")
+    val hasNumbers = text.any { it.isDigit() }
+    val hasLetters = text.any { it.isLetter() }
+    val hasSpecialChars = text.any { !it.isLetterOrDigit() && !it.isWhitespace() }
+
+    analysis.append("Містить цифри: ${if (hasNumbers) "Так" else "Ні"}\n")
+    analysis.append("Містить літери: ${if (hasLetters) "Так" else "Ні"}\n")
+    analysis.append("Містить спеціальні символи: ${if (hasSpecialChars) "Так" else "Ні"}\n")
+
+    // Розподіл символів
+    val charCounts = text.groupingBy { it }.eachCount()
+        .filterKeys { !it.isWhitespace() }
+        .toList()
+        .sortedByDescending { it.second }
+        .take(10)
+
+    if (charCounts.isNotEmpty()) {
+        analysis.append("\nНайчастіші символи:\n")
+        charCounts.forEach { (char, count) ->
+            analysis.append("  '$char': $count разів\n")
+        }
+    }
+
+    return analysis.toString()
+}
+
+private fun generateRegexFromText(text: String): String {
+    if (text.isEmpty()) return ""
+
+    val lines = text.split('\n').filter { it.isNotEmpty() }
+    if (lines.isEmpty()) return ""
+
+    // Якщо всього один рядок, аналізуємо його
+    if (lines.size == 1) {
+        return generateRegexForSingleLine(lines[0])
+    }
+
+    // Для множинних рядків намагаємось знайти спільний патерн
+    return generateRegexForMultipleLines(lines)
+}
+
+private fun generateRegexForSingleLine(line: String): String {
+    // Перевіряємо на популярні патерни
+    val emailPattern = Regex("[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}")
+    if (emailPattern.matches(line)) {
+        return "[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}"
+    }
+
+    val urlPattern = Regex("https?://[\\w\\-]+(\\.[\\w\\-]+)+([\\w\\-\\.,@?^=%&:/~\\+#]*[\\w\\-\\@?^=%&/~\\+#])?")
+    if (urlPattern.matches(line)) {
+        return "https?://[\\w\\-]+(\\.[\\w\\-]+)+([\\w\\-\\.,@?^=%&:/~\\+#]*[\\w\\-\\@?^=%&/~\\+#])?"
+    }
+
+    val ipPattern = Regex("(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)")
+    if (ipPattern.matches(line)) {
+        return "(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)"
+    }
+
+    // Загальний підхід - створюємо патерн на основі структури
+    return createPatternFromStructure(line)
+}
+
+private fun generateRegexForMultipleLines(lines: List<String>): String {
+    // Знаходимо спільні характеристики всіх рядків
+    val minLength = lines.minOf { it.length }
+    val maxLength = lines.maxOf { it.length }
+
+    // Якщо всі рядки однакової довжини, шукаємо позиційні патерни
+    if (minLength == maxLength) {
+        return createFixedLengthPattern(lines)
+    }
+
+    // Інакше створюємо більш загальний патерн
+    val patterns = lines.map { createPatternFromStructure(it) }
+
+    // Якщо всі патерни однакові, повертаємо один
+    if (patterns.toSet().size == 1) {
+        return patterns.first()
+    }
+
+    // Намагаємось знайти спільні елементи
+    return combinePatterns(patterns)
+}
+
+private fun createPatternFromStructure(text: String): String {
+    val result = StringBuilder()
+    var i = 0
+
+    while (i < text.length) {
+        val char = text[i]
+
+        when {
+            char.isDigit() -> {
+                // Рахуємо послідовні цифри
+                var digitCount = 0
+                var j = i
+                while (j < text.length && text[j].isDigit()) {
+                    digitCount++
+                    j++
+                }
+
+                when {
+                    digitCount == 1 -> result.append("\\d")
+                    digitCount <= 3 -> result.append("\\d{$digitCount}")
+                    else -> result.append("\\d{$digitCount,}")
+                }
+                i = j
             }
 
-            Spacer(modifier = Modifier.height(4.dp))
+            char.isLetter() -> {
+                // Рахуємо послідовні літери
+                var letterCount = 0
+                var j = i
+                val isUpper = char.isUpperCase()
 
-            Text(
-                "Value: \"${match.value}\"",
-                style = MaterialTheme.typography.bodyMedium.copy(fontFamily = FontFamily.Monospace),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(
-                        MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f),
-                        RoundedCornerShape(4.dp)
-                    )
-                    .padding(8.dp)
-            )
-
-            if (match.groups.size > 1) {
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    "Groups:",
-                    style = MaterialTheme.typography.labelMedium
-                )
-                match.groups.forEachIndexed { groupIndex, group ->
-                    Text(
-                        "  \$${groupIndex}: \"$group\"",
-                        style = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace),
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                while (j < text.length && text[j].isLetter() && text[j].isUpperCase() == isUpper) {
+                    letterCount++
+                    j++
                 }
+
+                val pattern = if (isUpper) "[A-Z]" else "[a-z]"
+                when {
+                    letterCount == 1 -> result.append(pattern)
+                    letterCount <= 3 -> result.append("$pattern{$letterCount}")
+                    else -> result.append("$pattern{$letterCount,}")
+                }
+                i = j
+            }
+
+            char.isWhitespace() -> {
+                result.append("\\s+")
+                // Пропускаємо всі послідовні пробіли
+                while (i < text.length && text[i].isWhitespace()) {
+                    i++
+                }
+            }
+
+            else -> {
+                // Спеціальні символи екрануємо
+                val escaped = when (char) {
+                    '.', '*', '+', '?', '^', '$', '(', ')', '[', ']', '{', '}', '|', '\\' -> "\\$char"
+                    else -> char.toString()
+                }
+                result.append(escaped)
+                i++
             }
         }
     }
+
+    return result.toString()
+}
+
+private fun createFixedLengthPattern(lines: List<String>): String {
+    val length = lines.first().length
+    val result = StringBuilder()
+
+    for (pos in 0 until length) {
+        val charsAtPos = lines.map { it[pos] }.toSet()
+
+        when {
+            charsAtPos.size == 1 -> {
+                // Всі символи на цій позиції однакові
+                val char = charsAtPos.first()
+                val escaped = when (char) {
+                    '.', '*', '+', '?', '^', '$', '(', ')', '[', ']', '{', '}', '|', '\\' -> "\\$char"
+                    else -> char.toString()
+                }
+                result.append(escaped)
+            }
+
+            charsAtPos.all { it.isDigit() } -> {
+                result.append("\\d")
+            }
+
+            charsAtPos.all { it.isLetter() } -> {
+                if (charsAtPos.all { it.isUpperCase() }) {
+                    result.append("[A-Z]")
+                } else if (charsAtPos.all { it.isLowerCase() }) {
+                    result.append("[a-z]")
+                } else {
+                    result.append("[a-zA-Z]")
+                }
+            }
+
+            charsAtPos.all { it.isLetterOrDigit() } -> {
+                result.append("[a-zA-Z0-9]")
+            }
+
+            else -> {
+                // Створюємо клас символів
+                val sortedChars = charsAtPos.sorted()
+                result.append("[${sortedChars.joinToString("") {
+                    when (it) {
+                        ']', '\\', '^', '-' -> "\\$it"
+                        else -> it.toString()
+                    }
+                }}]")
+            }
+        }
+    }
+
+    return result.toString()
+}
+
+private fun combinePatterns(patterns: List<String>): String {
+    // Спрощена логіка комбінування патернів
+    // Повертаємо перший патерн з припискою що це один з можливих варіантів
+    return if (patterns.isNotEmpty()) {
+        "(?:" + patterns.joinToString("|") + ")"
+    } else {
+        ".*"
+    }
+}
+
+private fun testRegex(pattern: String, text: String): String {
+    if (pattern.isEmpty() || text.isEmpty()) {
+        return "Не вказано патерн або текст для тестування"
+    }
+
+    val result = StringBuilder()
+
+    try {
+        val regex = Regex(pattern)
+        val matches = regex.findAll(text).toList()
+
+        result.append("=== РЕЗУЛЬТАТИ ТЕСТУВАННЯ ===\n")
+        result.append("Патерн: $pattern\n")
+        result.append("Знайдено збігів: ${matches.size}\n\n")
+
+        if (matches.isNotEmpty()) {
+            result.append("=== ЗНАЙДЕНІ ЗБІГИ ===\n")
+            matches.forEachIndexed { index, match ->
+                result.append("${index + 1}. \"${match.value}\" (позиція ${match.range.first}-${match.range.last})\n")
+
+                if (match.groups.size > 1) {
+                    result.append("   Групи:\n")
+                    match.groups.drop(1).forEachIndexed { groupIndex, group ->
+                        if (group != null) {
+                            result.append("   - Група ${groupIndex + 1}: \"${group.value}\"\n")
+                        }
+                    }
+                }
+            }
+            result.append("\n")
+
+            // Статистика
+            result.append("=== СТАТИСТИКА ===\n")
+            val uniqueMatches = matches.map { it.value }.toSet()
+            result.append("Унікальних збігів: ${uniqueMatches.size}\n")
+
+            if (uniqueMatches.size != matches.size) {
+                result.append("Повторювані збіги:\n")
+                val duplicates = matches.map { it.value }
+                    .groupingBy { it }
+                    .eachCount()
+                    .filter { it.value > 1 }
+
+                duplicates.forEach { (value, count) ->
+                    result.append("  \"$value\": $count разів\n")
+                }
+            }
+        } else {
+            result.append("❌ Збігів не знайдено\n")
+            result.append("\nПоради для покращення патерну:\n")
+            result.append("- Перевірте синтаксис регулярного виразу\n")
+            result.append("- Спростіть патерн для початкового тестування\n")
+            result.append("- Використайте аналіз тексту для знаходження патернів\n")
+        }
+
+    } catch (e: Exception) {
+        result.append("❌ ПОМИЛКА ПРИ ТЕСТУВАННІ\n")
+        result.append("${e.message}\n")
+        result.append("\nПеревірте синтаксис регулярного виразу.")
+    }
+
+    return result.toString()
 }

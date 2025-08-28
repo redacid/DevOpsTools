@@ -654,6 +654,8 @@ private fun jsonToYaml(json: String): String {
     options.defaultFlowStyle = DumperOptions.FlowStyle.BLOCK
     options.isPrettyFlow = true
     options.isProcessComments = true
+    options.isAllowUnicode = true
+    options.defaultScalarStyle = DumperOptions.ScalarStyle.SINGLE_QUOTED
     val yaml = Yaml(options)
 
     return yaml.dump(map)
@@ -830,6 +832,7 @@ private fun jsonlToYaml(jsonl: String): String {
     options.defaultFlowStyle = DumperOptions.FlowStyle.BLOCK
     options.isPrettyFlow = true
     options.isProcessComments = true
+    options.isAllowUnicode = true
     val yaml = Yaml(options)
 
     return lines.mapIndexed { index, line ->
