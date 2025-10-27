@@ -7,7 +7,7 @@
       "install_type": "package",
       "version_cmd": "--version",
       "enabled": true,
-      "install_version": "2.28.15",
+      "install_version": "latest",
       "package": {
         "link": "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip",
         "after_unpack_install_cmd": {
@@ -105,13 +105,18 @@
       "install_type": "github",
       "version_cmd": "version",
       "enabled": true,
-      "install_version": "v0.212.0",
+      "install_version": "v0.215.0",
       "github": {
         "url": "https://github.com/eksctl-io/eksctl",
         "api_url": "https://api.github.com/repos/eksctl-io/eksctl",
         "parse_release_notes": false,
         "asset": "eksctl_Linux_amd64.tar.gz",
-        "asset_type": "package"
+        "asset_type": "package",
+        "after_install_cmd": {
+          "flag": false,
+          "sudo": false,
+          "cmd": ""
+        }
       },
       "disable_version_check": false
     },
@@ -122,13 +127,18 @@
       "install_type": "github",
       "version_cmd": "--version",
       "enabled": true,
-      "install_version": "v2.78.0",
+      "install_version": "v2.82.0",
       "github": {
         "url": "https://github.com/cli/cli/",
         "api_url": "https://api.github.com/repos/cli/cli",
         "parse_release_notes": false,
-        "asset": "gh_2.78.0_linux_amd64.deb",
-        "asset_type": "deb_based"
+        "asset": "gh_2.82.0_linux_amd64.deb",
+        "asset_type": "deb_based",
+        "after_install_cmd": {
+          "flag": false,
+          "sudo": false,
+          "cmd": ""
+        }
       },
       "disable_version_check": false
     },
@@ -156,18 +166,40 @@
       "disable_version_check": false
     },
     {
+      "name": "go-containerregistry",
+      "description": "crane - This is a golang library for working with container registries. It\u0027s largely based on the Python library of the same name.",
+      "binary_name": "crane",
+      "install_type": "github",
+      "version_cmd": "version",
+      "disable_version_check": false,
+      "enabled": true,
+      "install_version": "v0.20.6",
+      "github": {
+        "url": "https://github.com/google/go-containerregistry",
+        "api_url": "https://api.github.com/repos/google/go-containerregistry",
+        "parse_release_notes": false,
+        "asset": "go-containerregistry_Linux_x86_64.tar.gz",
+        "asset_type": "package",
+        "after_install_cmd": {
+          "flag": false,
+          "sudo": false,
+          "cmd": ""
+        }
+      }
+    },
+    {
       "name": "helm",
       "description": "Helm is a tool for managing Charts. Charts are packages of pre-configured Kubernetes resources",
       "binary_name": "helm",
       "install_type": "github",
       "version_cmd": "version",
       "enabled": true,
-      "install_version": "v3.18.6",
+      "install_version": "v3.19.0",
       "github": {
         "url": "https://github.com/helm/helm",
         "api_url": "https://api.github.com/repos/helm/helm",
         "parse_release_notes": true,
-        "asset": "helm-v3.18.6-linux-amd64.tar.gz",
+        "asset": "helm-v3.19.0-linux-amd64.tar.gz",
         "asset_type": "package",
         "after_install_cmd": {
           "flag": false,
@@ -216,14 +248,20 @@
       "install_type": "github",
       "version_cmd": "--version",
       "enabled": true,
-      "install_version": "v0.29.0",
+      "install_version": "v0.30.0",
       "github": {
         "url": "https://github.com/kubernetes-sigs/kind/",
         "api_url": "https://api.github.com/repos/kubernetes-sigs/kind",
         "parse_release_notes": false,
         "asset": "kind-linux-amd64",
-        "asset_type": "binary"
-      }
+        "asset_type": "binary",
+        "after_install_cmd": {
+          "flag": false,
+          "sudo": false,
+          "cmd": ""
+        }
+      },
+      "disable_version_check": false
     },
     {
       "name": "kompose",
@@ -250,13 +288,18 @@
       "version_cmd": "version",
       "disable_version_check": false,
       "enabled": true,
-      "install_version": "v1.33.0",
+      "install_version": "v1.33.1",
       "github": {
         "url": "https://github.com/kubernetes/kops",
         "api_url": "https://api.github.com/repos/kubernetes/kops",
         "parse_release_notes": false,
         "asset": "kops-linux-amd64",
-        "asset_type": "binary"
+        "asset_type": "binary",
+        "after_install_cmd": {
+          "flag": false,
+          "sudo": false,
+          "cmd": ""
+        }
       }
     },
     {
@@ -289,13 +332,18 @@
       "install_type": "github",
       "version_cmd": "version",
       "enabled": true,
-      "install_version": "v4.7.1",
+      "install_version": "v4.9.0",
       "github": {
         "url": "https://github.com/kubernetes-sigs/kubebuilder",
         "api_url": "https://api.github.com/repos/kubernetes-sigs/kubebuilder",
         "parse_release_notes": false,
         "asset": "kubebuilder_linux_amd64",
-        "asset_type": "binary"
+        "asset_type": "binary",
+        "after_install_cmd": {
+          "flag": false,
+          "sudo": false,
+          "cmd": ""
+        }
       },
       "disable_version_check": false
     },
@@ -425,14 +473,20 @@
       "install_type": "github",
       "version_cmd": "version",
       "enabled": true,
-      "install_version": "v1.36.0",
+      "install_version": "v1.37.0",
       "github": {
         "url": "https://github.com/kubernetes/minikube",
         "api_url": "https://api.github.com/repos/kubernetes/minikube",
         "parse_release_notes": false,
         "asset": "minikube-linux-amd64.tar.gz",
-        "asset_type": "package"
-      }
+        "asset_type": "package",
+        "after_install_cmd": {
+          "flag": false,
+          "sudo": false,
+          "cmd": ""
+        }
+      },
+      "disable_version_check": false
     },
     {
       "name": "pike",
@@ -441,13 +495,18 @@
       "install_type": "github",
       "version_cmd": "--version",
       "enabled": true,
-      "install_version": "v0.3.76",
+      "install_version": "v0.3.79",
       "github": {
         "url": "https://github.com/jameswoolfenden/pike",
         "api_url": "https://api.github.com/repos/jameswoolfenden/pike",
         "parse_release_notes": false,
-        "asset": "pike_0.3.76_linux_amd64.tar.gz",
-        "asset_type": "package"
+        "asset": "pike_0.3.79_linux_amd64.tar.gz",
+        "asset_type": "package",
+        "after_install_cmd": {
+          "flag": false,
+          "sudo": false,
+          "cmd": ""
+        }
       },
       "disable_version_check": false
     },
@@ -458,13 +517,18 @@
       "install_type": "github",
       "version_cmd": "version",
       "enabled": true,
-      "install_version": "v0.9.0",
+      "install_version": "v0.9.2",
       "github": {
         "url": "https://github.com/regclient/regclient",
         "api_url": "https://api.github.com/repos/regclient/regclient",
         "parse_release_notes": false,
         "asset": "regbot-linux-amd64",
-        "asset_type": "binary"
+        "asset_type": "binary",
+        "after_install_cmd": {
+          "flag": false,
+          "sudo": false,
+          "cmd": ""
+        }
       },
       "disable_version_check": false
     },
@@ -475,7 +539,7 @@
       "install_type": "github",
       "version_cmd": "version",
       "enabled": true,
-      "install_version": "v0.9.1",
+      "install_version": "v0.9.2",
       "github": {
         "url": "https://github.com/regclient/regclient",
         "api_url": "https://api.github.com/repos/regclient/regclient",
@@ -497,13 +561,18 @@
       "install_type": "github",
       "version_cmd": "version",
       "enabled": true,
-      "install_version": "v0.9.0",
+      "install_version": "v0.9.2",
       "github": {
         "url": "https://github.com/regclient/regclient",
         "api_url": "https://api.github.com/repos/regclient/regclient",
         "parse_release_notes": false,
         "asset": "regsync-linux-amd64",
-        "asset_type": "binary"
+        "asset_type": "binary",
+        "after_install_cmd": {
+          "flag": false,
+          "sudo": false,
+          "cmd": ""
+        }
       },
       "disable_version_check": false
     },
@@ -515,13 +584,18 @@
       "version_cmd": "--version",
       "disable_version_check": false,
       "enabled": true,
-      "install_version": "v0.11.0",
+      "install_version": "v0.11.1",
       "github": {
         "url": "https://github.com/shshemi/tabiew",
         "api_url": "https://api.github.com/repos/shshemi/tabiew",
         "parse_release_notes": false,
         "asset": "tabiew-x86_64-unknown-linux-gnu.deb",
-        "asset_type": "deb_based"
+        "asset_type": "deb_based",
+        "after_install_cmd": {
+          "flag": false,
+          "sudo": false,
+          "cmd": ""
+        }
       }
     },
     {
@@ -548,11 +622,55 @@
       "disable_version_check": false
     },
     {
+      "name": "trivy",
+      "description": "Trivy (pronunciation) is a comprehensive and versatile security scanner. Trivy has scanners that look for security issues, and targets where it can find those issues.",
+      "binary_name": "trivy",
+      "install_type": "github",
+      "version_cmd": "--version",
+      "disable_version_check": false,
+      "enabled": true,
+      "install_version": "v0.67.0",
+      "github": {
+        "url": "https://github.com/aquasecurity/trivy",
+        "api_url": "https://api.github.com/repos/aquasecurity/trivy",
+        "parse_release_notes": false,
+        "asset": "trivy_0.67.0_Linux-64bit.deb",
+        "asset_type": "deb_based",
+        "after_install_cmd": {
+          "flag": false,
+          "sudo": false,
+          "cmd": ""
+        }
+      }
+    },
+    {
+      "name": "velero",
+      "description": "Velero (formerly Heptio Ark) gives you tools to back up and restore your Kubernetes cluster resources and persistent volumes. You can run Velero with a public cloud platform or on-premises.",
+      "binary_name": "velero",
+      "install_type": "github",
+      "version_cmd": "version",
+      "disable_version_check": false,
+      "enabled": true,
+      "install_version": "v1.17.0",
+      "github": {
+        "url": "https://github.com/vmware-tanzu/velero",
+        "api_url": "https://api.github.com/repos/vmware-tanzu/velero",
+        "parse_release_notes": false,
+        "asset": "velero-v1.17.0-linux-amd64.tar.gz",
+        "asset_type": "package",
+        "after_install_cmd": {
+          "flag": false,
+          "sudo": false,
+          "cmd": ""
+        }
+      }
+    },
+    {
       "name": "yq",
       "binary_name": "yq",
       "description": "A lightweight and portable command-line YAML, JSON, INI and XML processor",
       "install_type": "github",
-      "install_version": "v4.47.1",
+      "install_version": "v4.48.1",
       "version_cmd": "--version",
       "enabled": true,
       "github": {
@@ -568,6 +686,20 @@
         }
       },
       "disable_version_check": false
+    },
+    {
+      "name": "kopia",
+      "description": "Kopia is a fast and secure open-source backup/restore tool that allows you to create encrypted snapshots of your data and save the snapshots to remote or cloud storage of your choice, to network-attached storage or server, or locally on your machine. Kopia does not \u0027image\u0027 your whole machine. Rather, Kopia allows you to backup/restore any and all files/directories that you deem are important or critical.",
+      "binary_name": "kopia",
+      "install_type": "github",
+      "version_cmd": "--version",
+      "disable_version_check": false,
+      "enabled": true,
+      "install_version": "latest",
+      "github": {
+        "url": "https://github.com/kopia/kopia",
+        "api_url": "https://api.github.com/repos/kopia/kopia"
+      }
     }
   ]
 }
