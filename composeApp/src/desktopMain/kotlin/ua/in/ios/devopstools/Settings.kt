@@ -165,7 +165,7 @@ class SettingsManager {
             val settingsObj = JsonObject().apply {
                 addProperty("install_path", "/usr/bin")
                 addProperty("temp_path", "/tmp/devopstools")
-                addProperty("tasks_url", "https://github.com/redacid/DevOpsTools/blob/main/tasks.json")
+                addProperty("tasks_url", "https://github.com/redacid/DevOpsTools/blob/tasks/tasks.json")
                 addProperty("github_token", "")
                 addProperty("log_level", "INFO")
                 // application_patterns
@@ -177,25 +177,30 @@ class SettingsManager {
                                 val amd64Obj = JsonObject().apply {
                                     val debBasedArray = gson.toJsonTree(arrayOf(
                                         "*amd64*.deb",
-                                        "*x86_64*.deb"
+                                        "*x86_64*.deb",
+                                        "*Linux-64bit.deb"
                                     )).asJsonArray
                                     add("deb_based", debBasedArray)
 
                                     val rpmBasedArray = gson.toJsonTree(arrayOf(
                                         "*amd64*.rpm",
-                                        "*x86_64*.rpm"
+                                        "*x86_64*.rpm",
+                                        "*Linux-64bit.rpm"
                                     )).asJsonArray
                                     add("rpm_based", rpmBasedArray)
 
                                     val packageArray = gson.toJsonTree(arrayOf(
                                         "*linux*amd64.tar.gz",
-                                        "*linux*x86_64.tar.gz"
+                                        "*linux*x86_64.tar.gz",
+                                        "*Linux-64bit.tar.gz",
+                                        "*Linux_x86_64.tar.gz"
                                     )).asJsonArray
                                     add("package", packageArray)
 
                                     val binaryArray = gson.toJsonTree(arrayOf(
                                         "*linux*amd64",
-                                        "*linux*x86_64"
+                                        "*linux*x86_64",
+                                        "*-linux-x64"
                                     )).asJsonArray
                                     add("binary", binaryArray)
                                 }
