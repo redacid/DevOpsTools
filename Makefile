@@ -1,16 +1,6 @@
 -include .env
 export
 
-JAVA_HOME := $(HOME)/.jdks/jbr-17.0.14
-#SHELL := /bin/bash
-APP_NAME := devopstools
-PACKAGE_OUTPUT_DIR := ./composeApp/build/compose/binaries
-#APP_NAME_MAC := devopstools
-
-PRJ_REPO := git@github.com:redacid/DevOpsTools.git
-PRJ_REPO_HTTP := https://github.com/redacid/DevOpsTools.git
-RELEASE_VERSION ?= 0.0.0
-CLOBBER := --clobber
 CURRENT_DATE = $(shell date '+%Y_%m_%d_%H_%M_%S')
 
 # colors
@@ -25,77 +15,10 @@ TARGET_MAX_CHAR_NUM = 30
 
 all: help
 
-copy_my_tasks:
+copy_tasks:
 	cp ~/.devopstools/tasks.json ./
 
-backup_tasks:
-	cp ~/.devopstools/tasks.json ~/.devopstools/tasks_$(CURRENT_DATE).json
-
-backup_settings:
-	cp ~/.devopstools/settings.json ~/.devopstools/settings_$(CURRENT_DATE).json
-
-
-## Build and Publish
-git-publish:
-	make clean-workspace
-	make build
-	make package
-	make git-release
-	make git-upload-release
-	#make clean-workspace
-
-.ONESHELL:
-clean-workspace:
-	./gradlew clean
-
-package: package-deb package-rpm
-
-build:
-	./gradlew build
-
-package-deb:
-	./gradlew packageReleaseDeb
-
-package-rpm:
-	./gradlew packageReleaseRpm
-
-package-dmg:
-	./gradlew packageReleaseDmg
-
-package-msi:
-	./gradlew.bat packageReleaseMsi
-
-install-deb: package-deb
-	sudo apt purge kubemanager -y
-	sudo dpkg -i "$(PACKAGE_OUTPUT_DIR)/main-release/deb/"$(APP_NAME)"_"$(RELEASE_VERSION)"-1_amd64.deb"
-
-git-release:
-	gh release delete $(RELEASE_VERSION) --cleanup-tag -y --repo $(PRJ_REPO) 2>/dev/null;
-	git tag -d $(RELEASE_VERSION) 2>/dev/null;
-	gh release create $(RELEASE_VERSION) --generate-notes --notes "$(RELEASE_VERSION)" --repo $(PRJ_REPO)
-
-git-upload-release: git-upload-deb-release git-upload-rpm-release
-
-.ONESHELL:
-git-upload-deb-release: package-deb
-	gh release upload $(RELEASE_VERSION) "$(PACKAGE_OUTPUT_DIR)/main-release/deb/"$(APP_NAME)"_"$(RELEASE_VERSION)"-1_amd64.deb" --repo $(PRJ_REPO) $(CLOBBER)
-
-.ONESHELL:
-git-upload-rpm-release: package-rpm
-	gh release upload $(RELEASE_VERSION) "$(PACKAGE_OUTPUT_DIR)/main-release/rpm/"$(APP_NAME)"-"$(RELEASE_VERSION)"-1.x86_64.rpm" --repo $(PRJ_REPO) $(CLOBBER)
-
-.ONESHELL:
-git-upload-mac-release: package-dmg
-	gh release upload $(RELEASE_VERSION) $(PACKAGE_OUTPUT_DIR)/main-release/dmg/$(APP_NAME)-$(RELEASE_VERSION).dmg --repo $(PRJ_REPO_HTTP) $(CLOBBER)
-
-.ONESHELL:
-git-upload-win-release: package-msi
-	gh release upload $(RELEASE_VERSION) $(PACKAGE_OUTPUT_DIR)/main-release/msi/$(APP_NAME)-$(RELEASE_VERSION).msi --repo $(PRJ_REPO) $(CLOBBER)
-
-mac-install-req:
-	brew install gh
-
-.PHONY: build git-publish git-upload-release git-release clean-workspace all help
+.PHONY: copy_tasks all help
 
 ## Shows help. | Help
 help:
