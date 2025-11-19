@@ -34,9 +34,6 @@ backup_tasks:
 backup_settings:
 	cp ~/.devopstools/settings.json ~/.devopstools/settings_$(CURRENT_DATE).json
 
-create-orfan-branch:
-	git checkout --orphan tasks
-
 ## Build and Publish
 git-publish:
 	make clean-workspace

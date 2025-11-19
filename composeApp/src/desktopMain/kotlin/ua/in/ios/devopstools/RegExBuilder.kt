@@ -12,7 +12,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -41,13 +40,13 @@ fun RegexTester(modifier: Modifier = Modifier) {
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         Text(
-            text = "Генератор/Тестер Регулярних Виразів",
+            text = "RegEx Generator/Tester",
             fontSize = 24.sp,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.primary
         )
 
-        // Секція вводу тексту
+        // Input text section
         Card(
             modifier = Modifier.fillMaxWidth(),
             elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
@@ -57,7 +56,7 @@ fun RegexTester(modifier: Modifier = Modifier) {
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 Text(
-                    text = "Текст для аналізу",
+                    text = "Text for Analysis",
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Medium
                 )
@@ -67,7 +66,7 @@ fun RegexTester(modifier: Modifier = Modifier) {
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(150.dp),
-                    placeholder = { Text("Вставте ваш текст тут для аналізу та генерації регулярних виразів...") },
+                    placeholder = { Text("Paste your text here for analysis and regex generation...") },
                     singleLine = false,
                     maxLines = 6
                 )
@@ -87,7 +86,7 @@ fun RegexTester(modifier: Modifier = Modifier) {
                     ) {
                         Icon(ICON_SEARCH, contentDescription = null)
                         Spacer(Modifier.width(8.dp))
-                        Text("Аналізувати")
+                        Text("Analyze")
                     }
 
                     Button(
@@ -100,7 +99,7 @@ fun RegexTester(modifier: Modifier = Modifier) {
                     ) {
                         Icon(ICON_CODE, contentDescription = null)
                         Spacer(Modifier.width(8.dp))
-                        Text("Генерувати RegEx")
+                        Text("Generate RegEx")
                     }
 
                     Button(
@@ -112,13 +111,13 @@ fun RegexTester(modifier: Modifier = Modifier) {
                             generatedRegex = ""
                         }
                     ) {
-                        Text("Очистити")
+                        Text("Clear")
                     }
                 }
             }
         }
 
-        // Секція регулярного виразу
+        // Regular expression section
         Card(
             modifier = Modifier.fillMaxWidth(),
             elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
@@ -128,7 +127,7 @@ fun RegexTester(modifier: Modifier = Modifier) {
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 Text(
-                    text = "Регулярний вираз",
+                    text = "Regular Expression",
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Medium
                 )
@@ -137,18 +136,18 @@ fun RegexTester(modifier: Modifier = Modifier) {
                     value = regexPattern,
                     onValueChange = { newValue ->
                         regexPattern = newValue
-                        // Валідація regex в реальному часі
+                        // Real-time regex validation
                         try {
                             Pattern.compile(newValue)
                             isValidRegex = true
                             regexError = ""
                         } catch (e: PatternSyntaxException) {
                             isValidRegex = false
-                            regexError = e.description ?: "Невірний синтаксис"
+                            regexError = e.description ?: "Invalid syntax"
                         }
                     },
                     modifier = Modifier.fillMaxWidth(),
-                    placeholder = { Text("Введіть регулярний вираз або використайте згенерований...") },
+                    placeholder = { Text("Enter regular expression or use generated one...") },
                     isError = !isValidRegex,
                     supportingText = {
                         if (!isValidRegex) {
@@ -174,7 +173,7 @@ fun RegexTester(modifier: Modifier = Modifier) {
                     ) {
                         Icon(ICON_CONNECT, contentDescription = null)
                         Spacer(Modifier.width(8.dp))
-                        Text("Тестувати")
+                        Text("Test")
                     }
 
                     if (generatedRegex.isNotEmpty()) {
@@ -183,14 +182,14 @@ fun RegexTester(modifier: Modifier = Modifier) {
                                 regexPattern = generatedRegex
                             }
                         ) {
-                            Text("Використати згенерований")
+                            Text("Use Generated")
                         }
                     }
                 }
 
-                // Швидкі патерни
+                // Quick patterns
                 Text(
-                    text = "Швидкі патерни:",
+                    text = "Quick Patterns:",
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Medium
                 )
@@ -203,11 +202,11 @@ fun RegexTester(modifier: Modifier = Modifier) {
                         "Email" to "[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}",
                         "IP" to "^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$",
                         "URL" to "https?://[\\w\\-]+(\\.[\\w\\-]+)+([\\w\\-\\.,@?^=%&:/~\\+#]*[\\w\\-\\@?^=%&/~\\+#])?",
-                        "Телефон" to "^[\\+]?[1-9][\\d\\-\\(\\)\\s]{7,15}$"
+                        "Phone" to "^[\\+]?[1-9][\\d\\-\\(\\)\\s]{7,15}$"
                     ).forEach { (name, pattern) ->
                         Button(
                             onClick = { regexPattern = pattern },
-                            modifier = Modifier.height(32.dp)
+                            //modifier = Modifier.height(32.dp)
                         ) {
                             Text(name, fontSize = 12.sp)
                         }
@@ -216,7 +215,7 @@ fun RegexTester(modifier: Modifier = Modifier) {
             }
         }
 
-        // Результати аналізу
+        // Analysis results
         if (analysisResults.isNotEmpty()) {
             Card(
                 modifier = Modifier.fillMaxWidth(),
@@ -229,7 +228,7 @@ fun RegexTester(modifier: Modifier = Modifier) {
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     Text(
-                        text = "Аналіз тексту",
+                        text = "Text Analysis",
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Medium,
                         color = MaterialTheme.colorScheme.primary
@@ -253,7 +252,7 @@ fun RegexTester(modifier: Modifier = Modifier) {
             }
         }
 
-        // Згенерований регулярний вираз
+        // Generated regular expression
         if (generatedRegex.isNotEmpty()) {
             Card(
                 modifier = Modifier.fillMaxWidth(),
@@ -266,7 +265,7 @@ fun RegexTester(modifier: Modifier = Modifier) {
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     Text(
-                        text = "Згенерований RegEx",
+                        text = "Generated RegEx",
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Medium,
                         color = MaterialTheme.colorScheme.onPrimaryContainer
@@ -296,7 +295,7 @@ fun RegexTester(modifier: Modifier = Modifier) {
             }
         }
 
-        // Результати тестування
+        // Test results
         if (testResults.isNotEmpty()) {
             Card(
                 modifier = Modifier.fillMaxWidth(),
@@ -309,7 +308,7 @@ fun RegexTester(modifier: Modifier = Modifier) {
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     Text(
-                        text = "Результати тестування",
+                        text = "Test Results",
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Medium,
                         color = MaterialTheme.colorScheme.onSecondaryContainer
@@ -336,58 +335,58 @@ fun RegexTester(modifier: Modifier = Modifier) {
 }
 
 private fun analyzeText(text: String): String {
-    if (text.isEmpty()) return "Текст порожній"
+    if (text.isEmpty()) return "Text is empty"
 
     val lines = text.split('\n')
     val words = text.split(Regex("\\s+")).filter { it.isNotEmpty() }
 
     val analysis = StringBuilder()
-    analysis.append("=== ЗАГАЛЬНИЙ АНАЛІЗ ===\n")
-    analysis.append("Кількість символів: ${text.length}\n")
-    analysis.append("Кількість рядків: ${lines.size}\n")
-    analysis.append("Кількість слів: ${words.size}\n")
+    analysis.append("=== GENERAL ANALYSIS ===\n")
+    analysis.append("Character count: ${text.length}\n")
+    analysis.append("Line count: ${lines.size}\n")
+    analysis.append("Word count: ${words.size}\n")
     analysis.append("\n")
 
-    // Аналіз патернів
-    analysis.append("=== ВИЯВЛЕНІ ПАТЕРНИ ===\n")
+    // Pattern analysis
+    analysis.append("=== DETECTED PATTERNS ===\n")
 
-    // Email адреси
+    // Email addresses
     val emailPattern = Regex("[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}")
     val emails = emailPattern.findAll(text).map { it.value }.toSet()
     if (emails.isNotEmpty()) {
-        analysis.append("📧 Email адреси (${emails.size}):\n")
+        analysis.append("📧 Email addresses (${emails.size}):\n")
         emails.forEach { analysis.append("  - $it\n") }
         analysis.append("\n")
     }
 
-    // URL адреси
+    // URL addresses
     val urlPattern = Regex("https?://[\\w\\-]+(\\.[\\w\\-]+)+([\\w\\-\\.,@?^=%&:/~\\+#]*[\\w\\-\\@?^=%&/~\\+#])?")
     val urls = urlPattern.findAll(text).map { it.value }.toSet()
     if (urls.isNotEmpty()) {
-        analysis.append("🌐 URL адреси (${urls.size}):\n")
+        analysis.append("🌐 URL addresses (${urls.size}):\n")
         urls.forEach { analysis.append("  - $it\n") }
         analysis.append("\n")
     }
 
-    // IP адреси
+    // IP addresses
     val ipPattern = Regex("(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)")
     val ips = ipPattern.findAll(text).map { it.value }.toSet()
     if (ips.isNotEmpty()) {
-        analysis.append("🌍 IP адреси (${ips.size}):\n")
+        analysis.append("🌍 IP addresses (${ips.size}):\n")
         ips.forEach { analysis.append("  - $it\n") }
         analysis.append("\n")
     }
 
-    // Номери телефонів
+    // Phone numbers
     val phonePattern = Regex("[\\+]?[1-9][\\d\\-\\(\\)\\s]{7,15}")
     val phones = phonePattern.findAll(text).map { it.value }.toSet()
     if (phones.isNotEmpty()) {
-        analysis.append("📱 Номери телефонів (${phones.size}):\n")
+        analysis.append("📱 Phone numbers (${phones.size}):\n")
         phones.forEach { analysis.append("  - $it\n") }
         analysis.append("\n")
     }
 
-    // Дати
+    // Dates
     val datePatterns = listOf(
         Regex("\\d{1,2}/\\d{1,2}/\\d{4}"), // MM/dd/yyyy
         Regex("\\d{1,2}-\\d{1,2}-\\d{4}"), // MM-dd-yyyy
@@ -399,31 +398,31 @@ private fun analyzeText(text: String): String {
         dates.addAll(pattern.findAll(text).map { it.value })
     }
     if (dates.isNotEmpty()) {
-        analysis.append("📅 Дати (${dates.size}):\n")
+        analysis.append("📅 Dates (${dates.size}):\n")
         dates.forEach { analysis.append("  - $it\n") }
         analysis.append("\n")
     }
 
-    // Числа
+    // Numbers
     val numberPattern = Regex("-?\\d+(?:\\.\\d+)?")
     val numbers = numberPattern.findAll(text).map { it.value }.toSet()
     if (numbers.isNotEmpty() && numbers.size <= 20) {
-        analysis.append("🔢 Числа (${numbers.size}):\n")
+        analysis.append("🔢 Numbers (${numbers.size}):\n")
         numbers.forEach { analysis.append("  - $it\n") }
         analysis.append("\n")
     }
 
-    // Структурний аналіз
-    analysis.append("=== СТРУКТУРНИЙ АНАЛІЗ ===\n")
+    // Structural analysis
+    analysis.append("=== STRUCTURAL ANALYSIS ===\n")
     val hasNumbers = text.any { it.isDigit() }
     val hasLetters = text.any { it.isLetter() }
     val hasSpecialChars = text.any { !it.isLetterOrDigit() && !it.isWhitespace() }
 
-    analysis.append("Містить цифри: ${if (hasNumbers) "Так" else "Ні"}\n")
-    analysis.append("Містить літери: ${if (hasLetters) "Так" else "Ні"}\n")
-    analysis.append("Містить спеціальні символи: ${if (hasSpecialChars) "Так" else "Ні"}\n")
+    analysis.append("Contains digits: ${if (hasNumbers) "Yes" else "No"}\n")
+    analysis.append("Contains letters: ${if (hasLetters) "Yes" else "No"}\n")
+    analysis.append("Contains special characters: ${if (hasSpecialChars) "Yes" else "No"}\n")
 
-    // Розподіл символів
+    // Character distribution
     val charCounts = text.groupingBy { it }.eachCount()
         .filterKeys { !it.isWhitespace() }
         .toList()
@@ -431,9 +430,9 @@ private fun analyzeText(text: String): String {
         .take(10)
 
     if (charCounts.isNotEmpty()) {
-        analysis.append("\nНайчастіші символи:\n")
+        analysis.append("\nMost frequent characters:\n")
         charCounts.forEach { (char, count) ->
-            analysis.append("  '$char': $count разів\n")
+            analysis.append("  '$char': $count times\n")
         }
     }
 
@@ -446,17 +445,17 @@ private fun generateRegexFromText(text: String): String {
     val lines = text.split('\n').filter { it.isNotEmpty() }
     if (lines.isEmpty()) return ""
 
-    // Якщо всього один рядок, аналізуємо його
+    // If only one line, analyze it
     if (lines.size == 1) {
         return generateRegexForSingleLine(lines[0])
     }
 
-    // Для множинних рядків намагаємось знайти спільний патерн
+    // For multiple lines, try to find common pattern
     return generateRegexForMultipleLines(lines)
 }
 
 private fun generateRegexForSingleLine(line: String): String {
-    // Перевіряємо на популярні патерни
+    // Check for popular patterns
     val emailPattern = Regex("[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}")
     if (emailPattern.matches(line)) {
         return "[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}"
@@ -472,29 +471,29 @@ private fun generateRegexForSingleLine(line: String): String {
         return "(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)"
     }
 
-    // Загальний підхід - створюємо патерн на основі структури
+    // General approach - create pattern based on structure
     return createPatternFromStructure(line)
 }
 
 private fun generateRegexForMultipleLines(lines: List<String>): String {
-    // Знаходимо спільні характеристики всіх рядків
+    // Find common characteristics of all lines
     val minLength = lines.minOf { it.length }
     val maxLength = lines.maxOf { it.length }
 
-    // Якщо всі рядки однакової довжини, шукаємо позиційні патерни
+    // If all lines have the same length, look for positional patterns
     if (minLength == maxLength) {
         return createFixedLengthPattern(lines)
     }
 
-    // Інакше створюємо більш загальний патерн
+    // Otherwise create a more general pattern
     val patterns = lines.map { createPatternFromStructure(it) }
 
-    // Якщо всі патерни однакові, повертаємо один
+    // If all patterns are the same, return one
     if (patterns.toSet().size == 1) {
         return patterns.first()
     }
 
-    // Намагаємось знайти спільні елементи
+    // Try to find common elements
     return combinePatterns(patterns)
 }
 
@@ -507,7 +506,7 @@ private fun createPatternFromStructure(text: String): String {
 
         when {
             char.isDigit() -> {
-                // Рахуємо послідовні цифри
+                // Count consecutive digits
                 var digitCount = 0
                 var j = i
                 while (j < text.length && text[j].isDigit()) {
@@ -524,7 +523,7 @@ private fun createPatternFromStructure(text: String): String {
             }
 
             char.isLetter() -> {
-                // Рахуємо послідовні літери
+                // Count consecutive letters
                 var letterCount = 0
                 var j = i
                 val isUpper = char.isUpperCase()
@@ -545,14 +544,14 @@ private fun createPatternFromStructure(text: String): String {
 
             char.isWhitespace() -> {
                 result.append("\\s+")
-                // Пропускаємо всі послідовні пробіли
+                // Skip all consecutive spaces
                 while (i < text.length && text[i].isWhitespace()) {
                     i++
                 }
             }
 
             else -> {
-                // Спеціальні символи екрануємо
+                // Escape special characters
                 val escaped = when (char) {
                     '.', '*', '+', '?', '^', '$', '(', ')', '[', ']', '{', '}', '|', '\\' -> "\\$char"
                     else -> char.toString()
@@ -575,7 +574,7 @@ private fun createFixedLengthPattern(lines: List<String>): String {
 
         when {
             charsAtPos.size == 1 -> {
-                // Всі символи на цій позиції однакові
+                // All characters at this position are the same
                 val char = charsAtPos.first()
                 val escaped = when (char) {
                     '.', '*', '+', '?', '^', '$', '(', ')', '[', ']', '{', '}', '|', '\\' -> "\\$char"
@@ -603,7 +602,7 @@ private fun createFixedLengthPattern(lines: List<String>): String {
             }
 
             else -> {
-                // Створюємо клас символів
+                // Create character class
                 val sortedChars = charsAtPos.sorted()
                 result.append("[${sortedChars.joinToString("") {
                     when (it) {
@@ -619,8 +618,8 @@ private fun createFixedLengthPattern(lines: List<String>): String {
 }
 
 private fun combinePatterns(patterns: List<String>): String {
-    // Спрощена логіка комбінування патернів
-    // Повертаємо перший патерн з припискою що це один з можливих варіантів
+    // Simplified pattern combination logic
+    // Return first pattern with note that this is one of possible variants
     return if (patterns.isNotEmpty()) {
         "(?:" + patterns.joinToString("|") + ")"
     } else {
@@ -630,7 +629,7 @@ private fun combinePatterns(patterns: List<String>): String {
 
 private fun testRegex(pattern: String, text: String): String {
     if (pattern.isEmpty() || text.isEmpty()) {
-        return "Не вказано патерн або текст для тестування"
+        return "Pattern or text for testing not specified"
     }
 
     val result = StringBuilder()
@@ -639,54 +638,54 @@ private fun testRegex(pattern: String, text: String): String {
         val regex = Regex(pattern)
         val matches = regex.findAll(text).toList()
 
-        result.append("=== РЕЗУЛЬТАТИ ТЕСТУВАННЯ ===\n")
-        result.append("Патерн: $pattern\n")
-        result.append("Знайдено збігів: ${matches.size}\n\n")
+        result.append("=== TEST RESULTS ===\n")
+        result.append("Pattern: $pattern\n")
+        result.append("Matches found: ${matches.size}\n\n")
 
         if (matches.isNotEmpty()) {
-            result.append("=== ЗНАЙДЕНІ ЗБІГИ ===\n")
+            result.append("=== FOUND MATCHES ===\n")
             matches.forEachIndexed { index, match ->
-                result.append("${index + 1}. \"${match.value}\" (позиція ${match.range.first}-${match.range.last})\n")
+                result.append("${index + 1}. \"${match.value}\" (position ${match.range.first}-${match.range.last})\n")
 
                 if (match.groups.size > 1) {
-                    result.append("   Групи:\n")
+                    result.append("   Groups:\n")
                     match.groups.drop(1).forEachIndexed { groupIndex, group ->
                         if (group != null) {
-                            result.append("   - Група ${groupIndex + 1}: \"${group.value}\"\n")
+                            result.append("   - Group ${groupIndex + 1}: \"${group.value}\"\n")
                         }
                     }
                 }
             }
             result.append("\n")
 
-            // Статистика
-            result.append("=== СТАТИСТИКА ===\n")
+            // Statistics
+            result.append("=== STATISTICS ===\n")
             val uniqueMatches = matches.map { it.value }.toSet()
-            result.append("Унікальних збігів: ${uniqueMatches.size}\n")
+            result.append("Unique matches: ${uniqueMatches.size}\n")
 
             if (uniqueMatches.size != matches.size) {
-                result.append("Повторювані збіги:\n")
+                result.append("Repeated matches:\n")
                 val duplicates = matches.map { it.value }
                     .groupingBy { it }
                     .eachCount()
                     .filter { it.value > 1 }
 
                 duplicates.forEach { (value, count) ->
-                    result.append("  \"$value\": $count разів\n")
+                    result.append("  \"$value\": $count times\n")
                 }
             }
         } else {
-            result.append("❌ Збігів не знайдено\n")
-            result.append("\nПоради для покращення патерну:\n")
-            result.append("- Перевірте синтаксис регулярного виразу\n")
-            result.append("- Спростіть патерн для початкового тестування\n")
-            result.append("- Використайте аналіз тексту для знаходження патернів\n")
+            result.append("❌ No matches found\n")
+            result.append("\nTips for improving the pattern:\n")
+            result.append("- Check the regular expression syntax\n")
+            result.append("- Simplify the pattern for initial testing\n")
+            result.append("- Use text analysis to find patterns\n")
         }
 
     } catch (e: Exception) {
-        result.append("❌ ПОМИЛКА ПРИ ТЕСТУВАННІ\n")
+        result.append("❌ ERROR DURING TESTING\n")
         result.append("${e.message}\n")
-        result.append("\nПеревірте синтаксис регулярного виразу.")
+        result.append("\nCheck the regular expression syntax.")
     }
 
     return result.toString()

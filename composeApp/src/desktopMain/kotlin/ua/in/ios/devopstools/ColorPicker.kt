@@ -4,31 +4,25 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.focusable
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
+import androidx.compose.material3.MenuAnchorType
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.toArgb
-import androidx.compose.ui.input.key.Key
-import androidx.compose.ui.input.key.KeyEventType
-import androidx.compose.ui.input.key.key
-import androidx.compose.ui.input.key.type
-import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.text.AnnotatedString
@@ -40,6 +34,7 @@ import androidx.compose.ui.window.WindowState
 import androidx.compose.ui.window.WindowPosition
 import androidx.compose.ui.window.rememberWindowState
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import java.awt.Robot
 import java.awt.Toolkit
 import kotlin.math.*
@@ -115,148 +110,151 @@ private fun captureColorAtPosition(screenCapture: GlobalScreenCapture): Color {
 
 
 // Improved global eyedropper overlay
+@OptIn(ExperimentalComposeUiApi::class)
 @Composable
 private fun GlobalEyedropperOverlay(
     isActive: Boolean,
     onColorPicked: (Color) -> Unit,
     onCancel: () -> Unit
 ) {
-    if (isActive) {
-        val screenCapture = remember { GlobalScreenCapture() }
-        val (screenWidth, screenHeight) = remember { screenCapture.getScreenDimensions() }
+    if (!isActive) return
 
-        // Stable color preview - only update when needed
-        var currentColor by remember { mutableStateOf(Color.Red) }
-        var mousePosition by remember { mutableStateOf(Pair(0, 0)) }
-        var isUpdating by remember { mutableStateOf(false) }
+    val screenCapture = remember { GlobalScreenCapture() }
+    val (screenWidth, screenHeight) = remember { screenCapture.getScreenDimensions() }
 
-        // More stable color tracking with throttling
-        LaunchedEffect(isActive) {
-            var lastUpdateTime = 0L
-            while (isActive && !isUpdating) {
-                try {
-                    val currentTime = System.currentTimeMillis()
-                    if (currentTime - lastUpdateTime > 100) { // Update every 100ms
-                        val (x, y) = screenCapture.getCurrentMousePosition()
-                        if (mousePosition != Pair(x, y)) {
-                            mousePosition = Pair(x, y)
-                            currentColor = screenCapture.getPixelColor(x, y)
-                            lastUpdateTime = currentTime
-                        }
+    // Stable color preview - only update when needed
+    var currentColor by remember { mutableStateOf(Color.Red) }
+    var mousePosition by remember { mutableStateOf(Pair(0, 0)) }
+    var isUpdating by remember { mutableStateOf(false) }
+
+    // More stable color tracking with throttling
+    LaunchedEffect(isActive) {
+        var lastUpdateTime = 0L
+        while (isActive && !isUpdating) {
+            try {
+                val currentTime = System.currentTimeMillis()
+                if (currentTime - lastUpdateTime > 100) { // Update every 100ms
+                    val (x, y) = screenCapture.getCurrentMousePosition()
+                    if (mousePosition != Pair(x, y)) {
+                        mousePosition = Pair(x, y)
+                        currentColor = screenCapture.getPixelColor(x, y)
+                        lastUpdateTime = currentTime
                     }
-                    delay(50)
-                } catch (e: Exception) {
-                    // Continue silently on errors
                 }
+                delay(50)
+            } catch (e: Exception) {
+                // Continue silently on errors
+            }
+        }
+    }
+
+    Window(
+        onCloseRequest = onCancel,
+        state = rememberWindowState(
+            position = WindowPosition(0.dp, 0.dp),
+            width = screenWidth.dp,
+            height = screenHeight.dp
+        ),
+        title = "Color Picker - Eyedropper",
+        undecorated = true,
+        transparent = true,
+        alwaysOnTop = true,
+        resizable = false,
+        focusable = true
+    ) {
+        // Виводимо вікно на передній план при створенні
+        DisposableEffect(Unit) {
+            val awtWindow = java.awt.Window.getWindows().lastOrNull()
+            awtWindow?.toFront()
+            awtWindow?.requestFocus()
+
+            onDispose {
+                // Cleanup if needed
             }
         }
 
-        Window(
-            onCloseRequest = onCancel,
-            state = rememberWindowState(
-                position = WindowPosition(0.dp, 0.dp),
-                width = screenWidth.dp,
-                height = screenHeight.dp
-            ),
-            title = "Color Picker",
-            undecorated = true,
-            transparent = true,
-            alwaysOnTop = true,
-            resizable = false,
-            focusable = true
-        ) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(Color.Transparent)
-                    .onKeyEvent { keyEvent ->
-                        if (keyEvent.type == KeyEventType.KeyDown && keyEvent.key == Key.Escape) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Transparent)
+                .pointerInput(Unit) {
+                    detectTapGestures { _ ->
+                        isUpdating = true // Stop the update loop
+                        try {
+                            // More precise color capture
+                            val color = captureColorAtPosition(screenCapture)
+                            onColorPicked(color)
+                        } catch (e: Exception) {
                             onCancel()
-                            true
-                        } else {
-                            false
                         }
                     }
-                    .focusable(true)
-                    .pointerInput(Unit) {
-                        detectTapGestures { _ ->
-                            isUpdating = true // Stop the update loop
-                            try {
-                                // More precise color capture
-                                val color = captureColorAtPosition(screenCapture)
-                                onColorPicked(color)
-                            } catch (e: Exception) {
-                                onCancel()
-                            }
-                        }
-                    }
+                }
+        ) {
+            // Only color preview panel - no crosshair interference
+            Column(
+                modifier = Modifier
+                    .align(Alignment.TopStart)
+                    .padding(20.dp)
             ) {
-                // Only color preview panel - no crosshair interference
-                Column(
-                    modifier = Modifier
-                        .align(Alignment.TopStart)
-                        .padding(20.dp)
+                // Instructions
+                Card(
+                    colors = CardDefaults.cardColors(
+                        containerColor = Color.Black.copy(alpha = 0.9f)
+                    )
                 ) {
-                    // Instructions
-                    Card(
-                        colors = CardDefaults.cardColors(
-                            containerColor = Color.Black.copy(alpha = 0.9f)
-                        )
-                    ) {
-                        Text(
-                            text = "Click to pick color • ESC to cancel",
-                            color = Color.White,
-                            style = MaterialTheme.typography.bodyMedium,
-                            modifier = Modifier.padding(12.dp)
-                        )
-                    }
+                    Text(
+                        text = "Click to pick color • Press Cancel button to exit",
+                        color = Color.White,
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier.padding(12.dp)
+                    )
+                }
 
-                    Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(8.dp))
 
-                    // Color preview
-                    Card(
-                        colors = CardDefaults.cardColors(
-                            containerColor = Color.Black.copy(alpha = 0.9f)
-                        )
+                // Color preview
+                Card(
+                    colors = CardDefaults.cardColors(
+                        containerColor = Color.Black.copy(alpha = 0.9f)
+                    )
+                ) {
+                    Row(
+                        modifier = Modifier.padding(12.dp),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Row(
-                            modifier = Modifier.padding(12.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            // Color swatch
-                            Box(
-                                modifier = Modifier
-                                    .size(40.dp)
-                                    .background(currentColor, RoundedCornerShape(6.dp))
-                                    .border(
-                                        2.dp,
-                                        Color.White,
-                                        RoundedCornerShape(6.dp)
-                                    )
+                        // Color swatch
+                        Box(
+                            modifier = Modifier
+                                .size(40.dp)
+                                .background(currentColor, RoundedCornerShape(6.dp))
+                                .border(
+                                    2.dp,
+                                    Color.White,
+                                    RoundedCornerShape(6.dp)
+                                )
+                        )
+
+                        Spacer(modifier = Modifier.width(12.dp))
+
+                        // Color info
+                        Column {
+                            Text(
+                                text = "HEX: ${currentColor.toHex()}",
+                                color = Color.White,
+                                style = MaterialTheme.typography.bodySmall,
+                                fontFamily = FontFamily.Monospace
                             )
-
-                            Spacer(modifier = Modifier.width(12.dp))
-
-                            // Color info
-                            Column {
-                                Text(
-                                    text = "HEX: ${currentColor.toHex()}",
-                                    color = Color.White,
-                                    style = MaterialTheme.typography.bodySmall,
-                                    fontFamily = FontFamily.Monospace
-                                )
-                                Text(
-                                    text = "RGB: ${currentColor.toRgbString()}",
-                                    color = Color.White,
-                                    style = MaterialTheme.typography.bodySmall,
-                                    fontFamily = FontFamily.Monospace
-                                )
-                                Text(
-                                    text = "Mouse: (${mousePosition.first}, ${mousePosition.second})",
-                                    color = Color.White.copy(alpha = 0.8f),
-                                    style = MaterialTheme.typography.bodySmall
-                                )
-                            }
+                            Text(
+                                text = "RGB: ${currentColor.toRgbString()}",
+                                color = Color.White,
+                                style = MaterialTheme.typography.bodySmall,
+                                fontFamily = FontFamily.Monospace
+                            )
+                            Text(
+                                text = "Mouse: (${mousePosition.first}, ${mousePosition.second})",
+                                color = Color.White.copy(alpha = 0.8f),
+                                style = MaterialTheme.typography.bodySmall
+                            )
                         }
                     }
                 }
@@ -268,7 +266,11 @@ private fun GlobalEyedropperOverlay(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ColorPicker(modifier: Modifier = Modifier) {
+@Suppress("DEPRECATION")
+fun ColorPicker(
+    modifier: Modifier = Modifier,
+    mainWindowState: WindowState? = null  // <-- зробили параметр необов'язковим
+) {
     var selectedColor by remember { mutableStateOf(Color.Red) }
     var hexInput by remember { mutableStateOf("#FF0000") }
     var rgbR by remember { mutableStateOf("255") }
@@ -282,7 +284,12 @@ fun ColorPicker(modifier: Modifier = Modifier) {
 
     // Eyedropper state
     var isEyedropperActive by remember { mutableStateOf(false) }
-    var eyedropperInstructions by remember { mutableStateOf("Click eyedropper button and click anywhere on screen") }
+    var eyedropperInstructions by remember { mutableStateOf("Click eyedropper button to pick color from screen") }
+
+    // Зберігаємо посилання на головне AWT вікно
+    val mainAwtWindow = remember {
+        java.awt.Window.getWindows().firstOrNull { it.isVisible && !it.name.contains("###") }
+    }
 
     // HSV sliders state
     var hsvH by remember { mutableFloatStateOf(0f) }
@@ -368,6 +375,8 @@ fun ColorPicker(modifier: Modifier = Modifier) {
         )
     }
 
+    val scope = rememberCoroutineScope()
+
     Box(modifier = modifier) {
         Column(
             modifier = Modifier
@@ -405,10 +414,12 @@ fun ColorPicker(modifier: Modifier = Modifier) {
                             onClick = {
                                 if (isEyedropperActive) {
                                     isEyedropperActive = false
-                                    eyedropperInstructions = "Click eyedropper button and click anywhere on screen"
+                                    eyedropperInstructions = "Click eyedropper button to pick color from screen"
                                 } else {
+                                    // Вмикаємо піпетку і мінімізуємо головне вікно
                                     isEyedropperActive = true
-                                    eyedropperInstructions = "Click anywhere on screen to pick color. ESC to cancel."
+                                    eyedropperInstructions = "Click anywhere on screen to pick color"
+                                    mainWindowState?.isMinimized = true
                                 }
                             },
                             colors = ButtonDefaults.buttonColors(
@@ -571,7 +582,7 @@ fun ColorPicker(modifier: Modifier = Modifier) {
                                         value = colorBlindnessType.name.lowercase().replaceFirstChar { it.uppercase() },
                                         onValueChange = { },
                                         readOnly = true,
-                                        modifier = Modifier.fillMaxWidth().menuAnchor(),
+                                        modifier = Modifier.fillMaxWidth().menuAnchor(MenuAnchorType.PrimaryNotEditable, enabled = true),
                                         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
                                         label = { Text("Type") }
                                     )
@@ -835,18 +846,60 @@ fun ColorPicker(modifier: Modifier = Modifier) {
         }
 
         // Global eyedropper overlay
-        GlobalEyedropperOverlay(
-            isActive = isEyedropperActive,
-            onColorPicked = { color ->
-                updateAllFromColor(color)
-                isEyedropperActive = false
-                eyedropperInstructions = "Color successfully picked: ${color.toHex()}"
-            },
-            onCancel = {
-                isEyedropperActive = false
-                eyedropperInstructions = "Color selection cancelled"
-            }
-        )
+        if (isEyedropperActive) {
+            GlobalEyedropperOverlay(
+                isActive = true,
+                onColorPicked = { color ->
+                    // Відразу закриваємо оверлей
+                    isEyedropperActive = false
+                    scope.launch {
+                        delay(100)
+                        updateAllFromColor(color)
+                        eyedropperInstructions = "Color successfully picked: ${color.toHex()}"
+
+                        // Відновлюємо головне вікно
+                        mainWindowState?.isMinimized = false
+                        delay(100)
+
+                        // Використовуємо javax.swing для відновлення вікна
+                        java.awt.EventQueue.invokeLater {
+                            mainAwtWindow?.let { window ->
+                                if (window is java.awt.Frame) {
+                                    window.extendedState = java.awt.Frame.NORMAL
+                                }
+                                window.isVisible = true
+                                window.toFront()
+                                window.requestFocus()
+                            }
+                        }
+                    }
+                },
+                onCancel = {
+                    // Відразу закриваємо оверлей
+                    isEyedropperActive = false
+                    scope.launch {
+                        delay(100)
+                        eyedropperInstructions = "Color selection cancelled"
+
+                        // Відновлюємо головне вікно
+                        mainWindowState?.isMinimized = false
+                        delay(100)
+
+                        // Використовуємо javax.swing для відновлення вікна
+                        java.awt.EventQueue.invokeLater {
+                            mainAwtWindow?.let { window ->
+                                if (window is java.awt.Frame) {
+                                    window.extendedState = java.awt.Frame.NORMAL
+                                }
+                                window.isVisible = true
+                                window.toFront()
+                                window.requestFocus()
+                            }
+                        }
+                    }
+                }
+            )
+        }
     }
 }
 

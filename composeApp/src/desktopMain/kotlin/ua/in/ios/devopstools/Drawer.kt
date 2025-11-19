@@ -29,18 +29,19 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.WindowState
 import com.google.gson.JsonObject
 import kotlinx.coroutines.launch
 
 
 @Composable
-fun NavigationDrawer() {
+fun NavigationDrawer(windowState: WindowState? = null) {
     var currentScreen by remember { mutableStateOf("Home") }
 
     DetailedDrawer(
         onScreenSelected = { screen ->
             currentScreen = screen
-        }
+        },
     ) { innerPadding ->
         Box(modifier = Modifier.padding(innerPadding)) {
             when (currentScreen) {
@@ -49,7 +50,8 @@ fun NavigationDrawer() {
                 "WHOIS Lookup" -> WhoisLookup(modifier = Modifier.fillMaxSize())
                 "JSON Tasks" -> JsonTaskTable()
                 "Base64 Tool" -> Base64Tool(modifier = Modifier.fillMaxSize())
-                "Color Picker" -> ColorPicker(modifier = Modifier.fillMaxSize())
+                "Color Picker" -> ColorPicker(modifier = Modifier.fillMaxSize(),
+                    mainWindowState = windowState)
                 "JSON Converter" -> JsonConverter(modifier = Modifier.fillMaxSize())
                 "Regex Tester" -> RegexTester(modifier = Modifier.fillMaxSize())
                 "Help" -> Text("Help", modifier = Modifier.padding(16.dp))

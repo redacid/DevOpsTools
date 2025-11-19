@@ -236,34 +236,6 @@ fun Base64Tool(modifier: Modifier = Modifier) {
                     }
                 }
             }
-
-            // Додаткова інформація про Base64
-            Spacer(modifier = Modifier.height(24.dp))
-
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f))
-            ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Text(
-                        text = "About Base64:",
-                        style = MaterialTheme.typography.titleSmall,
-                        modifier = Modifier.padding(bottom = 8.dp)
-                    )
-
-                    Text(
-                        text = buildString {
-                            appendLine("• Base64 is a coding scheme that converts binary data into text format")
-                            appendLine("• Uses 64 characters: A-Z, a-z, 0-9, +, /")
-                            appendLine("• Each 3 bytes of original data are converted into 4 characters Base64")
-                            appendLine("• The '=' symbol is used to supplement")
-                            append("• Usually used to transmit binary data through text protocols")
-                        },
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer
-                    )
-                }
-            }
         }
     }
 }

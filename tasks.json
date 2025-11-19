@@ -44,7 +44,7 @@
       "description": "The cert-manager Command Line Tool",
       "binary_name": "cmctl",
       "install_type": "github",
-      "version_cmd": "version",
+      "version_cmd": "version --client",
       "enabled": true,
       "install_version": "v2.3.0",
       "github": {
@@ -105,7 +105,7 @@
       "install_type": "github",
       "version_cmd": "version",
       "enabled": true,
-      "install_version": "v0.215.0",
+      "install_version": "v0.217.0",
       "github": {
         "url": "https://github.com/eksctl-io/eksctl",
         "api_url": "https://api.github.com/repos/eksctl-io/eksctl",
@@ -127,12 +127,12 @@
       "install_type": "github",
       "version_cmd": "--version",
       "enabled": true,
-      "install_version": "v2.82.0",
+      "install_version": "v2.83.1",
       "github": {
         "url": "https://github.com/cli/cli/",
         "api_url": "https://api.github.com/repos/cli/cli",
         "parse_release_notes": false,
-        "asset": "gh_2.82.0_linux_amd64.deb",
+        "asset": "gh_2.83.1_linux_amd64.deb",
         "asset_type": "deb_based",
         "after_install_cmd": {
           "flag": false,
@@ -194,12 +194,12 @@
       "install_type": "github",
       "version_cmd": "version",
       "enabled": true,
-      "install_version": "v3.19.0",
+      "install_version": "v3.19.2",
       "github": {
         "url": "https://github.com/helm/helm",
         "api_url": "https://api.github.com/repos/helm/helm",
         "parse_release_notes": true,
-        "asset": "helm-v3.19.0-linux-amd64.tar.gz",
+        "asset": "helm-v3.19.2-linux-amd64.tar.gz",
         "asset_type": "package",
         "after_install_cmd": {
           "flag": false,
@@ -281,6 +281,28 @@
       }
     },
     {
+      "name": "kopia",
+      "description": "Kopia is a fast and secure open-source backup/restore tool that allows you to create encrypted snapshots of your data and save the snapshots to remote or cloud storage of your choice, to network-attached storage or server, or locally on your machine. Kopia does not \u0027image\u0027 your whole machine. Rather, Kopia allows you to backup/restore any and all files/directories that you deem are important or critical.",
+      "binary_name": "kopia",
+      "install_type": "github",
+      "version_cmd": "--version",
+      "disable_version_check": true,
+      "enabled": true,
+      "install_version": "v0.22.0",
+      "github": {
+        "url": "https://github.com/kopia/kopia",
+        "api_url": "https://api.github.com/repos/kopia/kopia",
+        "parse_release_notes": false,
+        "asset": "kopia-ui_0.22.0_amd64.deb",
+        "asset_type": "deb_based",
+        "after_install_cmd": {
+          "flag": false,
+          "sudo": false,
+          "cmd": ""
+        }
+      }
+    },
+    {
       "name": "kops",
       "description": "The easiest way to get a production grade Kubernetes cluster up and running",
       "binary_name": "kops",
@@ -288,7 +310,7 @@
       "version_cmd": "version",
       "disable_version_check": false,
       "enabled": true,
-      "install_version": "v1.33.1",
+      "install_version": "v1.34.0",
       "github": {
         "url": "https://github.com/kubernetes/kops",
         "api_url": "https://api.github.com/repos/kubernetes/kops",
@@ -332,7 +354,7 @@
       "install_type": "github",
       "version_cmd": "version",
       "enabled": true,
-      "install_version": "v4.9.0",
+      "install_version": "v4.10.1",
       "github": {
         "url": "https://github.com/kubernetes-sigs/kubebuilder",
         "api_url": "https://api.github.com/repos/kubernetes-sigs/kubebuilder",
@@ -440,13 +462,18 @@
       "install_type": "github",
       "version_cmd": "version",
       "enabled": true,
-      "install_version": "kustomize/v5.7.1",
+      "install_version": "kustomize/v5.8.0",
       "github": {
         "url": "https://github.com/kubernetes-sigs/kustomize",
         "api_url": "https://api.github.com/repos/kubernetes-sigs/kustomize",
         "parse_release_notes": false,
-        "asset": "kustomize_v5.7.1_linux_amd64.tar.gz",
-        "asset_type": "package"
+        "asset": "kustomize_v5.8.0_linux_amd64.tar.gz",
+        "asset_type": "package",
+        "after_install_cmd": {
+          "flag": false,
+          "sudo": false,
+          "cmd": ""
+        }
       },
       "disable_version_check": false
     },
@@ -457,14 +484,20 @@
       "install_type": "github",
       "version_cmd": "--version",
       "enabled": true,
-      "install_version": "v0.24.1",
+      "install_version": "v0.24.2",
       "github": {
         "url": "https://github.com/jesseduffield/lazydocker",
         "api_url": "https://api.github.com/repos/jesseduffield/lazydocker",
         "parse_release_notes": false,
-        "asset": "lazydocker_0.24.1_Linux_x86_64.tar.gz",
-        "asset_type": "package"
-      }
+        "asset": "lazydocker_0.24.2_Linux_x86_64.tar.gz",
+        "asset_type": "package",
+        "after_install_cmd": {
+          "flag": false,
+          "sudo": false,
+          "cmd": ""
+        }
+      },
+      "disable_version_check": false
     },
     {
       "name": "minikube",
@@ -495,12 +528,12 @@
       "install_type": "github",
       "version_cmd": "--version",
       "enabled": true,
-      "install_version": "v0.3.79",
+      "install_version": "v0.3.83",
       "github": {
         "url": "https://github.com/jameswoolfenden/pike",
         "api_url": "https://api.github.com/repos/jameswoolfenden/pike",
         "parse_release_notes": false,
-        "asset": "pike_0.3.79_linux_amd64.tar.gz",
+        "asset": "pike_0.3.83_linux_amd64.tar.gz",
         "asset_type": "package",
         "after_install_cmd": {
           "flag": false,
@@ -511,13 +544,33 @@
       "disable_version_check": false
     },
     {
+      "name": "pnpm",
+      "description": "Fast, disk space efficient package manager",
+      "binary_name": "pnpm",
+      "install_type": "github",
+      "version_cmd": "--version",
+      "disable_version_check": false,
+      "enabled": true,
+      "install_version": "v10.22.0",
+      "github": {
+        "url": "https://github.com/pnpm/pnpm",
+        "api_url": "https://api.github.com/repos/pnpm/pnpm",
+        "parse_release_notes": false,
+        "after_install_cmd": {
+          "flag": false,
+          "sudo": false,
+          "cmd": ""
+        }
+      }
+    },
+    {
       "name": "regbot",
       "description": "regclient is a client interface to OCI conformant registries and content shipped with the OCI Image Layout. It includes a Go library and several CLI commands",
       "binary_name": "regbot",
       "install_type": "github",
       "version_cmd": "version",
       "enabled": true,
-      "install_version": "v0.9.2",
+      "install_version": "v0.10.0",
       "github": {
         "url": "https://github.com/regclient/regclient",
         "api_url": "https://api.github.com/repos/regclient/regclient",
@@ -539,7 +592,7 @@
       "install_type": "github",
       "version_cmd": "version",
       "enabled": true,
-      "install_version": "v0.9.2",
+      "install_version": "v0.10.0",
       "github": {
         "url": "https://github.com/regclient/regclient",
         "api_url": "https://api.github.com/repos/regclient/regclient",
@@ -561,7 +614,7 @@
       "install_type": "github",
       "version_cmd": "version",
       "enabled": true,
-      "install_version": "v0.9.2",
+      "install_version": "v0.10.0",
       "github": {
         "url": "https://github.com/regclient/regclient",
         "api_url": "https://api.github.com/repos/regclient/regclient",
@@ -622,6 +675,28 @@
       "disable_version_check": false
     },
     {
+      "name": "terraform-docs",
+      "description": "A utility to generate documentation from Terraform modules in various output formats.",
+      "binary_name": "terraform-docs",
+      "install_type": "github",
+      "version_cmd": "--version",
+      "disable_version_check": false,
+      "enabled": true,
+      "install_version": "v0.20.0",
+      "github": {
+        "url": "https://github.com/terraform-docs/terraform-docs",
+        "api_url": "https://api.github.com/repos/terraform-docs/terraform-docs",
+        "parse_release_notes": false,
+        "asset": "terraform-docs-v0.20.0-linux-amd64.tar.gz",
+        "asset_type": "package",
+        "after_install_cmd": {
+          "flag": false,
+          "sudo": false,
+          "cmd": ""
+        }
+      }
+    },
+    {
       "name": "trivy",
       "description": "Trivy (pronunciation) is a comprehensive and versatile security scanner. Trivy has scanners that look for security issues, and targets where it can find those issues.",
       "binary_name": "trivy",
@@ -629,12 +704,12 @@
       "version_cmd": "--version",
       "disable_version_check": false,
       "enabled": true,
-      "install_version": "v0.67.0",
+      "install_version": "v0.67.2",
       "github": {
         "url": "https://github.com/aquasecurity/trivy",
         "api_url": "https://api.github.com/repos/aquasecurity/trivy",
         "parse_release_notes": false,
-        "asset": "trivy_0.67.0_Linux-64bit.deb",
+        "asset": "trivy_0.67.2_Linux-64bit.deb",
         "asset_type": "deb_based",
         "after_install_cmd": {
           "flag": false,
@@ -648,15 +723,15 @@
       "description": "Velero (formerly Heptio Ark) gives you tools to back up and restore your Kubernetes cluster resources and persistent volumes. You can run Velero with a public cloud platform or on-premises.",
       "binary_name": "velero",
       "install_type": "github",
-      "version_cmd": "version",
+      "version_cmd": "version --client-only",
       "disable_version_check": false,
       "enabled": true,
-      "install_version": "v1.17.0",
+      "install_version": "v1.17.1",
       "github": {
         "url": "https://github.com/vmware-tanzu/velero",
         "api_url": "https://api.github.com/repos/vmware-tanzu/velero",
         "parse_release_notes": false,
-        "asset": "velero-v1.17.0-linux-amd64.tar.gz",
+        "asset": "velero-v1.17.1-linux-amd64.tar.gz",
         "asset_type": "package",
         "after_install_cmd": {
           "flag": false,
@@ -670,7 +745,7 @@
       "binary_name": "yq",
       "description": "A lightweight and portable command-line YAML, JSON, INI and XML processor",
       "install_type": "github",
-      "install_version": "v4.48.1",
+      "install_version": "v4.48.2",
       "version_cmd": "--version",
       "enabled": true,
       "github": {
@@ -686,20 +761,6 @@
         }
       },
       "disable_version_check": false
-    },
-    {
-      "name": "kopia",
-      "description": "Kopia is a fast and secure open-source backup/restore tool that allows you to create encrypted snapshots of your data and save the snapshots to remote or cloud storage of your choice, to network-attached storage or server, or locally on your machine. Kopia does not \u0027image\u0027 your whole machine. Rather, Kopia allows you to backup/restore any and all files/directories that you deem are important or critical.",
-      "binary_name": "kopia",
-      "install_type": "github",
-      "version_cmd": "--version",
-      "disable_version_check": false,
-      "enabled": true,
-      "install_version": "latest",
-      "github": {
-        "url": "https://github.com/kopia/kopia",
-        "api_url": "https://api.github.com/repos/kopia/kopia"
-      }
     }
   ]
 }
