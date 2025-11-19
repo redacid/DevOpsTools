@@ -1,4 +1,7 @@
 # CHANGELOG
+## 0.3.0
+* add many tools(color picker, text converters, whois lookup, subnet calc)
+
 ## 0.2.0
 * fix for searching in unpacked package a binary file to partial match is used instead of full match
 * add a disable version checking checkbox

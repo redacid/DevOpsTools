@@ -47,6 +47,8 @@ kotlin {
             implementation(libs.androidx.lifecycle.viewmodel)
             implementation(libs.androidx.lifecycle.runtimeCompose)
             implementation("com.google.code.gson:gson:2.10.1")
+            implementation("org.yaml:snakeyaml:2.4")
+
         }
 //        commonTest.dependencies {
 //            implementation(libs.kotlin.test)

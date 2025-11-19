@@ -1,6 +1,7 @@
 package ua.`in`.ios.devopstools
 
 import androidx.compose.runtime.*
+import androidx.compose.ui.window.WindowState
 import org.jetbrains.compose.ui.tooling.preview.Preview
 
 
@@ -11,7 +12,7 @@ val systemInfo = SystemInfo.getInstance()
 
 @Composable
 @Preview
-fun App() {
+fun App(windowState: WindowState? = null) {
     val loglevel = settingsManager.getString("settings.log_level")
     when (loglevel) {
         "DEV" -> logger.setMinimumLogLevel(LogLevel.DEBUG)
@@ -32,5 +33,5 @@ fun App() {
 //// Отримання всіх налаштувань
 //    val allSettings = settingsManager.getSettings()
 
-    NavigationDrawer()
+    NavigationDrawer(windowState = windowState)
 }

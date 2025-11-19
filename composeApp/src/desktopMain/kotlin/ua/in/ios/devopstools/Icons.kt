@@ -17,8 +17,10 @@ import compose.icons.feathericons.Edit
 import compose.icons.feathericons.ExternalLink
 import compose.icons.feathericons.Eye
 import compose.icons.feathericons.EyeOff
+import compose.icons.feathericons.Feather
 import compose.icons.feathericons.Filter
 import compose.icons.feathericons.HardDrive
+import compose.icons.feathericons.Hash
 import compose.icons.feathericons.HelpCircle
 import compose.icons.feathericons.Hexagon
 import compose.icons.feathericons.Home
@@ -28,6 +30,7 @@ import compose.icons.feathericons.Lock
 import compose.icons.feathericons.Maximize2
 import compose.icons.feathericons.Menu
 import compose.icons.feathericons.Minimize2
+import compose.icons.feathericons.Minus
 import compose.icons.feathericons.Moon
 import compose.icons.feathericons.Play
 import compose.icons.feathericons.Plus
@@ -52,6 +55,8 @@ var ICON_UP = FeatherIcons.ArrowUp
 var ICON_DOWN = FeatherIcons.ArrowDown
 var ICON_RIGHT = FeatherIcons.ArrowRight
 var ICON_LEFT = FeatherIcons.ArrowLeft
+var ICON_HASH = FeatherIcons.Hash
+var ICON_FEATHER = FeatherIcons.Feather
 var ICON_LOGS = FeatherIcons.List
 var ICON_HELP = FeatherIcons.HelpCircle
 var ICON_INFO = FeatherIcons.Info
@@ -96,3 +101,5 @@ var ICON_SERVER = FeatherIcons.Server
 var ICON_HOME = FeatherIcons.Home
 var ICON_MENU = FeatherIcons.Menu
 var ICON_SHUFFLE = FeatherIcons.Shuffle
+var ICON_PLUS = FeatherIcons.Plus
+var ICON_MINUS = FeatherIcons.Minus
