@@ -68,12 +68,12 @@
       "install_type": "github",
       "version_cmd": "--version",
       "enabled": true,
-      "install_version": "0.2.0",
+      "install_version": "0.3.0",
       "github": {
         "url": "https://github.com/redacid/DevOpsTools",
         "api_url": "https://api.github.com/repos/redacid/DevOpsTools",
         "parse_release_notes": false,
-        "asset": "devopstools_0.2.0-1_amd64.deb",
+        "asset": "devopstools_0.3.0-1_amd64.deb",
         "asset_type": "deb_based",
         "after_install_cmd": {
           "flag": false,
