@@ -54,6 +54,7 @@ fun NavigationDrawer(windowState: WindowState? = null) {
                     mainWindowState = windowState)
                 "JSON Converter" -> JsonConverter(modifier = Modifier.fillMaxSize())
                 "Regex Tester" -> RegexTester(modifier = Modifier.fillMaxSize())
+                "Spiral Antenna Calculator" -> SpiralAntennaCalculator(modifier = Modifier.fillMaxSize())
                 "Help" -> Text("Help", modifier = Modifier.padding(16.dp))
                 "System Info" -> SystemInfoView()
                 "Logs" -> LogViewer(modifier = Modifier.fillMaxSize().padding(16.dp))
@@ -197,7 +198,18 @@ fun DetailedDrawer(
                             }
                         }
                     )
-
+                    NavigationDrawerItem(
+                        label = { Text("Spiral Antenna Calculator") },
+                        selected = selectedItem == "Spiral Antenna Calculator",
+                        icon = { Icon(ICON_CONNECT, contentDescription = null) },
+                        onClick = {
+                            selectedItem = "Spiral Antenna Calculator"
+                            onScreenSelected("Spiral Antenna Calculator")
+                            scope.launch {
+                                drawerState.close()
+                            }
+                        }
+                    )
                     HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
 
                     NavigationDrawerItem(
