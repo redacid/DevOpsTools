@@ -24,7 +24,12 @@ data class AntennaInfo(
     val inductance: Double,
     val gain: Double,
     val power: Double,
-    val coilHeight: Double
+    val coilHeight: Double,
+    val eirp: Double,           // Ефективна ізотропна випромінювальна потужність
+    val range: Double,          // Приблизна дальність дії
+    val impedance: Double,      // Вхідний опір антени
+    val bandwidth: Double,      // Смуга пропускання
+    val efficiency: Double     // КПД антени
 )
 
 enum class CalculationMode {
@@ -263,6 +268,7 @@ fun SpiralAntennaCalculator(modifier: Modifier = Modifier) {
                         modifier = Modifier.padding(bottom = 16.dp)
                     )
 
+
                     SelectionContainer {
                         Column {
                             AntennaInfoRow("Частота:", "${result.frequency} МГц")
@@ -273,9 +279,25 @@ fun SpiralAntennaCalculator(modifier: Modifier = Modifier) {
                             AntennaInfoRow("Висота котушки:", "${String.format("%.2f", result.coilHeight)} см")
                             AntennaInfoRow("Діаметр дроту:", "${result.wireDiameter} мм")
                             AntennaInfoRow("Крок спіралі:", "${String.format("%.2f", result.pitch)} мм")
+
+                            // Розділювач для електричних характеристик
+                            Spacer(modifier = Modifier.height(8.dp))
+                            HorizontalDivider()
+                            Spacer(modifier = Modifier.height(8.dp))
+
+                            AntennaInfoRow("Потужність передавача:", "${result.power} Вт")
+                            AntennaInfoRow("EIRP (ефективна потужність):", "${String.format("%.1f", result.eirp)} Вт")
+                            AntennaInfoRow("Коефіцієнт підсилення:", "${String.format("%.1f", result.gain)} дБi")
+                            AntennaInfoRow("КПД антени:", "${String.format("%.1f", result.efficiency * 100)}%")
+                            AntennaInfoRow("Вхідний опір:", "${String.format("%.0f", result.impedance)} Ом")
+                            AntennaInfoRow("Смуга пропускання:", "${String.format("%.1f", result.bandwidth)} МГц")
+                            AntennaInfoRow("Приблизна дальність дії:", "${String.format("%.0f", result.range)} м")
+
+                            // Індуктивність винесемо окремо
+                            Spacer(modifier = Modifier.height(8.dp))
+                            HorizontalDivider()
+                            Spacer(modifier = Modifier.height(8.dp))
                             AntennaInfoRow("Індуктивність:", "${String.format("%.2f", result.inductance)} мкГн")
-                            AntennaInfoRow("Очікуваний коефіцієнт підсилення:", "${String.format("%.1f", result.gain)} дБi")
-                            AntennaInfoRow("Потужність:", "${result.power} Вт")
                         }
                     }
                 }
@@ -328,6 +350,7 @@ private fun AntennaInfoRow(label: String, value: String) {
     }
 }
 
+
 private fun buildRecommendations(result: AntennaInfo): String {
     return buildString {
         append("• Використовуйте мідний дріт для кращої провідності\n")
@@ -339,11 +362,26 @@ private fun buildRecommendations(result: AntennaInfo): String {
         append("• Для ${result.frequency} МГц оптимальна поляризація - вертикальна\n")
         append("• Розташовуйте антену якомога вище над землею\n")
 
+        // Рекомендації залежно від потужності
+        when {
+            result.power <= 1 -> append("• Низька потужність: підходить для коротких дистанцій до ${String.format("%.0f", result.range)}м\n")
+            result.power <= 10 -> append("• Середня потужність: оптимально для гаражних воріт та пультів\n")
+            result.power > 10 -> append("• Висока потужність: забезпечте якісне узгодження (КСХ < 1.5)\n")
+        }
+
+        // Рекомендації по опору
+        if (result.impedance < 40) {
+            append("• Низький вхідний опір: може знадобитися узгоджувальний трансформатор\n")
+        } else if (result.impedance > 75) {
+            append("• Високий вхідний опір: перевірте якість з'єднань\n")
+        }
+
         if (result.frequency == 433.0) {
-            append("• Для 433 МГц: оптимальна дальність до 500м на відкритій місцевості")
+            append("• Для 433 МГц ISM діапазону: максимальна дозволена EIRP = 10 мВт в ЄС")
         }
     }
 }
+
 
 private fun calculateSpiralAntenna(
     frequencyMHz: Double,
@@ -413,7 +451,36 @@ private fun calculateSpiralAntenna(
     val inductance = (radiusCm * radiusCm * turns * turns) / (22.86 * radiusCm + 25.4 * lengthCm)
 
     // Розрахунок коефіцієнта підсилення (приблизний для спіральної антени)
-    val gain = 10 * log10(4 * PI * turns * (coilDiameter / 100) / wavelength)
+    val gain = 10 * log10(4 * PI * turns * (coilDiameter / 100) / wavelength).coerceAtLeast(0.0)
+    val gainLinear = 10.0.pow(gain / 10.0)
+
+    // Розрахунок КПД антени (залежить від частоти, матеріалу дроту та конструкції)
+    val skinDepth = sqrt(2 / (2 * PI * frequencyMHz * 1e6 * 4e-7 * PI * 5.8e7)) // глибина скін-ефекту для міді
+    val wireCrossSectionArea = PI * (wireDiameterMm / 2000).pow(2)
+    val resistance = actualWireLength / (5.8e7 * wireCrossSectionArea) // опір міді
+    val radiationResistance = 36.6 * (actualWireLength / wavelength).pow(2) // опір випромінювання
+    val efficiency = radiationResistance / (radiationResistance + resistance)
+
+    // Розрахунок EIRP (ефективна ізотропна випромінювальна потужність)
+    val eirp = powerW * gainLinear * efficiency
+
+    // Розрахунок вхідного опору антени
+    val impedance = when {
+        turns <= 2 -> 25.0 + 15.0 * turns
+        turns <= 5 -> 50.0 + 5.0 * (turns - 2)
+        else -> 65.0 + 2.0 * (turns - 5)
+    }
+
+    // Розрахунок смуги пропускання (залежить від добротності)
+    val q = 2 * PI * frequencyMHz * 1e6 * inductance * 1e-6 / impedance
+    val bandwidth = frequencyMHz / q
+
+    // Розрахунок приблизної дальності дії (у вільному просторі)
+    // Формула Friis для втрат у вільному просторі
+    val rxSensitivity = -100.0 // дБм (типова чутливість приймача 433 МГц)
+    val txPowerDbm = 10 * log10(powerW * 1000) // переведення в дБм
+    val pathLossDb = txPowerDbm + gain - rxSensitivity - 20 // 20 дБ запас
+    val range = lightSpeed / (4 * PI * frequencyMHz * 1e6) * 10.0.pow(pathLossDb / 20.0)
 
     return AntennaInfo(
         frequency = frequencyMHz,
@@ -424,8 +491,13 @@ private fun calculateSpiralAntenna(
         wireDiameter = wireDiameterMm,
         pitch = pitch,
         inductance = inductance,
-        gain = gain.coerceAtLeast(0.0),
+        gain = gain,
         power = powerW,
-        coilHeight = coilHeight
+        coilHeight = coilHeight,
+        eirp = eirp,
+        range = range.coerceAtMost(10000.0), // обмежуємо розумними межами
+        impedance = impedance,
+        bandwidth = bandwidth,
+        efficiency = efficiency.coerceIn(0.1, 0.95) // реалістичні межі КПД
     )
 }
