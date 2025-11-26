@@ -54,6 +54,7 @@ fun NavigationDrawer(windowState: WindowState? = null) {
                     mainWindowState = windowState)
                 "JSON Converter" -> JsonConverter(modifier = Modifier.fillMaxSize())
                 "Regex Tester" -> RegexTester(modifier = Modifier.fillMaxSize())
+                "Number Base Converter" -> NumberBaseConverter(modifier = Modifier.fillMaxSize())
                 "Spiral Antenna Calculator" -> SpiralAntennaCalculator(modifier = Modifier.fillMaxSize())
                 "Help" -> Text("Help", modifier = Modifier.padding(16.dp))
                 "System Info" -> SystemInfoView()
@@ -193,6 +194,18 @@ fun DetailedDrawer(
                         onClick = {
                             selectedItem = "Regex Tester"
                             onScreenSelected("Regex Tester")
+                            scope.launch {
+                                drawerState.close()
+                            }
+                        }
+                    )
+                    NavigationDrawerItem(
+                        label = { Text("Number Base Converter") },
+                        selected = selectedItem == "Number Base Converter",
+                        icon = { Icon(ICON_HASH, contentDescription = null) },
+                        onClick = {
+                            selectedItem = "Number Base Converter"
+                            onScreenSelected("Number Base Converter")
                             scope.launch {
                                 drawerState.close()
                             }
