@@ -18,54 +18,62 @@ data class AntennaInfo(
     val wavelength: Double,
     val totalLength: Double,
     val turns: Int,
-    val coilDiameterMm: Double,     // в мм
-    val wireDiameterMm: Double,     // в мм
-    val pitchMm: Double,            // в мм
+    val coilDiameterMm: Double,     // in mm
+    val wireDiameterMm: Double,     // in mm
+    val pitchMm: Double,            // in mm
     val inductance: Double,
     val gain: Double,
     val power: Double,
-    val coilHeightMm: Double,       // в мм
+    val coilHeightMm: Double,       // in mm
     val eirp: Double,
-    val range: Double,              // в метрах
+    val range: Double,              // in meters
     val impedance: Double,
     val bandwidth: Double,
     val efficiency: Double,
-    // Нові параметри для аналізу товщини дроту
-    val skinDepthMm: Double,        // глибина скін-ефекту в мм
-    val wireResistanceOhm: Double,  // опір дроту в Ом
-    val radiationResistanceOhm: Double, // опір випромінювання в Ом
-    val qualityFactor: Double,      // добротність Q
-    val skinEffectFactor: Double,   // коефіцієнт скін-ефекту
-    val wireQuality: String         // оцінка якості товщини дроту
+    // New parameters for wire thickness analysis
+    val skinDepthMm: Double,        // skin depth in mm
+    val wireResistanceOhm: Double,  // wire resistance in Ohms
+    val radiationResistanceOhm: Double, // radiation resistance in Ohms
+    val qualityFactor: Double,      // Q-factor
+    val skinEffectFactor: Double,   // skin effect utilization factor
+    val wireQuality: String         // assessment of wire thickness
 )
 
+enum class WavelengthFraction(val description: String, val factor: Double) {
+    FULL_WAVE("1λ (Full Wave)", 1.0),
+    HALF_WAVE("λ/2 (Half Wave)", 0.5),
+    THIRD_WAVE("λ/3 (Third Wave)", 1.0 / 3.0),
+    QUARTER_WAVE("λ/4 (Quarter Wave)", 0.25)
+}
+
 enum class CalculationMode {
-    AUTO,           // Автоматичний розрахунок
-    FIXED_DIAMETER, // Фіксований діаметр
-    FIXED_TURNS     // Фіксована кількість витків
+    FIXED_DIAMETER, // Fixed diameter
+    FIXED_TURNS     // Fixed number of turns
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SpiralAntennaCalculator(modifier: Modifier = Modifier) {
-    var frequency by remember { mutableStateOf("433.0") }
-    var wireDiameter by remember { mutableStateOf("0.5") }
-    var power by remember { mutableStateOf("10.0") }
-    var calculationMode by remember { mutableStateOf(CalculationMode.AUTO) }
-    var fixedCoilDiameter by remember { mutableStateOf("50.0") }
-    var fixedTurns by remember { mutableStateOf("5") }
-    var pitchBetweenCenters by remember { mutableStateOf("1.0") }
+    var frequency by remember { mutableStateOf("433.92") }
+    var wireDiameter by remember { mutableStateOf("0.75") }
+    var power by remember { mutableStateOf("0.01") }
+    var wavelengthFraction by remember { mutableStateOf(WavelengthFraction.QUARTER_WAVE) }
+    var calculationMode by remember { mutableStateOf(CalculationMode.FIXED_DIAMETER) }
+    var fixedCoilDiameter by remember { mutableStateOf("5.0") }
+    var fixedTurns by remember { mutableStateOf("10") }
+    var pitchBetweenCenters by remember { mutableStateOf("3.0") }
     var calculationResult by remember { mutableStateOf<AntennaInfo?>(null) }
     var errorMessage by remember { mutableStateOf("") }
 
-    // Автоматичний пересчет при зміні параметрів
-    LaunchedEffect(frequency, wireDiameter, power, calculationMode, fixedCoilDiameter, fixedTurns, pitchBetweenCenters) {
+    // Automatic calculation on parameter change
+    LaunchedEffect(frequency, wireDiameter, power, wavelengthFraction, calculationMode, fixedCoilDiameter, fixedTurns, pitchBetweenCenters) {
         if (frequency.isNotBlank() && wireDiameter.isNotBlank() && power.isNotBlank() && pitchBetweenCenters.isNotBlank()) {
             try {
                 val result = calculateSpiralAntenna(
                     frequency.toDouble(),
                     wireDiameter.toDouble(),
                     power.toDouble(),
+                    wavelengthFraction,
                     calculationMode,
                     if (calculationMode == CalculationMode.FIXED_DIAMETER) fixedCoilDiameter.toDoubleOrNull() else null,
                     if (calculationMode == CalculationMode.FIXED_TURNS) fixedTurns.toIntOrNull() else null,
@@ -74,7 +82,7 @@ fun SpiralAntennaCalculator(modifier: Modifier = Modifier) {
                 calculationResult = result
                 errorMessage = ""
             } catch (e: Exception) {
-                errorMessage = "Помилка: ${e.message}"
+                errorMessage = "Error: ${e.message}"
                 calculationResult = null
             }
         }
@@ -87,128 +95,183 @@ fun SpiralAntennaCalculator(modifier: Modifier = Modifier) {
             .verticalScroll(rememberScrollState())
     ) {
         Text(
-            text = "Калькулятор спіральної антени",
+            text = "Spiral Antenna Calculator",
             style = MaterialTheme.typography.headlineMedium,
             modifier = Modifier.padding(bottom = 24.dp)
         )
 
         Text(
-            text = "Розрахунок параметрів спіральної антени для приймачів та передавачів (наприклад, гаражні ворота)",
+            text = "Calculation of spiral antenna parameters for receivers and transmitters (e.g., garage doors)",
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(bottom = 16.dp)
         )
 
-        // Основні параметри
+        // Main Parameters
         Card(
             modifier = Modifier.fillMaxWidth(),
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
         ) {
             Column(modifier = Modifier.padding(16.dp)) {
                 Text(
-                    text = "Основні параметри",
+                    text = "Main Parameters",
                     style = MaterialTheme.typography.titleMedium,
                     modifier = Modifier.padding(bottom = 16.dp)
                 )
 
-                // Поле для введення частоти
-                OutlinedTextField(
-                    value = frequency,
-                    onValueChange = {
-                        frequency = it
-                        errorMessage = ""
-                    },
-                    label = { Text("Частота (МГц)") },
-                    placeholder = { Text("433.0") },
-                    modifier = Modifier.fillMaxWidth(),
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                    supportingText = { Text("Стандартні частоти: 433 МГц, 315 МГц, 868 МГц") }
+                // Standard Frequencies
+                val standardFrequencies = listOf(
+                    "ISM Europe (433 MHz)" to "433.92",
+                    "ISM Europe (868 MHz)" to "868.3",
+                    "ISM US (315 MHz)" to "315.0",
+                    "ISM US (915 MHz)" to "915.0",
+                    "Wi-Fi / BT (2.4 GHz)" to "2440.0",
+                    "Wi-Fi 5G (Ch 36)" to "5180.0",
+                    "Wi-Fi 5G (Ch 100)" to "5500.0",
+                    "Wi-Fi 5G (Ch 149)" to "5745.0",
+                    "GPS L1" to "1575.42",
+                    "LoRa EU" to "868.0",
+                    "LoRa US" to "915.0"
                 )
+                var freqExpanded by remember { mutableStateOf(false) }
+
+                ExposedDropdownMenuBox(
+                    expanded = freqExpanded,
+                    onExpandedChange = { freqExpanded = !freqExpanded }
+                ) {
+                    OutlinedTextField(
+                        value = frequency,
+                        onValueChange = { frequency = it },
+                        label = { Text("Frequency (MHz)") },
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = freqExpanded) },
+                        modifier = Modifier.fillMaxWidth().menuAnchor(),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                        supportingText = { Text("Select a standard or enter a custom value") }
+                    )
+                    ExposedDropdownMenu(
+                        expanded = freqExpanded,
+                        onDismissRequest = { freqExpanded = false }
+                    ) {
+                        standardFrequencies.forEach { selectionOption ->
+                            DropdownMenuItem(
+                                text = { Text("${selectionOption.first} - ${selectionOption.second} MHz") },
+                                onClick = {
+                                    frequency = selectionOption.second
+                                    freqExpanded = false
+                                }
+                            )
+                        }
+                    }
+                }
+
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // Поле для введення діаметру дроту
+                // Radiator Length Dropdown
+                var lengthExpanded by remember { mutableStateOf(false) }
+                ExposedDropdownMenuBox(
+                    expanded = lengthExpanded,
+                    onExpandedChange = { lengthExpanded = !lengthExpanded }
+                ) {
+                    OutlinedTextField(
+                        value = wavelengthFraction.description,
+                        onValueChange = {},
+                        readOnly = true,
+                        label = { Text("Radiator Length") },
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = lengthExpanded) },
+                        modifier = Modifier.fillMaxWidth().menuAnchor(),
+                        supportingText = { Text("Electrical length of the antenna wire") }
+                    )
+                    ExposedDropdownMenu(
+                        expanded = lengthExpanded,
+                        onDismissRequest = { lengthExpanded = false }
+                    ) {
+                        WavelengthFraction.values().forEach { selectionOption ->
+                            DropdownMenuItem(
+                                text = { Text(selectionOption.description) },
+                                onClick = {
+                                    wavelengthFraction = selectionOption
+                                    lengthExpanded = false
+                                }
+                            )
+                        }
+                    }
+                }
+
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // Wire diameter input field
                 OutlinedTextField(
                     value = wireDiameter,
                     onValueChange = {
                         wireDiameter = it
                         errorMessage = ""
                     },
-                    label = { Text("Діаметр дроту (мм)") },
-                    placeholder = { Text("0.50") },
+                    label = { Text("Wire Diameter (mm)") },
+                    placeholder = { Text("0.75") },
                     modifier = Modifier.fillMaxWidth(),
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                    supportingText = { Text("Типові значення: 0.3-2.0 мм") }
+                    supportingText = { Text("Typical values: 0.3-2.0 mm") }
                 )
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // Поле для введення кроку між центрами витків
+                // Pitch between turn centers input field
                 OutlinedTextField(
                     value = pitchBetweenCenters,
                     onValueChange = {
                         pitchBetweenCenters = it
                         errorMessage = ""
                     },
-                    label = { Text("Крок між центрами витків (мм)") },
-                    placeholder = { Text("1.00") },
+                    label = { Text("Pitch between turn centers (mm)") },
+                    placeholder = { Text("3.00") },
                     modifier = Modifier.fillMaxWidth(),
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                    supportingText = { Text("Відстань між центрами сусідніх витків. Мінімум = діаметр дроту") }
+                    supportingText = { Text("Distance between the centers of adjacent turns. Minimum = wire diameter") }
                 )
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // Поле для введення потужності
+                // Power input field
                 OutlinedTextField(
                     value = power,
                     onValueChange = {
                         power = it
                         errorMessage = ""
                     },
-                    label = { Text("Потужність передавача (Вт)") },
+                    label = { Text("Transmitter Power (W)") },
                     placeholder = { Text("0.01") },
                     modifier = Modifier.fillMaxWidth(),
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                    supportingText = { Text("Для гаражних воріт зазвичай 1-50 Вт") }
+                    supportingText = { Text("For garage doors, typically 0.01-10 W") }
                 )
             }
         }
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Режим розрахунку
+        // Calculation Mode
         Card(
             modifier = Modifier.fillMaxWidth(),
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer)
         ) {
             Column(modifier = Modifier.padding(16.dp)) {
                 Text(
-                    text = "Режим розрахунку",
+                    text = "Calculation Mode",
                     style = MaterialTheme.typography.titleMedium,
                     modifier = Modifier.padding(bottom = 16.dp)
                 )
 
-                // Радіокнопки для вибору режиму
+                // Radio buttons for mode selection
                 Column {
-                    Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
-                        RadioButton(
-                            selected = calculationMode == CalculationMode.AUTO,
-                            onClick = { calculationMode = CalculationMode.AUTO }
-                        )
-                        Text(
-                            text = "Автоматичний розрахунок (оптимальні значення)",
-                            modifier = Modifier.padding(start = 8.dp)
-                        )
-                    }
-
                     Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
                         RadioButton(
                             selected = calculationMode == CalculationMode.FIXED_DIAMETER,
                             onClick = { calculationMode = CalculationMode.FIXED_DIAMETER }
                         )
                         Text(
-                            text = "Задати діаметр котушки",
+                            text = "Set Coil Diameter",
                             modifier = Modifier.padding(start = 8.dp)
                         )
                     }
@@ -219,24 +282,24 @@ fun SpiralAntennaCalculator(modifier: Modifier = Modifier) {
                             onClick = { calculationMode = CalculationMode.FIXED_TURNS }
                         )
                         Text(
-                            text = "Задати кількість витків",
+                            text = "Set Number of Turns",
                             modifier = Modifier.padding(start = 8.dp)
                         )
                     }
                 }
 
-                // Додаткові поля в залежності від режиму
+                // Additional fields depending on the mode
                 when (calculationMode) {
                     CalculationMode.FIXED_DIAMETER -> {
                         Spacer(modifier = Modifier.height(16.dp))
                         OutlinedTextField(
                             value = fixedCoilDiameter,
                             onValueChange = { fixedCoilDiameter = it },
-                            label = { Text("Внутрішній діаметр котушки (мм)") },
-                            placeholder = { Text("0.5") },
+                            label = { Text("Inner Coil Diameter (mm)") },
+                            placeholder = { Text("5.0") },
                             modifier = Modifier.fillMaxWidth(),
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                            supportingText = { Text("Діаметр основи для намотування") }
+                            supportingText = { Text("Diameter of the winding form") }
                         )
                     }
                     CalculationMode.FIXED_TURNS -> {
@@ -244,19 +307,11 @@ fun SpiralAntennaCalculator(modifier: Modifier = Modifier) {
                         OutlinedTextField(
                             value = fixedTurns,
                             onValueChange = { fixedTurns = it },
-                            label = { Text("Кількість витків") },
+                            label = { Text("Number of Turns") },
                             placeholder = { Text("5") },
                             modifier = Modifier.fillMaxWidth(),
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                            supportingText = { Text("Рекомендовано: 3-15 витків") }
-                        )
-                    }
-                    CalculationMode.AUTO -> {
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text(
-                            text = "Параметри котушки будуть розраховані автоматично для оптимальної роботи",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSecondaryContainer
+                            supportingText = { Text("Recommended: 3-15 turns") }
                         )
                     }
                 }
@@ -265,7 +320,7 @@ fun SpiralAntennaCalculator(modifier: Modifier = Modifier) {
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Відображення помилок
+        // Error display
         if (errorMessage.isNotEmpty()) {
             Card(
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer),
@@ -280,7 +335,7 @@ fun SpiralAntennaCalculator(modifier: Modifier = Modifier) {
             Spacer(modifier = Modifier.height(16.dp))
         }
 
-        // Відображення результатів
+        // Results display
         calculationResult?.let { result ->
             Card(
                 modifier = Modifier.fillMaxWidth(),
@@ -288,57 +343,57 @@ fun SpiralAntennaCalculator(modifier: Modifier = Modifier) {
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text(
-                        text = "Результати розрахунку",
+                        text = "Calculation Results",
                         style = MaterialTheme.typography.titleLarge,
                         modifier = Modifier.padding(bottom = 16.dp)
                     )
 
                     SelectionContainer {
                         Column {
-                            AntennaInfoRow("Частота:", "${result.frequency} МГц")
-                            AntennaInfoRow("Довжина хвилі:", "${String.format("%.0f", result.wavelength * 1000)} мм")
-                            AntennaInfoRow("Загальна довжина дроту:", "${String.format("%.0f", result.totalLength * 1000)} мм")
-                            AntennaInfoRow("Кількість витків:", "${result.turns}")
-                            AntennaInfoRow("Внутрішній діаметр котушки:", "${String.format("%.2f", result.coilDiameterMm)} мм")
-                            AntennaInfoRow("Висота котушки:", "${String.format("%.2f", result.coilHeightMm)} мм")
-                            AntennaInfoRow("Діаметр дроту:", "${String.format("%.2f", result.wireDiameterMm)} мм")
-                            AntennaInfoRow("Крок спіралі:", "${String.format("%.2f", result.pitchMm)} мм")
+                            AntennaInfoRow("Frequency:", "${result.frequency} MHz")
+                            AntennaInfoRow("Wavelength:", "${String.format("%.0f", result.wavelength * 1000)} mm")
+                            AntennaInfoRow("Total Wire Length:", "${String.format("%.0f", result.totalLength * 1000)} mm")
+                            AntennaInfoRow("Number of Turns:", "${result.turns}")
+                            AntennaInfoRow("Inner Coil Diameter:", "${String.format("%.2f", result.coilDiameterMm)} mm")
+                            AntennaInfoRow("Coil Height:", "${String.format("%.2f", result.coilHeightMm)} mm")
+                            AntennaInfoRow("Wire Diameter:", "${String.format("%.2f", result.wireDiameterMm)} mm")
+                            AntennaInfoRow("Spiral Pitch:", "${String.format("%.2f", result.pitchMm)} mm")
 
-                            // Розділювач для електричних характеристик
+                            // Divider for electrical characteristics
                             Spacer(modifier = Modifier.height(8.dp))
                             HorizontalDivider()
                             Spacer(modifier = Modifier.height(8.dp))
 
-                            AntennaInfoRow("Потужність передавача:", "${result.power} Вт")
-                            AntennaInfoRow("EIRP (ефективна потужність):", "${String.format("%.4f", result.eirp)} Вт")
-                            AntennaInfoRow("Коефіцієнт підсилення:", "${String.format("%.2f", result.gain)} дБi")
-                            AntennaInfoRow("КПД антени:", "${String.format("%.2f", result.efficiency * 100)}%")
-                            AntennaInfoRow("Вхідний опір:", "${String.format("%.0f", result.impedance)} Ом")
-                            AntennaInfoRow("Смуга пропускання:", "${String.format("%.2f", result.bandwidth)} МГц")
-                            AntennaInfoRow("Приблизна дальність дії:", "${String.format("%.0f", result.range)} м")
+                            AntennaInfoRow("Transmitter Power:", "${result.power} W")
+                            AntennaInfoRow("EIRP (Effective Power):", "${String.format("%.4f", result.eirp)} W")
+                            AntennaInfoRow("Gain:", "${String.format("%.2f", result.gain)} dBi")
+                            AntennaInfoRow("Antenna Efficiency:", "${String.format("%.2f", result.efficiency * 100)}%")
+                            AntennaInfoRow("Input Impedance:", "${String.format("%.0f", result.impedance)} Ohm")
+                            AntennaInfoRow("Bandwidth:", "${String.format("%.2f", result.bandwidth)} MHz")
+                            AntennaInfoRow("Approximate Range:", "${String.format("%.0f", result.range)} m")
 
-                            // Індуктивність винесемо окремо
+                            // Inductance separately
                             Spacer(modifier = Modifier.height(8.dp))
                             HorizontalDivider()
                             Spacer(modifier = Modifier.height(8.dp))
-                            AntennaInfoRow("Індуктивність:", "${String.format("%.4f", result.inductance)} мкГн")
+                            AntennaInfoRow("Inductance:", "${String.format("%.4f", result.inductance)} µH")
 
-                            // Новий розділ - аналіз товщини дроту
+                            // New section - wire thickness analysis
                             Spacer(modifier = Modifier.height(8.dp))
                             HorizontalDivider()
                             Spacer(modifier = Modifier.height(8.dp))
                             Text(
-                                text = "Аналіз товщини дроту:",
+                                text = "Wire Thickness Analysis:",
                                 style = MaterialTheme.typography.titleSmall,
                                 modifier = Modifier.padding(vertical = 8.dp)
                             )
 
-                            AntennaInfoRow("Глибина скін-ефекту:", "${String.format("%.4f", result.skinDepthMm)} мм")
-                            AntennaInfoRow("Опір дроту:", "${String.format("%.4f", result.wireResistanceOhm)} Ом")
-                            AntennaInfoRow("Опір випромінювання:", "${String.format("%.4f", result.radiationResistanceOhm)} Ом")
-                            AntennaInfoRow("Добротність (Q):", "${String.format("%.4f", result.qualityFactor)}")
-                            AntennaInfoRow("Використання скін-шару:", "${String.format("%.4f", result.skinEffectFactor * 100)}%")
-                            AntennaInfoRow("Оцінка товщини дроту:", result.wireQuality)
+                            AntennaInfoRow("Skin Depth:", "${String.format("%.4f", result.skinDepthMm)} mm")
+                            AntennaInfoRow("Wire Resistance:", "${String.format("%.4f", result.wireResistanceOhm)} Ohm")
+                            AntennaInfoRow("Radiation Resistance:", "${String.format("%.4f", result.radiationResistanceOhm)} Ohm")
+                            AntennaInfoRow("Quality Factor (Q):", "${String.format("%.4f", result.qualityFactor)}")
+                            AntennaInfoRow("Skin Layer Usage:", "${String.format("%.4f", result.skinEffectFactor * 100)}%")
+                            AntennaInfoRow("Wire Thickness Assessment:", result.wireQuality)
                         }
                     }
                 }
@@ -346,14 +401,14 @@ fun SpiralAntennaCalculator(modifier: Modifier = Modifier) {
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Додаткова інформація
+            // Additional information
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text(
-                        text = "Рекомендації для виготовлення",
+                        text = "Manufacturing Recommendations",
                         style = MaterialTheme.typography.titleMedium,
                         modifier = Modifier.padding(bottom = 8.dp)
                     )
@@ -395,89 +450,77 @@ private fun calculateSpiralAntenna(
     frequencyMHz: Double,
     wireDiameterMm: Double,
     powerW: Double,
+    wavelengthFraction: WavelengthFraction,
     mode: CalculationMode,
     fixedCoilDiameterMm: Double? = null,
     fixedTurns: Int? = null,
     pitchBetweenCentersMm: Double = 1.0
 ): AntennaInfo {
-    // Валідація вхідних даних
-    if (frequencyMHz <= 0) throw IllegalArgumentException("Частота повинна бути більше 0")
-    if (wireDiameterMm <= 0) throw IllegalArgumentException("Діаметр дроту повинен бути більше 0")
-    if (powerW <= 0) throw IllegalArgumentException("Потужність повинна бути більше 0")
-    if (pitchBetweenCentersMm < wireDiameterMm) throw IllegalArgumentException("Крок між витками не може бути менше діаметра дроту")
+    // Input validation
+    if (frequencyMHz <= 0) throw IllegalArgumentException("Frequency must be greater than 0")
+    if (wireDiameterMm <= 0) throw IllegalArgumentException("Wire diameter must be greater than 0")
+    if (powerW <= 0) throw IllegalArgumentException("Power must be greater than 0")
+    if (pitchBetweenCentersMm < wireDiameterMm) throw IllegalArgumentException("Pitch between turns cannot be less than the wire diameter")
 
-    // Швидкість світла (м/с)
+    // Speed of light (m/s)
     val lightSpeed = 299_792_458.0
 
-    // Розрахунок довжини хвилі
+    // Wavelength calculation
     val wavelength = lightSpeed / (frequencyMHz * 1_000_000)
 
-    // Для спіральної антени оптимальна довжина - близько 1/4 довжини хвилі
-    val totalLength = wavelength / 4
+    // Calculate total electrical length based on the selected fraction
+    val totalLength = wavelength * wavelengthFraction.factor
 
-    // Розрахунок параметрів в залежності від режиму
+    // Parameter calculation depending on the mode
     val (coilDiameterMm, turns) = when (mode) {
         CalculationMode.FIXED_DIAMETER -> {
             if (fixedCoilDiameterMm == null || fixedCoilDiameterMm <= 0) {
-                throw IllegalArgumentException("Діаметр котушки повинен бути більше 0")
+                throw IllegalArgumentException("Coil diameter must be greater than 0")
             }
-            // Розрахунок кількості витків для заданого діаметру
+            // Calculate number of turns for a given diameter
             val circumferenceMm = PI * fixedCoilDiameterMm
             val calculatedTurns = (totalLength * 1000 / circumferenceMm).toInt().coerceIn(2, 30)
             Pair(fixedCoilDiameterMm, calculatedTurns)
         }
         CalculationMode.FIXED_TURNS -> {
             if (fixedTurns == null || fixedTurns <= 0) {
-                throw IllegalArgumentException("Кількість витків повинна бути більше 0")
+                throw IllegalArgumentException("Number of turns must be greater than 0")
             }
-            // Розрахунок діаметру для заданої кількості витків
+            // Calculate diameter for a given number of turns
             val circumferenceMm = totalLength * 1000 / fixedTurns
             val calculatedDiameterMm = circumferenceMm / PI
             Pair(calculatedDiameterMm, fixedTurns)
         }
-        CalculationMode.AUTO -> {
-            // Для автоматичного режиму використовуємо практичні правила
-            val optimalDiameterMm = when {
-                frequencyMHz < 200 -> wavelength * 150  // 15% від довжини хвилі в мм
-                frequencyMHz < 500 -> wavelength * 120  // 12% від довжини хвилі в мм
-                else -> wavelength * 100                // 10% від довжини хвилі в мм
-            }.coerceIn(20.0, 150.0) // обмежуємо 2-15 см
-
-            val circumferenceMm = PI * optimalDiameterMm
-            val estimatedTurns = (totalLength * 1000 / circumferenceMm).toInt().coerceIn(3, 12)
-
-            Pair(optimalDiameterMm, estimatedTurns)
-        }
     }
 
-    // Розрахунок висоти котушки
-    val coilHeightMm = (turns - 1) * pitchBetweenCentersMm // висота = (витки - 1) × крок
+    // Coil height calculation
+    val coilHeightMm = (turns - 1) * pitchBetweenCentersMm // height = (turns - 1) × pitch
 
-    // Розрахунок реальної довжини дроту
+    // Actual wire length calculation
     val circumferenceMm = PI * coilDiameterMm
     val wireLengthPerTurn = sqrt(circumferenceMm.pow(2) + pitchBetweenCentersMm.pow(2))
-    val actualTotalLength = wireLengthPerTurn * turns / 1000 // в метрах
+    val actualTotalLength = wireLengthPerTurn * turns / 1000 // in meters
 
-    // ===== ВИПРАВЛЕНИЙ АНАЛІЗ ТОВЩИНИ ДРОТУ =====
+    // ===== CORRECTED WIRE THICKNESS ANALYSIS =====
 
-    // Правильний розрахунок глибини скін-ефекту для міді
-    val frequency = frequencyMHz * 1e6 // частота в Гц
-    val mu0 = 4e-7 * PI // магнітна проникність вакууму H/м
-    val sigma = 5.96e7 // провідність міді S/m при 20°C
+    // Correct calculation of skin depth for copper
+    val frequency = frequencyMHz * 1e6 // frequency in Hz
+    val mu0 = 4e-7 * PI // magnetic permeability of vacuum H/m
+    val sigma = 5.96e7 // conductivity of copper S/m at 20°C
 
-    // Формула скін-ефекту: δ = √(2/(ωμσ))
+    // Skin effect formula: δ = √(2/(ωμσ))
     val skinDepth = sqrt(2.0 / (2 * PI * frequency * mu0 * sigma))
-    val skinDepthMm = skinDepth * 1000 // переводимо в мм
+    val skinDepthMm = skinDepth * 1000 // convert to mm
 
-    // Правильний розрахунок коефіцієнта використання
+    // Correct calculation of utilization factor
     val wireRadiusMm = wireDiameterMm / 2
 
     val skinEffectFactor = if (wireRadiusMm <= skinDepthMm) {
-        // Тонкий дріт - весь переріз працює
+        // Thin wire - entire cross-section is effective
         1.0
     } else {
-        // Товстий дріт - тільки поверхневий шар
-        // Ефективна площа = площа кільця товщиною skinDepth
+        // Thick wire - only the surface layer is effective
+        // Effective area = area of a ring with thickness skinDepth
         val outerArea = PI * wireRadiusMm.pow(2)
         val innerRadius = (wireRadiusMm - skinDepthMm).coerceAtLeast(0.0)
         val innerArea = PI * innerRadius.pow(2)
@@ -485,71 +528,65 @@ private fun calculateSpiralAntenna(
         effectiveArea / outerArea
     }
 
-    // Розрахунок опору дроту
-    val rho = 1.72e-8 // питомий опір міді Ом⋅м при 20°C
-    val wireArea = PI * (wireDiameterMm / 2000).pow(2) // повна площа в м²
+    // Wire resistance calculation
+    val rho = 1.72e-8 // resistivity of copper Ohm⋅m at 20°C
+    val wireArea = PI * (wireDiameterMm / 2000).pow(2) // total area in m²
     val effectiveArea = wireArea * skinEffectFactor
 
     val dcResistance = rho * actualTotalLength / effectiveArea
 
-    // Проксимітні втрати (вплив сусідніх витків)
+    // Proximity effect losses (influence of adjacent turns)
     val proximityFactor = when {
-        pitchBetweenCentersMm <= wireDiameterMm * 1.05 -> 2.5 // майже торкаються
-        pitchBetweenCentersMm <= wireDiameterMm * 1.2 -> 1.8  // дуже близько
-        pitchBetweenCentersMm <= wireDiameterMm * 2.0 -> 1.4  // близько
-        pitchBetweenCentersMm <= wireDiameterMm * 3.0 -> 1.2  // нормально
-        else -> 1.1 // далеко
+        pitchBetweenCentersMm <= wireDiameterMm * 1.05 -> 2.5 // almost touching
+        pitchBetweenCentersMm <= wireDiameterMm * 1.2 -> 1.8  // very close
+        pitchBetweenCentersMm <= wireDiameterMm * 2.0 -> 1.4  // close
+        pitchBetweenCentersMm <= wireDiameterMm * 3.0 -> 1.2  // normal
+        else -> 1.1 // far
     }
 
     val totalWireResistance = dcResistance * proximityFactor
 
-    // Опір випромінювання
+    // Radiation resistance
     val lengthInWavelengths = actualTotalLength / wavelength
     val radiationResistance = when {
-        lengthInWavelengths < 0.1 -> {
-            790.0 * lengthInWavelengths.pow(2)
-        }
-        lengthInWavelengths < 0.5 -> {
-            36.6 * lengthInWavelengths.pow(2)
-        }
-        else -> {
-            73.1 * (lengthInWavelengths - 0.25).pow(2).coerceAtLeast(0.0) + 9.1
-        }
+        lengthInWavelengths < 0.1 -> 790.0 * lengthInWavelengths.pow(2)
+        lengthInWavelengths < 0.5 -> 36.6 * lengthInWavelengths.pow(2)
+        else -> 73.1 * (lengthInWavelengths - 0.25).pow(2).coerceAtLeast(0.0) + 9.1
     }
 
-    // Ефективність
+    // Efficiency
     val efficiency = (radiationResistance / (radiationResistance + totalWireResistance)).coerceIn(0.15, 0.98)
 
-    // ПРАВИЛЬНА оцінка якості товщини дроту
+    // CORRECT assessment of wire thickness quality
     val skinRatio = wireRadiusMm / skinDepthMm
     val wireQuality = when {
-        skinRatio < 0.8 -> "Тонкий (весь переріз працює ефективно)"
-        skinRatio < 1.5 -> "Оптимальний (найкращий баланс)"
-        skinRatio < 3.0 -> "Практичний (невеликі втрати матеріалу)"
-        skinRatio < 6.0 -> "Товстий (частина матеріалу не використовується)"
-        else -> "Надмірно товстий (неефективне використання матеріалу)"
+        skinRatio < 0.8 -> "Thin (entire cross-section works effectively)"
+        skinRatio < 1.5 -> "Optimal (best balance)"
+        skinRatio < 3.0 -> "Practical (small material losses)"
+        skinRatio < 6.0 -> "Thick (part of the material is not used)"
+        else -> "Excessively thick (inefficient use of material)"
     }
 
-    // Розрахунок індуктивності
+    // Inductance calculation
     val radiusMm = coilDiameterMm / 2
     val aspectRatio = if (coilHeightMm > 0) coilHeightMm / coilDiameterMm else 0.1
 
     val correctionFactor = when {
-        aspectRatio < 0.2 -> 0.5  // плоска котушка
+        aspectRatio < 0.2 -> 0.5  // flat coil
         aspectRatio < 1.0 -> 0.6 + aspectRatio * 0.3
         aspectRatio < 3.0 -> 0.9 + aspectRatio * 0.05
         else -> 1.0
     }
 
-    // Формула Вілера для індуктивності (мкГн)
+    // Wheeler's formula for inductance (µH)
     val inductance = if (radiusMm > 0 && coilHeightMm > 0) {
         correctionFactor * (radiusMm * radiusMm * turns * turns) /
                 (22.86 * radiusMm + 25.4 * coilHeightMm)
     } else {
-        0.1 // мінімальна індуктивність
+        0.1 // minimal inductance
     }
 
-    // Реалістична добротність
+    // Realistic Q-factor
     val reactance = 2 * PI * frequencyMHz * 1e6 * inductance * 1e-6
     val qualityFactor = if (totalWireResistance > 0) {
         (reactance / totalWireResistance).coerceIn(5.0, 200.0)
@@ -557,7 +594,7 @@ private fun calculateSpiralAntenna(
         50.0
     }
 
-    // Коефіцієнт підсилення
+    // Gain
     val circumferenceInWavelengths = (circumferenceMm / 1000) / wavelength
     val gain = when {
         turns <= 2 -> -2.0 + 4.0 * circumferenceInWavelengths
@@ -571,7 +608,7 @@ private fun calculateSpiralAntenna(
     // EIRP
     val eirp = powerW * gainLinear * efficiency
 
-    // Вхідний опір
+    // Input impedance
     val baseImpedance = when {
         circumferenceInWavelengths < 0.3 -> 20.0 + 40.0 * circumferenceInWavelengths
         circumferenceInWavelengths < 1.0 -> 35.0 + 25.0 * circumferenceInWavelengths
@@ -581,10 +618,10 @@ private fun calculateSpiralAntenna(
     val lossCorrection = 1.0 + (1.0 - efficiency) * 0.8
     val impedance = (baseImpedance * lossCorrection).coerceIn(15.0, 300.0)
 
-    // Смуга пропускання
+    // Bandwidth
     val bandwidth = (frequencyMHz / qualityFactor).coerceAtLeast(0.5)
 
-    // Дальність дії
+    // Range
     val rxSensitivity = when {
         frequencyMHz < 200 -> -115.0
         frequencyMHz < 500 -> -110.0
@@ -594,12 +631,12 @@ private fun calculateSpiralAntenna(
 
     val txPowerDbm = 10 * log10(powerW * 1000)
     val eirpDbm = txPowerDbm + gain + 10 * log10(efficiency)
-    val linkMargin = 25.0 // більш консервативний запас
+    val linkMargin = 25.0 // more conservative margin
     val availableBudget = eirpDbm - rxSensitivity - linkMargin
 
     val range = if (availableBudget > 0) {
         val freeSpaceRange = lightSpeed / (4 * PI * frequencyMHz * 1e6) * 10.0.pow(availableBudget / 20.0)
-        freeSpaceRange * 0.3 // реалістичний коефіцієнт для реальних умов
+        freeSpaceRange * 0.3 // realistic factor for real-world conditions
     } else {
         5.0
     }.coerceIn(5.0, 500.0)
@@ -621,7 +658,7 @@ private fun calculateSpiralAntenna(
         impedance = impedance,
         bandwidth = bandwidth,
         efficiency = efficiency,
-        // Виправлені параметри
+        // Corrected parameters
         skinDepthMm = skinDepthMm,
         wireResistanceOhm = totalWireResistance,
         radiationResistanceOhm = radiationResistance,
@@ -633,81 +670,81 @@ private fun calculateSpiralAntenna(
 
 private fun buildRecommendations(result: AntennaInfo): String {
     return buildString {
-        append("• Використовуйте мідний дріт діаметром ${result.wireDiameterMm} мм\n")
-        append("• Основа для намотування: труба діаметром ${String.format("%.2f", result.coilDiameterMm)} мм\n")
-        append("• Висота котушки: ${String.format("%.2f", result.coilHeightMm)} мм\n")
-        append("• Намотайте ${result.turns} витків з кроком ${String.format("%.2f", result.pitchMm)} мм\n")
+        append("• Use copper wire with a diameter of ${result.wireDiameterMm} mm\n")
+        append("• Winding form: a tube with a diameter of ${String.format("%.2f", result.coilDiameterMm)} mm\n")
+        append("• Coil height: ${String.format("%.2f", result.coilHeightMm)} mm\n")
+        append("• Wind ${result.turns} turns with a pitch of ${String.format("%.2f", result.pitchMm)} mm\n")
 
-        // Виправлені рекомендації по товщині дроту
-        append("\n🔧 Аналіз товщини дроту:\n")
-        append("• Глибина скін-ефекту для ${result.frequency} МГц: ${String.format("%.4f", result.skinDepthMm)} мм\n")
+        // Corrected recommendations for wire thickness
+        append("\n🔧 Wire Thickness Analysis:\n")
+        append("• Skin depth for ${result.frequency} MHz: ${String.format("%.4f", result.skinDepthMm)} mm\n")
 
         val skinRatio = (result.wireDiameterMm / 2) / result.skinDepthMm
         when {
             skinRatio < 0.8 -> {
-                append("• Дріт тонкий - весь переріз (${String.format("%.3f", result.skinEffectFactor * 100)}%) ефективно використовується\n")
-                append("• Можна збільшити товщину до ${String.format("%.3f", result.skinDepthMm * 2)} мм для зменшення опору\n")
+                append("• Wire is thin - the entire cross-section (${String.format("%.3f", result.skinEffectFactor * 100)}%) is used effectively\n")
+                append("• You can increase the thickness to ${String.format("%.3f", result.skinDepthMm * 2)} mm to reduce resistance\n")
             }
             skinRatio < 1.5 -> {
-                append("• ✅ Оптимальна товщина дроту для ${result.frequency} МГц!\n")
-                append("• Відмінний баланс між ефективністю та вартістю матеріалу\n")
+                append("• ✅ Optimal wire thickness for ${result.frequency} MHz!\n")
+                append("• Excellent balance between efficiency and material cost\n")
             }
             skinRatio < 3.0 -> {
-                append("• Практична товщина з невеликими надлишками\n")
-                append("• ${String.format("%.2f", result.skinEffectFactor * 100)}% перерізу активно працює\n")
+                append("• Practical thickness with small excess\n")
+                append("• ${String.format("%.2f", result.skinEffectFactor * 100)}% of the cross-section is actively working\n")
             }
             skinRatio < 6.0 -> {
                 val recommendedDiameter = result.skinDepthMm * 3
-                append("• ⚠️ Дріт товстіший за потрібний\n")
-                append("• Рекомендована товщина: ~${String.format("%.2f", recommendedDiameter)} мм\n")
-                append("• Можна заощадити матеріал без втрати ефективності\n")
+                append("• ⚠️ Wire is thicker than necessary\n")
+                append("• Recommended thickness: ~${String.format("%.2f", recommendedDiameter)} mm\n")
+                append("• You can save material without losing efficiency\n")
             }
             else -> {
                 val recommendedDiameter = result.skinDepthMm * 2.5
-                append("• ❌ Надмірно товстий дріт!\n")
-                append("• Тільки ${String.format("%.2f", result.skinEffectFactor * 100)}% перерізу працює\n")
-                append("• Оптимальна товщина: ${String.format("%.4f", recommendedDiameter)} мм\n")
+                append("• ❌ Excessively thick wire!\n")
+                append("• Only ${String.format("%.2f", result.skinEffectFactor * 100)}% of the cross-section is working\n")
+                append("• Optimal thickness: ${String.format("%.4f", recommendedDiameter)} mm\n")
             }
         }
 
-        // Аналіз ефективності
+        // Efficiency analysis
         when {
             result.efficiency < 0.5 -> {
-                append("• ❌ Низька ефективність (${String.format("%.2f", result.efficiency * 100)}%) - великі втрати в дроті\n")
-                append("• Збільште товщину дроту або зменште кількість витків\n")
+                append("• ❌ Low efficiency (${String.format("%.2f", result.efficiency * 100)}%) - high losses in the wire\n")
+                append("• Increase the wire thickness or decrease the number of turns\n")
             }
             result.efficiency < 0.7 -> {
-                append("• ⚠️ Помірна ефективність (${String.format("%.2f", result.efficiency * 100)}%) - можна покращити\n")
+                append("• ⚠️ Moderate efficiency (${String.format("%.2f", result.efficiency * 100)}%) - can be improved\n")
             }
             result.efficiency < 0.85 -> {
-                append("• ✅ Хороша ефективність (${String.format("%.2f", result.efficiency * 100)}%)\n")
+                append("• ✅ Good efficiency (${String.format("%.2f", result.efficiency * 100)}%)\n")
             }
             else -> {
-                append("• 🌟 Відмінна ефективність (${String.format("%.2f", result.efficiency * 100)}%)!\n")
+                append("• 🌟 Excellent efficiency (${String.format("%.2f", result.efficiency * 100)}%)!\n")
             }
         }
 
-        // Аналіз добротності
+        // Q-factor analysis
         if (result.qualityFactor < 20) {
-            append("• Низька добротність (Q=${String.format("%.2f", result.qualityFactor)}) - широкосмугова робота\n")
+            append("• Low Q-factor (Q=${String.format("%.2f", result.qualityFactor)}) - broadband operation\n")
         } else if (result.qualityFactor > 100) {
-            append("• Висока добротність (Q=${String.format("%.2f", result.qualityFactor)}) - вузькосмугова, потребує точного налаштування\n")
+            append("• High Q-factor (Q=${String.format("%.2f", result.qualityFactor)}) - narrowband, requires precise tuning\n")
         }
 
-        append("\n📡 Загальні поради:\n")
-        append("• Підключіть центральний провідник до одного кінця, екран - до іншого\n")
-        append("• Для ${result.frequency} МГц оптимальна поляризація - вертикальна\n")
-        append("• Розташовуйте антену якомога вище над землею\n")
+        append("\n📡 General Advice:\n")
+        append("• Connect the center conductor to one end, and the ground/shield to the other if applicable\n")
+        append("• For ${result.frequency} MHz, vertical polarization is often optimal\n")
+        append("• Position the antenna as high as possible and clear of obstructions\n")
 
-        // Рекомендації залежно від потужності
+        // Recommendations based on power
         when {
-            result.power <= 1 -> append("• Низька потужність: підходить для коротких дистанцій\n")
-            result.power <= 10 -> append("• Середня потужність: оптимально для гаражних воріт та пультів\n")
-            result.power > 10 -> append("• Висока потужність: забезпечте якісне узгодження (КСХ < 1.5)\n")
+            result.power <= 1 -> append("• Low power: suitable for short-range applications\n")
+            result.power <= 10 -> append("• Medium power: optimal for garage doors and remote controls\n")
+            result.power > 10 -> append("• High power: ensure good matching (SWR < 1.5) to protect the transmitter\n")
         }
 
-        if (result.frequency == 433.0) {
-            append("• Для 433 МГц ISM діапазону: дотримуйтесь регуляторних вимог")
+        if (result.frequency > 433.91 && result.frequency < 433.93) {
+            append("• For 433 MHz ISM band: comply with local regulatory power limits")
         }
     }
 }
