@@ -101,7 +101,7 @@ fun SpiralAntennaCalculator(modifier: Modifier = Modifier) {
         )
 
         Text(
-            text = "Calculation of spiral antenna parameters for receivers and transmitters (e.g., garage doors)",
+            text = "Calculation of spiral antenna parameters for receivers and transmitters",
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(bottom = 16.dp)
