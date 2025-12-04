@@ -24,6 +24,28 @@
       "disable_version_check": false
     },
     {
+      "name": "bruno",
+      "description": "Bruno - Opensource IDE for exploring and testing APIs.",
+      "binary_name": "bruno",
+      "install_type": "github",
+      "version_cmd": "--version",
+      "disable_version_check": true,
+      "enabled": true,
+      "install_version": "v2.14.2",
+      "github": {
+        "url": "https://github.com/usebruno/bruno",
+        "api_url": "https://api.github.com/repos/usebruno/bruno",
+        "parse_release_notes": false,
+        "asset": "bruno_2.14.2_amd64_linux.deb",
+        "asset_type": "deb_based",
+        "after_install_cmd": {
+          "flag": false,
+          "sudo": false,
+          "cmd": ""
+        }
+      }
+    },
+    {
       "name": "chart-releaser",
       "description": "Helps Turn GitHub Repositories into Helm Chart Repositories",
       "binary_name": "cr",
@@ -528,12 +550,12 @@
       "install_type": "github",
       "version_cmd": "--version",
       "enabled": true,
-      "install_version": "v0.3.83",
+      "install_version": "v0.3.84",
       "github": {
         "url": "https://github.com/jameswoolfenden/pike",
         "api_url": "https://api.github.com/repos/jameswoolfenden/pike",
         "parse_release_notes": false,
-        "asset": "pike_0.3.83_linux_amd64.tar.gz",
+        "asset": "pike_0.3.84_linux_amd64.tar.gz",
         "asset_type": "package",
         "after_install_cmd": {
           "flag": false,
@@ -551,11 +573,35 @@
       "version_cmd": "--version",
       "disable_version_check": false,
       "enabled": true,
-      "install_version": "v10.22.0",
+      "install_version": "v10.24.0",
       "github": {
         "url": "https://github.com/pnpm/pnpm",
         "api_url": "https://api.github.com/repos/pnpm/pnpm",
         "parse_release_notes": false,
+        "asset": "pnpm-linux-x64",
+        "asset_type": "binary",
+        "after_install_cmd": {
+          "flag": false,
+          "sudo": false,
+          "cmd": ""
+        }
+      }
+    },
+    {
+      "name": "rclone",
+      "description": "Rclone (\"rsync for cloud storage\") is a command-line program to sync files and directories to and from different cloud storage providers.",
+      "binary_name": "rclone",
+      "install_type": "github",
+      "version_cmd": "--version",
+      "disable_version_check": false,
+      "enabled": true,
+      "install_version": "v1.72.0",
+      "github": {
+        "url": "https://github.com/rclone/rclone",
+        "api_url": "https://api.github.com/repos/rclone/rclone",
+        "parse_release_notes": false,
+        "asset": "rclone-v1.72.0-linux-amd64.deb",
+        "asset_type": "deb_based",
         "after_install_cmd": {
           "flag": false,
           "sudo": false,
@@ -628,6 +674,28 @@
         }
       },
       "disable_version_check": false
+    },
+    {
+      "name": "stacer",
+      "description": "Linux System Optimizer and Monitoring",
+      "binary_name": "stacer",
+      "install_type": "github",
+      "version_cmd": "--version",
+      "disable_version_check": true,
+      "enabled": true,
+      "install_version": "v1.1.0",
+      "github": {
+        "url": "https://github.com/oguzhaninan/Stacer",
+        "api_url": "https://api.github.com/repos/oguzhaninan/Stacer",
+        "parse_release_notes": false,
+        "asset": "stacer_1.1.0_amd64.deb",
+        "asset_type": "deb_based",
+        "after_install_cmd": {
+          "flag": false,
+          "sudo": false,
+          "cmd": ""
+        }
+      }
     },
     {
       "name": "tabiew",
