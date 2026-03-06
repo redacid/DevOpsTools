@@ -31,12 +31,12 @@
       "version_cmd": "--version",
       "disable_version_check": true,
       "enabled": true,
-      "install_version": "v2.14.2",
+      "install_version": "v3.1.4",
       "github": {
         "url": "https://github.com/usebruno/bruno",
         "api_url": "https://api.github.com/repos/usebruno/bruno",
         "parse_release_notes": false,
-        "asset": "bruno_2.14.2_amd64_linux.deb",
+        "asset": "bruno_3.1.4_amd64_linux.deb",
         "asset_type": "deb_based",
         "after_install_cmd": {
           "flag": false,
@@ -143,6 +143,28 @@
       "disable_version_check": false
     },
     {
+      "name": "freelens",
+      "description": "Freelens is a free and open-source user interface designed for managing Kubernetes clusters. It provides a standalone application compatible with macOS, Windows, and Linux operating systems, making it accessible to a wide range of users. The application aims to simplify the complexities of Kubernetes management by offering an intuitive and user-friendly interface.",
+      "binary_name": "freelens",
+      "install_type": "github",
+      "version_cmd": "--version",
+      "disable_version_check": true,
+      "enabled": true,
+      "install_version": "v1.8.1",
+      "github": {
+        "url": "https://github.com/freelensapp/freelens",
+        "api_url": "https://api.github.com/repos/freelensapp/freelens",
+        "parse_release_notes": false,
+        "asset": "Freelens-1.8.1-linux-amd64.deb",
+        "asset_type": "deb_based",
+        "after_install_cmd": {
+          "flag": false,
+          "sudo": false,
+          "cmd": ""
+        }
+      }
+    },
+    {
       "name": "gh",
       "description": "gh is GitHub on the command line. It brings pull requests, issues, and other GitHub concepts to the terminal next to where you are already working with git and your code",
       "binary_name": "gh",
@@ -210,18 +232,40 @@
       }
     },
     {
+      "name": "golangci-lint",
+      "description": "golangci-lint is a fast Go linters runner.",
+      "binary_name": "golangci-lint",
+      "install_type": "github",
+      "version_cmd": "--version",
+      "disable_version_check": false,
+      "enabled": true,
+      "install_version": "v2.9.0",
+      "github": {
+        "url": "https://github.com/golangci/golangci-lint",
+        "api_url": "https://api.github.com/repos/golangci/golangci-lint",
+        "parse_release_notes": false,
+        "asset": "golangci-lint-2.9.0-linux-amd64.deb",
+        "asset_type": "deb_based",
+        "after_install_cmd": {
+          "flag": false,
+          "sudo": false,
+          "cmd": ""
+        }
+      }
+    },
+    {
       "name": "helm",
       "description": "Helm is a tool for managing Charts. Charts are packages of pre-configured Kubernetes resources",
       "binary_name": "helm",
       "install_type": "github",
       "version_cmd": "version",
       "enabled": true,
-      "install_version": "v3.19.2",
+      "install_version": "v3.19.5",
       "github": {
         "url": "https://github.com/helm/helm",
         "api_url": "https://api.github.com/repos/helm/helm",
         "parse_release_notes": true,
-        "asset": "helm-v3.19.2-linux-amd64.tar.gz",
+        "asset": "helm-v3.19.5-linux-amd64.tar.gz",
         "asset_type": "package",
         "after_install_cmd": {
           "flag": false,
@@ -248,6 +292,28 @@
       }
     },
     {
+      "name": "iam-policy-json-to-terraform",
+      "description": "Small tool to convert an IAM Policy in JSON format into a Terraform aws_iam_policy_document",
+      "binary_name": "iam-policy-json-to-terraform",
+      "install_type": "github",
+      "version_cmd": "--version",
+      "disable_version_check": false,
+      "enabled": true,
+      "install_version": "1.9.2",
+      "github": {
+        "url": "https://github.com/flosell/iam-policy-json-to-terraform",
+        "api_url": "https://api.github.com/repos/flosell/iam-policy-json-to-terraform",
+        "parse_release_notes": false,
+        "asset": "iam-policy-json-to-terraform_amd64",
+        "asset_type": "binary",
+        "after_install_cmd": {
+          "flag": false,
+          "sudo": false,
+          "cmd": ""
+        }
+      }
+    },
+    {
       "name": "jq",
       "binary_name": "jq",
       "description": "A lightweight and flexible command-line JSON processor",
@@ -261,6 +327,28 @@
         "parse_release_notes": false,
         "asset": "jq-linux-amd64",
         "asset_type": "binary"
+      }
+    },
+    {
+      "name": "just",
+      "description": "just is a handy way to save and run project-specific commands.",
+      "binary_name": "just",
+      "install_type": "github",
+      "version_cmd": "--version",
+      "disable_version_check": false,
+      "enabled": true,
+      "install_version": "1.45.0",
+      "github": {
+        "url": "https://github.com/casey/just",
+        "api_url": "https://api.github.com/repos/casey/just",
+        "parse_release_notes": false,
+        "asset": "just-1.45.0-x86_64-unknown-linux-musl.tar.gz",
+        "asset_type": "package",
+        "after_install_cmd": {
+          "flag": false,
+          "sudo": false,
+          "cmd": ""
+        }
       }
     },
     {
@@ -366,6 +454,28 @@
           "flag": true,
           "sudo": true,
           "cmd": "ln -s ~/.krew/bin/kubectl-krew /usr/bin/krew"
+        }
+      }
+    },
+    {
+      "name": "kse",
+      "description": "KeyStore Explorer is a free GUI replacement for the Java command-line utilities keytool and jarsigner.",
+      "binary_name": "ks-explorer",
+      "install_type": "github",
+      "version_cmd": "--version",
+      "disable_version_check": true,
+      "enabled": true,
+      "install_version": "v5.6.0",
+      "github": {
+        "url": "https://github.com/kaikramer/keystore-explorer/",
+        "api_url": "https://api.github.com/repos/kaikramer/keystore-explorer",
+        "parse_release_notes": false,
+        "asset": "kse_5.6.0_all.deb",
+        "asset_type": "deb_based",
+        "after_install_cmd": {
+          "flag": false,
+          "sudo": false,
+          "cmd": ""
         }
       }
     },
@@ -522,6 +632,26 @@
       "disable_version_check": false
     },
     {
+      "name": "mc",
+      "description": "MinIO Client (mc) provides a modern alternative to UNIX commands like ls, cat, cp, mirror, diff, find etc. It supports filesystems and Amazon S3 compatible cloud storage service (AWS Signature v2 and v4).",
+      "binary_name": "mc",
+      "install_type": "github",
+      "version_cmd": "--version",
+      "disable_version_check": true,
+      "enabled": false,
+      "install_version": "RELEASE.2025-08-13T08-35-41Z",
+      "github": {
+        "url": "https://github.com/minio/mc",
+        "api_url": "https://api.github.com/repos/minio/mc",
+        "parse_release_notes": false,
+        "after_install_cmd": {
+          "flag": true,
+          "sudo": true,
+          "cmd": "ln -s /usr/local/bin/mc /usr/local/bin/minio"
+        }
+      }
+    },
+    {
       "name": "minikube",
       "description": "minikube implements a local Kubernetes cluster on macOS, Linux, and Windows. minikube\u0027s primary goals are to be the best tool for local Kubernetes application development and to support all Kubernetes features that fit.",
       "binary_name": "minikube",
@@ -542,6 +672,19 @@
         }
       },
       "disable_version_check": false
+    },
+    {
+      "name": "nodejs",
+      "description": "Node.js is an open-source, cross-platform JavaScript runtime environment",
+      "binary_name": "node",
+      "install_type": "package",
+      "version_cmd": "--version",
+      "disable_version_check": false,
+      "enabled": true,
+      "install_version": "v22.21.1",
+      "package": {
+        "link": "https://nodejs.org/dist/v22.21.1/node-v22.21.1-linux-x64.tar.gz"
+      }
     },
     {
       "name": "pike",
@@ -698,6 +841,28 @@
       }
     },
     {
+      "name": "stern",
+      "description": "Stern allows you to tail multiple pods on Kubernetes and multiple containers within the pod. Each result is color coded for quicker debugging.",
+      "binary_name": "stern",
+      "install_type": "github",
+      "version_cmd": "--version",
+      "disable_version_check": false,
+      "enabled": true,
+      "install_version": "v1.33.1",
+      "github": {
+        "url": "https://github.com/stern/stern",
+        "api_url": "https://api.github.com/repos/stern/stern",
+        "parse_release_notes": false,
+        "asset": "stern_1.33.1_linux_amd64.tar.gz",
+        "asset_type": "package",
+        "after_install_cmd": {
+          "flag": false,
+          "sudo": false,
+          "cmd": ""
+        }
+      }
+    },
+    {
       "name": "tabiew",
       "description": "Tabiew is a lightweight TUI application that allows users to view and query tabular data files, such as CSV, Parquet, Arrow, and ...",
       "binary_name": "tw",
@@ -787,6 +952,28 @@
       }
     },
     {
+      "name": "uv",
+      "description": "An extremely fast Python package and project manager, written in Rust.",
+      "binary_name": "uv",
+      "install_type": "github",
+      "version_cmd": "--version",
+      "disable_version_check": false,
+      "enabled": false,
+      "install_version": "0.8.14",
+      "github": {
+        "url": "https://github.com/astral-sh/uv/",
+        "api_url": "https://api.github.com/repos/astral-sh/uv",
+        "parse_release_notes": false,
+        "asset": "uv-x86_64-unknown-linux-gnu.tar.gz",
+        "asset_type": "package",
+        "after_install_cmd": {
+          "flag": false,
+          "sudo": false,
+          "cmd": ""
+        }
+      }
+    },
+    {
       "name": "velero",
       "description": "Velero (formerly Heptio Ark) gives you tools to back up and restore your Kubernetes cluster resources and persistent volumes. You can run Velero with a public cloud platform or on-premises.",
       "binary_name": "velero",
@@ -829,6 +1016,28 @@
         }
       },
       "disable_version_check": false
+    },
+    {
+      "name": "nerdctl",
+      "description": "nerdctl: Docker-compatible CLI for containerd",
+      "binary_name": "nerdctl",
+      "install_type": "github",
+      "version_cmd": "--version",
+      "disable_version_check": false,
+      "enabled": true,
+      "install_version": "v2.2.1",
+      "github": {
+        "url": "https://github.com/containerd/nerdctl",
+        "api_url": "https://api.github.com/repos/containerd/nerdctl",
+        "parse_release_notes": false,
+        "asset": "nerdctl-2.2.1-linux-amd64.tar.gz",
+        "asset_type": "package",
+        "after_install_cmd": {
+          "flag": false,
+          "sudo": false,
+          "cmd": ""
+        }
+      }
     }
   ]
 }
