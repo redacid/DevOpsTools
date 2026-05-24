@@ -31,12 +31,12 @@
       "version_cmd": "--version",
       "disable_version_check": true,
       "enabled": true,
-      "install_version": "v3.1.4",
+      "install_version": "v3.2.2",
       "github": {
         "url": "https://github.com/usebruno/bruno",
         "api_url": "https://api.github.com/repos/usebruno/bruno",
         "parse_release_notes": false,
-        "asset": "bruno_3.1.4_amd64_linux.deb",
+        "asset": "bruno_3.2.2_amd64_linux.deb",
         "asset_type": "deb_based",
         "after_install_cmd": {
           "flag": false,
@@ -68,7 +68,7 @@
       "install_type": "github",
       "version_cmd": "version --client",
       "enabled": true,
-      "install_version": "v2.3.0",
+      "install_version": "v2.4.1",
       "github": {
         "url": "https://github.com/cert-manager/cmctl",
         "api_url": "https://api.github.com/repos/cert-manager/cmctl",
@@ -82,6 +82,50 @@
         }
       },
       "disable_version_check": false
+    },
+    {
+      "name": "crd-wizard",
+      "description": "CR(D) Wizard is a tool designed to provide a clear and intuitive interface for visualizing and exploring Kubernetes Custom Resource Definitions (CRDs) and their corresponding Custom Resources (CRs). It helps developers and cluster administrators quickly understand the state of their custom controllers and the resources they manage.",
+      "binary_name": "crd-wizard",
+      "install_type": "github",
+      "version_cmd": "version",
+      "disable_version_check": false,
+      "enabled": true,
+      "install_version": "v0.1.9",
+      "github": {
+        "url": "https://github.com/pehlicd/crd-wizard",
+        "api_url": "https://api.github.com/repos/pehlicd/crd-wizard",
+        "parse_release_notes": false,
+        "asset": "crd-wizard_v0.1.9_linux_amd64.tar.gz",
+        "asset_type": "package",
+        "after_install_cmd": {
+          "flag": false,
+          "sudo": false,
+          "cmd": ""
+        }
+      }
+    },
+    {
+      "name": "dasel",
+      "description": "Dasel (short for Data-Select) is a command-line tool and library for querying, modifying, and transforming data structures such as JSON, YAML, TOML, XML, and CSV.",
+      "binary_name": "dasel",
+      "install_type": "github",
+      "version_cmd": "version",
+      "disable_version_check": false,
+      "enabled": true,
+      "install_version": "v3.4.1",
+      "github": {
+        "url": "https://github.com/TomWright/dasel",
+        "api_url": "https://api.github.com/repos/TomWright/dasel",
+        "parse_release_notes": false,
+        "asset": "dasel_linux_amd64",
+        "asset_type": "binary",
+        "after_install_cmd": {
+          "flag": false,
+          "sudo": false,
+          "cmd": ""
+        }
+      }
     },
     {
       "name": "devopstools",
@@ -127,7 +171,7 @@
       "install_type": "github",
       "version_cmd": "version",
       "enabled": true,
-      "install_version": "v0.217.0",
+      "install_version": "v0.225.0",
       "github": {
         "url": "https://github.com/eksctl-io/eksctl",
         "api_url": "https://api.github.com/repos/eksctl-io/eksctl",
@@ -171,12 +215,12 @@
       "install_type": "github",
       "version_cmd": "--version",
       "enabled": true,
-      "install_version": "v2.83.1",
+      "install_version": "v2.89.0",
       "github": {
         "url": "https://github.com/cli/cli/",
         "api_url": "https://api.github.com/repos/cli/cli",
         "parse_release_notes": false,
-        "asset": "gh_2.83.1_linux_amd64.deb",
+        "asset": "gh_2.89.0_linux_amd64.deb",
         "asset_type": "deb_based",
         "after_install_cmd": {
           "flag": false,
@@ -217,7 +261,7 @@
       "version_cmd": "version",
       "disable_version_check": false,
       "enabled": true,
-      "install_version": "v0.20.6",
+      "install_version": "v0.21.4",
       "github": {
         "url": "https://github.com/google/go-containerregistry",
         "api_url": "https://api.github.com/repos/google/go-containerregistry",
@@ -239,12 +283,12 @@
       "version_cmd": "--version",
       "disable_version_check": false,
       "enabled": true,
-      "install_version": "v2.9.0",
+      "install_version": "v2.11.4",
       "github": {
         "url": "https://github.com/golangci/golangci-lint",
         "api_url": "https://api.github.com/repos/golangci/golangci-lint",
         "parse_release_notes": false,
-        "asset": "golangci-lint-2.9.0-linux-amd64.deb",
+        "asset": "golangci-lint-2.11.4-linux-amd64.deb",
         "asset_type": "deb_based",
         "after_install_cmd": {
           "flag": false,
@@ -260,12 +304,12 @@
       "install_type": "github",
       "version_cmd": "version",
       "enabled": true,
-      "install_version": "v3.19.5",
+      "install_version": "v4.1.3",
       "github": {
         "url": "https://github.com/helm/helm",
         "api_url": "https://api.github.com/repos/helm/helm",
         "parse_release_notes": true,
-        "asset": "helm-v3.19.5-linux-amd64.tar.gz",
+        "asset": "helm-v4.1.3-linux-amd64.tar.gz",
         "asset_type": "package",
         "after_install_cmd": {
           "flag": false,
@@ -337,12 +381,12 @@
       "version_cmd": "--version",
       "disable_version_check": false,
       "enabled": true,
-      "install_version": "1.45.0",
+      "install_version": "1.49.0",
       "github": {
         "url": "https://github.com/casey/just",
         "api_url": "https://api.github.com/repos/casey/just",
         "parse_release_notes": false,
-        "asset": "just-1.45.0-x86_64-unknown-linux-musl.tar.gz",
+        "asset": "just-1.49.0-x86_64-unknown-linux-musl.tar.gz",
         "asset_type": "package",
         "after_install_cmd": {
           "flag": false,
@@ -358,7 +402,7 @@
       "install_type": "github",
       "version_cmd": "--version",
       "enabled": true,
-      "install_version": "v0.30.0",
+      "install_version": "v0.31.0",
       "github": {
         "url": "https://github.com/kubernetes-sigs/kind/",
         "api_url": "https://api.github.com/repos/kubernetes-sigs/kind",
@@ -381,13 +425,18 @@
       "version_cmd": "version",
       "disable_version_check": false,
       "enabled": true,
-      "install_version": "v1.37.0",
+      "install_version": "v1.38.0",
       "github": {
         "url": "https://github.com/kubernetes/kompose",
         "api_url": "https://api.github.com/repos/kubernetes/kompose",
         "parse_release_notes": false,
         "asset": "kompose-linux-amd64",
-        "asset_type": "binary"
+        "asset_type": "binary",
+        "after_install_cmd": {
+          "flag": false,
+          "sudo": false,
+          "cmd": ""
+        }
       }
     },
     {
@@ -398,12 +447,12 @@
       "version_cmd": "--version",
       "disable_version_check": true,
       "enabled": true,
-      "install_version": "v0.22.0",
+      "install_version": "v0.22.3",
       "github": {
         "url": "https://github.com/kopia/kopia",
         "api_url": "https://api.github.com/repos/kopia/kopia",
         "parse_release_notes": false,
-        "asset": "kopia-ui_0.22.0_amd64.deb",
+        "asset": "kopia-ui_0.22.3_amd64.deb",
         "asset_type": "deb_based",
         "after_install_cmd": {
           "flag": false,
@@ -420,7 +469,7 @@
       "version_cmd": "version",
       "disable_version_check": false,
       "enabled": true,
-      "install_version": "v1.34.0",
+      "install_version": "v1.35.0",
       "github": {
         "url": "https://github.com/kubernetes/kops",
         "api_url": "https://api.github.com/repos/kubernetes/kops",
@@ -465,12 +514,12 @@
       "version_cmd": "--version",
       "disable_version_check": true,
       "enabled": true,
-      "install_version": "v5.6.0",
+      "install_version": "v5.6.1",
       "github": {
         "url": "https://github.com/kaikramer/keystore-explorer/",
         "api_url": "https://api.github.com/repos/kaikramer/keystore-explorer",
         "parse_release_notes": false,
-        "asset": "kse_5.6.0_all.deb",
+        "asset": "kse_5.6.1_all.deb",
         "asset_type": "deb_based",
         "after_install_cmd": {
           "flag": false,
@@ -486,7 +535,7 @@
       "install_type": "github",
       "version_cmd": "version",
       "enabled": true,
-      "install_version": "v4.10.1",
+      "install_version": "v4.13.1",
       "github": {
         "url": "https://github.com/kubernetes-sigs/kubebuilder",
         "api_url": "https://api.github.com/repos/kubernetes-sigs/kubebuilder",
@@ -524,9 +573,9 @@
       "version_cmd": "version --client\u003dtrue",
       "disable_version_check": false,
       "enabled": true,
-      "install_version": "1.33.3",
+      "install_version": "1.35.3",
       "package": {
-        "link": "https://dl.k8s.io/release/v1.33.3/bin/linux/amd64/kubectl",
+        "link": "https://dl.k8s.io/release/v1.35.3/bin/linux/amd64/kubectl",
         "after_unpack_install_cmd": {
           "flag": false,
           "sudo": false,
@@ -546,14 +595,20 @@
       "install_type": "github",
       "version_cmd": "--version",
       "enabled": true,
-      "install_version": "v0.9.5",
+      "install_version": "v0.11.0",
       "github": {
         "url": "https://github.com/ahmetb/kubectx",
         "api_url": "https://api.github.com/repos/ahmetb/kubectx",
         "parse_release_notes": false,
-        "asset": "kubectx_v0.9.5_linux_x86_64.tar.gz",
-        "asset_type": "package"
-      }
+        "asset": "kubectx_v0.11.0_linux_x86_64.tar.gz",
+        "asset_type": "package",
+        "after_install_cmd": {
+          "flag": false,
+          "sudo": false,
+          "cmd": ""
+        }
+      },
+      "disable_version_check": false
     },
     {
       "name": "kubens",
@@ -562,13 +617,18 @@
       "install_type": "github",
       "version_cmd": "--version",
       "enabled": true,
-      "install_version": "v0.9.5",
+      "install_version": "v0.11.0",
       "github": {
         "url": "https://github.com/ahmetb/kubectx",
         "api_url": "https://api.github.com/repos/ahmetb/kubectx",
         "parse_release_notes": false,
-        "asset": "kubens_v0.9.5_linux_x86_64.tar.gz",
-        "asset_type": "package"
+        "asset": "kubens_v0.11.0_linux_x86_64.tar.gz",
+        "asset_type": "package",
+        "after_install_cmd": {
+          "flag": false,
+          "sudo": false,
+          "cmd": ""
+        }
       },
       "disable_version_check": false
     },
@@ -594,12 +654,12 @@
       "install_type": "github",
       "version_cmd": "version",
       "enabled": true,
-      "install_version": "kustomize/v5.8.0",
+      "install_version": "kustomize/v5.8.1",
       "github": {
         "url": "https://github.com/kubernetes-sigs/kustomize",
         "api_url": "https://api.github.com/repos/kubernetes-sigs/kustomize",
         "parse_release_notes": false,
-        "asset": "kustomize_v5.8.0_linux_amd64.tar.gz",
+        "asset": "kustomize_v5.8.1_linux_amd64.tar.gz",
         "asset_type": "package",
         "after_install_cmd": {
           "flag": false,
@@ -616,12 +676,12 @@
       "install_type": "github",
       "version_cmd": "--version",
       "enabled": true,
-      "install_version": "v0.24.2",
+      "install_version": "v0.25.0",
       "github": {
         "url": "https://github.com/jesseduffield/lazydocker",
         "api_url": "https://api.github.com/repos/jesseduffield/lazydocker",
         "parse_release_notes": false,
-        "asset": "lazydocker_0.24.2_Linux_x86_64.tar.gz",
+        "asset": "lazydocker_0.25.0_Linux_x86_64.tar.gz",
         "asset_type": "package",
         "after_install_cmd": {
           "flag": false,
@@ -658,7 +718,7 @@
       "install_type": "github",
       "version_cmd": "version",
       "enabled": true,
-      "install_version": "v1.37.0",
+      "install_version": "v1.38.1",
       "github": {
         "url": "https://github.com/kubernetes/minikube",
         "api_url": "https://api.github.com/repos/kubernetes/minikube",
@@ -672,6 +732,28 @@
         }
       },
       "disable_version_check": false
+    },
+    {
+      "name": "nerdctl",
+      "description": "nerdctl: Docker-compatible CLI for containerd",
+      "binary_name": "nerdctl",
+      "install_type": "github",
+      "version_cmd": "--version",
+      "disable_version_check": false,
+      "enabled": true,
+      "install_version": "v2.2.2",
+      "github": {
+        "url": "https://github.com/containerd/nerdctl",
+        "api_url": "https://api.github.com/repos/containerd/nerdctl",
+        "parse_release_notes": false,
+        "asset": "nerdctl-2.2.2-linux-amd64.tar.gz",
+        "asset_type": "package",
+        "after_install_cmd": {
+          "flag": false,
+          "sudo": false,
+          "cmd": ""
+        }
+      }
     },
     {
       "name": "nodejs",
@@ -693,12 +775,12 @@
       "install_type": "github",
       "version_cmd": "--version",
       "enabled": true,
-      "install_version": "v0.3.84",
+      "install_version": "v0.3.95",
       "github": {
         "url": "https://github.com/jameswoolfenden/pike",
         "api_url": "https://api.github.com/repos/jameswoolfenden/pike",
         "parse_release_notes": false,
-        "asset": "pike_0.3.84_linux_amd64.tar.gz",
+        "asset": "pike_0.3.95_linux_amd64.tar.gz",
         "asset_type": "package",
         "after_install_cmd": {
           "flag": false,
@@ -716,7 +798,7 @@
       "version_cmd": "--version",
       "disable_version_check": false,
       "enabled": true,
-      "install_version": "v10.24.0",
+      "install_version": "v10.33.0",
       "github": {
         "url": "https://github.com/pnpm/pnpm",
         "api_url": "https://api.github.com/repos/pnpm/pnpm",
@@ -738,12 +820,12 @@
       "version_cmd": "--version",
       "disable_version_check": false,
       "enabled": true,
-      "install_version": "v1.72.0",
+      "install_version": "v1.73.3",
       "github": {
         "url": "https://github.com/rclone/rclone",
         "api_url": "https://api.github.com/repos/rclone/rclone",
         "parse_release_notes": false,
-        "asset": "rclone-v1.72.0-linux-amd64.deb",
+        "asset": "rclone-v1.73.3-linux-amd64.deb",
         "asset_type": "deb_based",
         "after_install_cmd": {
           "flag": false,
@@ -759,7 +841,7 @@
       "install_type": "github",
       "version_cmd": "version",
       "enabled": true,
-      "install_version": "v0.10.0",
+      "install_version": "v0.11.2",
       "github": {
         "url": "https://github.com/regclient/regclient",
         "api_url": "https://api.github.com/repos/regclient/regclient",
@@ -781,7 +863,7 @@
       "install_type": "github",
       "version_cmd": "version",
       "enabled": true,
-      "install_version": "v0.10.0",
+      "install_version": "v0.11.2",
       "github": {
         "url": "https://github.com/regclient/regclient",
         "api_url": "https://api.github.com/repos/regclient/regclient",
@@ -803,7 +885,7 @@
       "install_type": "github",
       "version_cmd": "version",
       "enabled": true,
-      "install_version": "v0.10.0",
+      "install_version": "v0.11.2",
       "github": {
         "url": "https://github.com/regclient/regclient",
         "api_url": "https://api.github.com/repos/regclient/regclient",
@@ -870,7 +952,7 @@
       "version_cmd": "--version",
       "disable_version_check": false,
       "enabled": true,
-      "install_version": "v0.11.1",
+      "install_version": "v0.13.0",
       "github": {
         "url": "https://github.com/shshemi/tabiew",
         "api_url": "https://api.github.com/repos/shshemi/tabiew",
@@ -915,12 +997,12 @@
       "version_cmd": "--version",
       "disable_version_check": false,
       "enabled": true,
-      "install_version": "v0.20.0",
+      "install_version": "v0.21.0",
       "github": {
         "url": "https://github.com/terraform-docs/terraform-docs",
         "api_url": "https://api.github.com/repos/terraform-docs/terraform-docs",
         "parse_release_notes": false,
-        "asset": "terraform-docs-v0.20.0-linux-amd64.tar.gz",
+        "asset": "terraform-docs-v0.21.0-linux-amd64.tar.gz",
         "asset_type": "package",
         "after_install_cmd": {
           "flag": false,
@@ -937,12 +1019,12 @@
       "version_cmd": "--version",
       "disable_version_check": false,
       "enabled": true,
-      "install_version": "v0.67.2",
+      "install_version": "v0.69.3",
       "github": {
         "url": "https://github.com/aquasecurity/trivy",
         "api_url": "https://api.github.com/repos/aquasecurity/trivy",
         "parse_release_notes": false,
-        "asset": "trivy_0.67.2_Linux-64bit.deb",
+        "asset": "trivy_0.69.3_Linux-64bit.deb",
         "asset_type": "deb_based",
         "after_install_cmd": {
           "flag": false,
@@ -981,12 +1063,34 @@
       "version_cmd": "version --client-only",
       "disable_version_check": false,
       "enabled": true,
-      "install_version": "v1.17.1",
+      "install_version": "v1.18.0",
       "github": {
         "url": "https://github.com/vmware-tanzu/velero",
         "api_url": "https://api.github.com/repos/vmware-tanzu/velero",
         "parse_release_notes": false,
-        "asset": "velero-v1.17.1-linux-amd64.tar.gz",
+        "asset": "velero-v1.18.0-linux-amd64.tar.gz",
+        "asset_type": "package",
+        "after_install_cmd": {
+          "flag": false,
+          "sudo": false,
+          "cmd": ""
+        }
+      }
+    },
+    {
+      "name": "xq",
+      "description": "Command-line XML and HTML beautifier and content extractor",
+      "binary_name": "xq",
+      "install_type": "github",
+      "version_cmd": "--version",
+      "disable_version_check": false,
+      "enabled": true,
+      "install_version": "v1.4.0",
+      "github": {
+        "url": "https://github.com/sibprogrammer/xq",
+        "api_url": "https://api.github.com/repos/sibprogrammer/xq",
+        "parse_release_notes": false,
+        "asset": "xq_1.4.0_linux_amd64.tar.gz",
         "asset_type": "package",
         "after_install_cmd": {
           "flag": false,
@@ -1000,7 +1104,7 @@
       "binary_name": "yq",
       "description": "A lightweight and portable command-line YAML, JSON, INI and XML processor",
       "install_type": "github",
-      "install_version": "v4.48.2",
+      "install_version": "v4.52.5",
       "version_cmd": "--version",
       "enabled": true,
       "github": {
@@ -1018,20 +1122,40 @@
       "disable_version_check": false
     },
     {
-      "name": "nerdctl",
-      "description": "nerdctl: Docker-compatible CLI for containerd",
-      "binary_name": "nerdctl",
+      "name": "kube-dump",
+      "description": "With this utility you can save your cluster resources as nice yaml manifests without unnecessary metadata.",
+      "binary_name": "kube-dump",
       "install_type": "github",
       "version_cmd": "--version",
       "disable_version_check": false,
-      "enabled": true,
-      "install_version": "v2.2.1",
+      "enabled": false,
+      "install_version": "1.1.2",
       "github": {
-        "url": "https://github.com/containerd/nerdctl",
-        "api_url": "https://api.github.com/repos/containerd/nerdctl",
+        "url": "https://github.com/WoozyMasta/kube-dump",
+        "api_url": "https://api.github.com/repos/WoozyMasta/kube-dump",
+        "parse_release_notes": true,
+        "after_install_cmd": {
+          "flag": false,
+          "sudo": false,
+          "cmd": ""
+        }
+      }
+    },
+    {
+      "name": "kubedump",
+      "description": "Simple tool to dump and restore kubernetes resources",
+      "binary_name": "kubedump",
+      "install_type": "github",
+      "version_cmd": "version",
+      "disable_version_check": true,
+      "enabled": true,
+      "install_version": "v0.1.8",
+      "github": {
+        "url": "https://github.com/msfidelis/kubedump",
+        "api_url": "https://api.github.com/repos/msfidelis/kubedump",
         "parse_release_notes": false,
-        "asset": "nerdctl-2.2.1-linux-amd64.tar.gz",
-        "asset_type": "package",
+        "asset": "kubedump_0.1.8_darwin_amd64",
+        "asset_type": "binary",
         "after_install_cmd": {
           "flag": false,
           "sudo": false,
